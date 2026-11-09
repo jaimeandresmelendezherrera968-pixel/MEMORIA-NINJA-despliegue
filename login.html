@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Inicia sesión en Ninja Memory">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+
+    <video autoplay muted loop playsinline id="videofondo">
+        <source src="assets/memory_ninja_background_v2.mp4" type="video/mp4">
+    </video>
+
+    <div class="login-contenedor">
+        <img src="assets/img/logo.png" alt="logo" style="display:block; margin:auto;" width="75%" alt="Logo"></img>
+        <h1>Iniciar Sesión</h1>
+
+        <input id="user" type="text" placeholder="Usuario" />
+
+        <div class="input-pass">
+            <input id="pass" type="password" placeholder="Contraseña" />
+            <img src="assets/img/Sharingan_triple.svg.png" class="ojo" id="ojoPass" alt="Mostrar contraseña">
+        </div>
+
+        <button id="btnLogin">Ingresar</button>
+
+        <div class="recordar-sesion">
+            <label>
+                <input type="checkbox" id="recordarme">
+                <span>Recordar sesión</span>
+            </label>
+        </div>
+
+        <p id="msg"></p>
+<p style="margin-top:10px;">
+    <a href="recuperar.html"
+       style="color:white; text-decoration:underline;">
+        ¿Olvidaste tu contraseña?
+    </a>
+</p>
+
+<p style="margin-top:15px;">
+    ¿No tienes cuenta?
+    <a href="registro.html"
+       style="color:#ffffff; text-decoration:underline;">
+        Regístrate
+    </a>
+</p>
+
+<button id="btnInvitado" class="btn-invitado" type="button">🎮 Jugar como invitado</button>
+    </div>
+
+
+    <script type="module" src="js/login.js"></script>
+
+</body>
+
+</html>

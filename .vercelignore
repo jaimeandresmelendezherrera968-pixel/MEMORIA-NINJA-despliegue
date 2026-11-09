@@ -1,0 +1,13 @@
+# Backend, material interno y archivos que no se sirven desde Vercel
+backend-poderes/
+docs/
+sql/
+-files
+.agents/
+.git/
+node_modules/
+*.md
+.env
+*.env
+package.json
+package-lock.json

@@ -1,0 +1,213 @@
+classDiagram
+
+    class Poder {
+        <<abstract>>
+        +string id
+        +string nombre
+        +number costoChakra
+        +object _usos
+        +HTMLElement boton
+        +HTMLElement contador
+        +object contexto
+        +inyectarContexto(contexto) void
+        +usosRestantes(esSasuke) number
+        +mostrarMensaje(mensaje) void
+        +activar() void
+        +estaBloqueado(contexto) boolean
+        +validarCondicionesExtra(contexto) boolean
+        +efecto(contexto, esSasuke, jugador) void
+        -#consumirUso(esSasuke) void
+        -#actualizarUsosUI(esSasuke) void
+    }
+
+    class ByakuganPoder {
+        -boolean _activo
+        -array _cartasParaRevelar
+        +estaBloqueado(contexto) boolean
+        +validarCondicionesExtra(contexto) boolean
+        +efecto(contexto, esSasuke) void
+        -#activarAnimacion(esSasuke) void
+        -#revelarCartas(cartas) void
+    }
+
+    class SustitucionPoder {
+        -object _armada
+        -number _timeout
+        -HTMLElement spanEstado
+        +estaBloqueado(contexto) boolean
+        +notificarUsoDefensivo() void
+        +estaArmada(esSasuke) boolean
+        +desarmar(esSasuke) void
+        +efecto(contexto, esSasuke) void
+        -#activarAnimacion(esSasuke) void
+    }
+
+    class RoboPoder {
+        +efecto(contexto, esSasuke, atacante) void
+        -#activarAnimacion(esSasuke, robado) void
+    }
+
+    class GenjutsuPoder {
+        -boolean _activo
+        -number _timeout
+        -HTMLElement _overlayEl
+        +estaBloqueado(contexto) boolean
+        +estaActivo() boolean
+        +efecto(contexto) void
+        +cancelar(detectadoPorByakugan) void
+        -#activarAnimacion() void
+        -#activarIlusionTablero() void
+        -#quitarIlusionTablero() void
+    }
+
+    class SelloPoder {
+        -object _cartaSelladaActual
+        -number _timeout
+        -object _cartaParaSellar
+        +estaBloqueado(contexto) boolean
+        +validarCondicionesExtra(contexto) boolean
+        +efecto() void
+        -#activarAnimacion() void
+        -#sellarCarta(carta) void
+        -#quitarSello() void
+    }
+
+    class BombaPoder {
+        +efecto(contexto, esSasuke) void
+        -#activarAnimacion(contexto, defensorEsSasuke, dano, mitigado) void
+    }
+
+    class GestorPoderes {
+        +ByakuganPoder byakugan
+        +SustitucionPoder sustitucion
+        +RoboPoder robo
+        +GenjutsuPoder genjutsu
+        +SelloPoder sello
+        +BombaPoder bomba
+        +array poderes
+    }
+
+    class Personaje {
+        +number CHAKRA_MAXIMO$ = 100
+        +number VIDA_MAXIMA$ = 100
+        -#number chakra
+        -#number vida
+        -#number combo
+        -#number aciertos
+        -#number errores
+        +string nombre
+        +number nivel
+        +get chakra() number
+        +get vida() number
+        +get combo() number
+        +get aciertos() number
+        +get errores() number
+        +tieneChakraPara(costo) boolean
+        +gastarChakra(cantidad) void
+        +ganarChakra(cantidad) void
+        +recibirDanio(cantidad) void
+        +registrarAcierto() void
+        +registrarError() boolean
+        +estaDerrotado() boolean
+    }
+
+    class GestorTurno {
+        -boolean #esTurnoDeSasuke
+        -boolean #modoPruebaLocal
+        -boolean #miPersonajeEsSasuke
+        -array #oyentesDeCambio
+        +esTurnoDeSasuke() boolean
+        +esMiTurno() boolean
+        +alCambiarTurno(callback) void
+        +cambiar() void
+    }
+
+    class GestorTiempo {
+        -number #tiempoSasuke
+        -number #tiempoNaruto
+        -number #intervalo
+        -number #tiempoInicial
+        +get tiempoSasuke() number
+        +get tiempoNaruto() number
+        +iniciar(onTick) void
+        +descontarSegundo(esTurnoDeSasuke) boolean
+        +detener() void
+        +formatear$(segundos) string
+    }
+
+    class GestorPartida {
+        -Personaje jugador
+        -Personaje rival
+        -GestorTurno gestorTurno
+        -GestorTiempo gestorTiempo
+        -GestorPoderes gestorPoderes
+        -VistaPartida vista
+        -ProveedorDatosSimulado proveedorDatos
+        -number puntajeActual
+        -boolean partidaFinalizada
+        +iniciar() void
+        +procesarResultado(esAcierto, puntajeTotal) void
+        +mostrarModalFinal(movimientosFinales, puntajeFinal) void
+        -#perderVida(esSasukeObjetivo, cantidad) void
+        -#ganarChakraPorCombo(esSasuke, actor) void
+    }
+
+    class VistaPartida {
+        +HTMLElement tiempo
+        +HTMLElement movimientos
+        +HTMLElement puntaje
+        +HTMLElement turnoSasuke
+        +HTMLElement turnoNaruto
+        +HTMLElement modal
+        +cargarPanelSuperior() void
+        +cargarPersonaje(personaje, opciones) void
+        +cargarPanelJugador(jugador) void
+        +cargarPanelRival(rival) void
+        +renderTurno(esTurnoDeSasuke) void
+        +renderTiempos(tiempoS, tiempoN, esTurnoDeSasuke, formatear) void
+        +renderPuntaje(puntaje) void
+        +renderChakra(jugador, rival) void
+        +renderVida(jugador, rival) void
+        +renderAciertoJugador(esSasuke, personaje) void
+        +renderErrorJugador(esSasuke, personaje) void
+        +renderCombo(jugador, rival) void
+        +mostrarComboRoto(esSasuke) void
+        +mostrarBonificacionCombo(combo, chakra) void
+        +mostrarBonoChakraVisual(esSasuke, cantidad) void
+        +mostrarAvisoRapido(mensaje) void
+        +mostrarModalFinal(movimientos, puntaje, jugador, rival, ...) void
+        +bindBotonesModal() void
+    }
+
+    class ProveedorDatos {
+        <<interface>>
+        +obtenerDatos() object
+    }
+
+    class ProveedorDatosSimulado {
+        +obtenerDatos() object
+    }
+
+    Poder <|-- ByakuganPoder : Herencia
+    Poder <|-- SustitucionPoder : Herencia
+    Poder <|-- RoboPoder : Herencia
+    Poder <|-- GenjutsuPoder : Herencia
+    Poder <|-- SelloPoder : Herencia
+    Poder <|-- BombaPoder : Herencia
+
+    GestorPoderes *-- ByakuganPoder
+    GestorPoderes *-- SustitucionPoder
+    GestorPoderes *-- RoboPoder
+    GestorPoderes *-- GenjutsuPoder
+    GestorPoderes *-- SelloPoder
+    GestorPoderes *-- BombaPoder
+
+    GestorPartida *-- Personaje : jugador
+    GestorPartida *-- Personaje : rival
+    GestorPartida *-- GestorTurno
+    GestorPartida *-- GestorTiempo
+    GestorPartida *-- GestorPoderes
+    GestorPartida *-- VistaPartida
+    GestorPartida --> ProveedorDatosSimulado : usa datos simulados
+
+    ProveedorDatos <|.. ProveedorDatosSimulado : LSP

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>PostgreSQL — Diagrama completo: tablas + objetos</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: radial-gradient(circle at top left, #1b2a4a 0%, #0d1117 45%, #090c10 100%);
+    color: #c9d1d9;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 14px;
+    margin: 0;
+    padding: 30px 36px 60px;
+  }
+  h1 {
+    color: #ffffff;
+    font-size: 26px;
+    margin: 0 0 4px;
+    background: linear-gradient(90deg, #58a6ff, #bc8cff, #3fb950, #ffa657);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitulo { color: #8b949e; margin: 0 0 10px; font-size: 13px; }
+
+  /* ====== ESCENARIO ====== */
+  .escena {
+    position: relative;
+    width: 1400px;
+    height: 780px;
+    margin: 24px 0 8px;
+    background: #0b1016;
+    border: 1px solid #30363d;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: inset 0 0 60px rgba(0,0,0,.5);
+  }
+  svg.lineas { position: absolute; left: 0; top: 0; width: 1400px; height: 780px; z-index: 1; }
+  .etq { font-family: "Cascadia Code","Consolas",monospace; font-size: 12px; font-weight: 800; }
+
+  /* ====== CAJAS ====== */
+  .tb {
+    position: absolute;
+    z-index: 2;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 24px rgba(0,0,0,.5);
+    border: 1.5px solid;
+  }
+  .tb-header {
+    padding: 8px 13px;
+    font-family: "Cascadia Code","Consolas",monospace;
+    font-weight: 800; font-size: 14.5px; letter-spacing: .5px;
+    display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  }
+  .tb-header small { font-size: 10px; font-weight: 700; opacity: .75; letter-spacing: 1px; text-transform: uppercase; }
+  .fila {
+    display: flex; align-items: center; gap: 7px;
+    height: 27px; padding: 0 12px;
+    font-family: "Cascadia Code","Consolas",monospace;
+    font-size: 12.5px;
+    border-top: 1px solid rgba(255,255,255,.05);
+    white-space: nowrap;
+  }
+  .fila .tipo { font-size: 10.5px; opacity: .75; }
+  .fila .sp { flex: 1; }
+  .punto { width: 26px; height: 3px; background: #7ee787; border-radius: 3px; opacity: 0; }
+  .punto.on { opacity: 1; }
+
+  /* filas de objetos (más altas para texto corto) */
+  .fila.obj { height: 40px; font-size: 12px; }
+  .fila.obj span.aux { font-size: 10.5px; opacity: .85; border-left: 2px solid; padding-left: 6px; }
+
+  /* Paleta tablas */
+  .tb-usuarios  { background: linear-gradient(180deg,#0b1c33,#0d1117); border-color: #1f4778; }
+  .tb-usuarios .tb-header { background:#0e2340; color:#a9d3ff; }
+  .tb-usuarios .tipo { color:#79c0ff; }
+
+  .tb-historial { background: linear-gradient(180deg,#0a2313,#0d1117); border-color: #1f6b34; }
+  .tb-historial .tb-header { background:#0d2b1a; color:#a5f3b6; }
+  .tb-historial .tipo { color:#7ee787; }
+
+  .tb-partidas  { background: linear-gradient(180deg,#241608,#0d1117); border-color: #6b451c; }
+  .tb-partidas .tb-header { background:#2e1d0a; color:#ffd9a8; }
+  .tb-partidas .tipo { color:#ffb877; }
+
+  .tb-jugadores { background: linear-gradient(180deg,#1c1233,#0d1117); border-color: #5a3a8f; }
+  .tb-jugadores .tb-header { background:#241743; color:#dcc5ff; }
+  .tb-jugadores .tipo { color:#d2a8ff; }
+  .tb-jugadores .fila { height: 18px; font-size: 9.6px; padding: 0 9px; }
+
+  /* Paleta objetos */
+  .tb-vistas    { background: linear-gradient(180deg,#0b1c33,#0d1117); border-color: #2a5a96; }
+  .tb-vistas .tb-header { background:#0e2340; color:#58a6ff; }
+  .tb-trigger   { background: linear-gradient(180deg,#241608,#0d1117); border-color: #8a5a22; }
+  .tb-trigger .tb-header { background:#2e1d0a; color:#ffa657; }
+  .tb-proc      { background: linear-gradient(180deg,#0a2313,#0d1117); border-color: #2a7a41; }
+  .tb-proc .tb-header { background:#0d2b1a; color:#3fb950; }
+
+  .llave { font-size: 9.5px; font-weight: 800; padding: 1px 6px; border-radius: 9px; white-space: nowrap; }
+  .llave.pk { background:#f0b429; color:#3a2a00; }
+  .llave.fk { background:transparent; border:1px solid #6ee7eb; color:#6ee7eb; }
+  .llave.uq { background:transparent; border:1px dashed #d2a8ff; color:#d2a8ff; }
+
+  .destacada { outline: 1.5px dashed rgba(255,255,255,.35); outline-offset: -2px; background: rgba(255,255,255,.05); }
+
+  /* ====== LEYENDA ====== */
+  .leyenda {
+    display: flex; gap: 26px; flex-wrap: wrap;
+    margin: 12px 0 30px;
+    padding: 12px 18px;
+    border: 1px solid #30363d; border-radius: 10px;
+    background: #0d1117; font-size: 13px;
+  }
+  .leyenda b { margin-right: 4px; }
+  .cuadrito { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; }
+  .lien { display:inline-block; width:24px; height:2.5px; vertical-align:middle; margin-right:5px; border-radius:2px; }
+
+  /* ====== DETALLE ====== */
+  .card { border-radius: 14px; padding: 16px 20px 12px; margin-bottom: 22px; border: 1px solid #30363d; box-shadow: 0 8px 28px rgba(0,0,0,.45); }
+  .card-head { display: flex; align-items: center; margin-bottom: 10px; }
+  .card-head h2 { font-size: 17px; margin: 0; }
+  .badge { display:inline-block; padding: 2px 11px; border-radius: 18px; font-size: 10.5px; font-weight: 800; letter-spacing: 1.2px; margin-right: 11px; text-transform: uppercase; }
+  .badge-partidas  { background:#ffa657; color:#2b1400; }
+  .badge-usuarios  { background:#58a6ff; color:#001b33; }
+  .badge-historial { background:#3fb950; color:#00210a; }
+  table { width:100%; border-collapse: collapse; margin-bottom:6px; border:1px solid #30363d; }
+  th { text-align:left; font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:#8b949e; border-bottom:2px solid #30363d; padding:6px 12px; }
+  td { padding:5px 12px; border-bottom:1px solid rgba(255,255,255,.06); vertical-align: top; }
+  tr:last-child td { border-bottom:none; }
+  .nota { border:1px dashed #f85149; border-radius:10px; padding:10px 14px; margin-top:10px; font-size:13px; color:#f8b4ae; background:rgba(248,81,73,.08); }
+  .nota b { color:#ff7b72; }
+  .ok { border:1px dashed #3fb950; border-radius:10px; padding:10px 14px; margin-top:10px; font-size:13px; color:#a5f3b6; background:rgba(63,185,80,.08); }
+  .azul { border:1px dashed #58a6ff; border-radius:10px; padding:10px 14px; margin-top:10px; font-size:13px; color:#a9d3ff; background:rgba(88,166,255,.07); }
+</style>
+</head>
+<body>
+
+<h1>PostgreSQL — diagrama completo de la base</h1>
+<p class="subtitulo">Base <b>memoria_ninja</b> · 4 tablas + 4 vistas + 1 trigger + 2 procedimientos · lo que ves en pgAdmin</p>
+
+<!-- ================= DIAGRAMA ================= -->
+<div class="escena">
+<svg class="lineas" viewBox="0 0 1400 780">
+  <defs>
+    <marker id="fk" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6ee7eb"/>
+    </marker>
+    <marker id="viz" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/>
+    </marker>
+    <marker id="tri" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#ffa657"/>
+    </marker>
+    <marker id="pro" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/>
+    </marker>
+  </defs>
+
+  <!-- ===== FK entre tablas (teal) ===== -->
+  <!-- usuarios.id -> historial.id_usuario  (1 ─ 0..n) -->
+  <path d="M360 93 V15 H775 V120 L790 120" fill="none" stroke="#6ee7eb" stroke-width="2.5" marker-end="url(#fk)"/>
+  <circle cx="360" cy="93" r="4.5" fill="#6ee7eb"/>
+  <circle cx="790" cy="120" r="4.5" fill="#6ee7eb"/>
+  <text x="470" y="12" class="etq" fill="#6ee7eb">1</text>
+  <text x="748" y="110" class="etq" fill="#6ee7eb">0..n</text>
+  <text x="352" y="130" class="etq" fill="#6ee7eb" font-size="10">FK</text>
+
+  <!-- partidas.id -> historial.id_partida (1 ─ 0..1) -->
+  <path d="M740 93 V28 H775 V147 L790 147" fill="none" stroke="#6ee7eb" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#fk)"/>
+  <circle cx="740" cy="93" r="4.5" fill="#6ee7eb"/>
+  <circle cx="790" cy="147" r="4.5" fill="#6ee7eb"/>
+  <text x="650" y="23" class="etq" fill="#6ee7eb">1</text>
+  <text x="756" y="137" class="etq" fill="#6ee7eb">0..1</text>
+
+  <!-- ===== VISTAS -> TABLAS (azul) ===== -->
+  <!-- vw_partidas_recientes -> partidas -->
+  <path d="M70 430 V290 H575 L575 188" fill="none" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#viz)"/>
+  <text x="248" y="278" class="etq" fill="#58a6ff">partidas</text>
+  <!-- vw_historial_detallado -> historial -->
+  <path d="M160 430 V350 H1000 L1000 296" fill="none" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#viz)"/>
+  <text x="900" y="340" class="etq" fill="#58a6ff">historial_partidas</text>
+  <!-- vw_ranking_mejor_puntaje -> historial -->
+  <path d="M245 430 V330 H900 L900 296" fill="none" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#viz)"/>
+  <!-- vw_usuarios_resumen -> usuarios -->
+  <path d="M330 430 V362 H195 L195 242" fill="none" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#viz)"/>
+  <text x="120" y="352" class="etq" fill="#58a6ff">usuarios</text>
+
+  <!-- ===== TRIGGER -> partidas (naranja) ===== -->
+  <path d="M505 430 V260 H650 L650 188" fill="none" stroke="#ffa657" stroke-width="2.5" marker-end="url(#tri)"/>
+  <text x="512" y="250" class="etq" fill="#ffa657">BEFORE UPDATE</text>
+
+  <!-- ===== PROCEDIMIENTOS -> tablas (verde) ===== -->
+  <!-- sp_registrar_partida -> historial -->
+  <path d="M880 430 V355 H1080 L1080 296" fill="none" stroke="#3fb950" stroke-width="2.5" marker-end="url(#pro)"/>
+  <!-- sp_crear_partida_completa -> partidas e historial (rama) -->
+  <path d="M1040 430 V335 H695 L695 188" fill="none" stroke="#3fb950" stroke-width="2.5" marker-end="url(#pro)"/>
+  <path d="M1040 430 V345 H1140 L1140 296" fill="none" stroke="#3fb950" stroke-width="2.5" marker-end="url(#pro)"/>
+  <text x="1045" y="370" class="etq" fill="#3fb950">ATÓMICO</text>
+
+  <!-- nota jugadores -->
+  <text x="1180" y="225" class="etq" fill="#d2a8ff" font-size="10">sin relación · sistema antiguo</text>
+  <text x="600" y="452" class="etq" fill="#30363d" font-size="10"></text>
+</svg>
+
+<!-- ============ TABLAS (arriba) ============ -->
+<!-- usuarios -->
+<div class="tb tb-usuarios" style="left:30px; top:50px; width:330px;">
+  <div class="tb-header">usuarios <small>cuentas</small></div>
+  <div class="fila destacada"><span class="punto on"></span><b>id</b><span class="llave pk">PK</span><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila"><b>usuario</b><span class="llave uq">UQ</span><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila"><b>correo</b><span class="llave uq">UQ</span><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila"><b>nacimiento</b><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila"><b>password_hash</b><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila"><b>creado_en</b><span class="sp"></span><span class="tipo">TIMESTAMP</span></div>
+</div>
+
+<!-- partidas -->
+<div class="tb tb-partidas" style="left:410px; top:50px; width:330px;">
+  <div class="tb-header">partidas <small>tableros</small></div>
+  <div class="fila destacada"><span class="punto on"></span><b>id</b><span class="llave pk">PK</span><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila"><b>estado_json</b><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila"><b>creada_en</b><span class="sp"></span><span class="tipo">TIMESTAMP</span></div>
+  <div class="fila destacada"><span class="punto on"></span><b>actualizada_en</b><span class="sp"></span><span class="tipo">TIMESTAMP</span></div>
+</div>
+
+<!-- historial_partidas -->
+<div class="tb tb-historial" style="left:790px; top:50px; width:340px;">
+  <div class="tb-header">historial_partidas <small>resultados</small></div>
+  <div class="fila"><b>id</b><span class="llave pk">PK</span><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila destacada"><span class="punto on"></span><b>id_usuario</b><span class="llave fk">FK→usuarios</span><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila destacada"><span class="punto on"></span><b>id_partida</b><span class="llave fk">FK→partidas</span><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila"><b>zona</b><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila"><b>puntaje</b><span class="sp"></span><span class="tipo">INTEGER</span></div>
+  <div class="fila"><b>modo</b><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila"><b>ganador</b><span class="sp"></span><span class="tipo">TEXT</span></div>
+  <div class="fila"><b>jugada_en</b><span class="sp"></span><span class="tipo">TIMESTAMP</span></div>
+</div>
+
+<!-- jugadores (aislada) -->
+<div class="tb tb-jugadores" style="left:1180px; top:50px; width:200px; border-style:dashed;">
+  <div class="tb-header">jugadores <small>legacy</small></div>
+  <div class="fila"><b>id</b> <span class="llave pk">PK</span><span class="sp"></span><span style="opacity:.7">SERIAL</span></div>
+  <div class="fila"><b>nombre</b> <span class="llave uq">UQ</span><span class="sp"></span><span style="opacity:.7">VARCHAR</span></div>
+  <div class="fila"><b>password</b><span class="sp"></span><span style="opacity:.7">VARCHAR</span></div>
+  <div class="fila"><b>nacimiento</b><span class="sp"></span><span style="opacity:.7">DATE</span></div>
+  <div class="fila"><b>correo</b> <span class="llave uq">UQ</span><span class="sp"></span><span style="opacity:.7">VARCHAR</span></div>
+  <div class="fila"><b>created_at</b><span class="sp"></span><span style="opacity:.7">TSTZ</span></div>
+  <div class="fila"><b>experiencia</b><span class="sp"></span><span style="opacity:.7">INTEGER</span></div>
+</div>
+
+<!-- ============ OBJETOS (abajo) ============ -->
+<!-- VISTAS -->
+<div class="tb tb-vistas" style="left:30px; top:430px; width:340px;">
+  <div class="tb-header">VISTAS <small>4</small></div>
+  <div class="fila obj"><b>vw_partidas_recientes</b><span class="sp"></span><span class="aux" style="border-color:#58a6ff">→ parte de partidas</span></div>
+  <div class="fila obj"><b>vw_historial_detallado</b><span class="sp"></span><span class="aux" style="border-color:#58a6ff">→ historial+usuarios</span></div>
+  <div class="fila obj"><b>vw_ranking_mejor_puntaje</b><span class="sp"></span><span class="aux" style="border-color:#58a6ff">→ historial+usuarios</span></div>
+  <div class="fila obj"><b>vw_usuarios_resumen</b><span class="sp"></span><span class="aux" style="border-color:#58a6ff">→ usuarios+historial</span></div>
+</div>
+
+<!-- TRIGGER -->
+<div class="tb tb-trigger" style="left:410px; top:430px; width:330px;">
+  <div class="tb-header">TRIGGER <small>1</small></div>
+  <div class="fila obj"><b>trg_partidas_actualizar_fecha</b></div>
+  <div class="fila obj"><span class="aux" style="border-color:#ffa657">BEFORE UPDATE · FOR EACH ROW</span><span class="sp"></span><span class="aux" style="border-color:#ffa657">fija actualizada_en</span></div>
+</div>
+
+<!-- PROCEDIMIENTOS -->
+<div class="tb tb-proc" style="left:790px; top:430px; width:340px;">
+  <div class="tb-header">PROCEDIMIENTOS <small>2</small></div>
+  <div class="fila obj"><b>sp_registrar_partida</b><span class="sp"></span><span class="aux" style="border-color:#3fb950">INSERT historial</span></div>
+  <div class="fila obj"><b>sp_crear_partida_completa</b><span class="sp"></span><span class="aux" style="border-color:#3fb950">INSERT historial + partidas</span></div>
+</div>
+</div>
+
+<div class="leyenda">
+  <span><span class="cuadrito" style="background:#f0b429"></span><b>PK</b> Clave primaria</span>
+  <span><span class="lien" style="background:#6ee7eb"></span><b>FK</b> Relación entre tablas (sólida = obligatoria, discontinua = opcional)</span>
+  <span><span class="lien" style="background:#58a6ff"></span><b>Vistas</b> leen de las tablas</span>
+  <span><span class="lien" style="background:#ffa657"></span><b>Trigger</b> se dispara sobre partidas</span>
+  <span><span class="lien" style="background:#3fb950"></span><b>Procedimientos</b> escriben en las tablas</span>
+  <span><span class="cuadrito" style="background:#bc8cff"></span><b>Recuadro discontinuo</b> = aislada</span>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="badge badge-historial">Cómo se lee</span><h2>El flujo completo del diagrama</h2></div>
+  <table>
+    <tr><th>Línea</th><th>Qué significa</th></tr>
+    <tr><td style="color:#6ee7eb">usuarios.id ── historial.id_usuario</td><td>FK: 1 usuario puede tener 0..n resultados. Las vistas de historial y ranking la usan para enlazar el nombre del jugador.</td></tr>
+    <tr><td style="color:#6ee7eb">partidas.id ┄─ historial.id_partida</td><td>FK opcional (0..1): un resultado puede no tener tablero guardado. La rellena <b>sp_crear_partida_completa</b>.</td></tr>
+    <tr><td style="color:#58a6ff">Vistas → tablas</td><td>Las 4 vistas son consultas guardadas: no guardan datos, en cada SELECT vuelven a calcular sobre las tablas.</td></tr>
+    <tr><td style="color:#ffa657">Trigger → partidas</td><td>Se ejecuta automáticamente en cada UPDATE de partidas y renueva <b>actualizada_en</b> (por eso la fila está resaltada).</td></tr>
+    <tr><td style="color:#3fb950">Procedimientos → tablas</td><td><b>sp_registrar_partida</b> inserta un resultado; <b>sp_crear_partida_completa</b> inserta historia + tablero en una operación <b>atómica</b>.</td></tr>
+    <tr><td style="color:#d2a8ff">jugadores (discontinuo)</td><td>Tabla del sistema antiguo: comparte base pero no tiene relación con ninguna de las demás.</td></tr>
+  </table>
+  <div class="nota"><b>⚠ Pendiente en PostgreSQL:</b> a <code>usuarios</code> le faltan las 5 columnas de progreso
+    (<code>xp, victorias, derrotas, racha, puntaje_max</code>). Se añaden con los <code>ALTER ... ADD COLUMN IF NOT EXISTS</code>
+    ya presentes en <code>schema-postgres.sql</code> (líneas 24-28).</div>
+  <div class="ok"><b>✔ Resumen:</b> las vistas <b>leen</b> las tablas, el trigger <b>reacciona</b> a partidas y los procedimientos <b>escriben</b>. Todo convive en PostgreSQL 18.</div>
+</div>
+
+</body>
+</html>

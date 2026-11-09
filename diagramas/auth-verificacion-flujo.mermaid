@@ -1,0 +1,30 @@
+%%=========================================================
+%%  MEMORIA NINJA — DIAGRAMA DE FLUJO: VERIFICACIÓN DE CORREO
+%%  Proceso: verificacion.html -> enviar código -> comprobar.
+%%  Basado en js/verificacion.js + js/controladores/VerificacionController.js
+%%  + js/servicios/VerificacionService.js.
+%%  Capas: COMPOSITION ROOT / CONTROLADOR / SERVICIO /
+%%  NÚCLEO (contratos DIP + OCP) / INFRAESTRUCTURA (LSP).
+%%=========================================================
+flowchart TD
+
+    A["verificacion.html<br/>DOMContentLoaded"] --> V1["VerificacionController construido por<br/>verificacion.js (CAPA 1 — COMPOSITION ROOT)<br/>con CodigoAlfanumericoGenerador(6),<br/>AlertaNotificador, EnvioCodigoModoPrueba,<br/>VerificacionService y referencias DOM"]
+
+    V1 --> B{"Click: 'Enviar código'"}
+    B -->|"correo vacío"| C["AlertaNotificador.mostrar('Escribe tu correo primero.', 'error')"]
+    B -->|"correo válido"| D["VerificacionController.enviarCodigo(correo)<br/>(CAPA 2 — CONTROLADOR)"]
+    D --> E["VerificacionService.generarNuevoCodigo(correo)<br/>(CAPA 3 — SERVICIO)"]
+    E -->|"DIP -> ICodigoGenerador"| F["CodigoAlfanumericoGenerador.generar()<br/>(INFRAESTRUCTURA · LSP)"]
+    F --> G["EnvioCodigoModoPrueba.enviar(correo, codigo)<br/>(INFRAESTRUCTURA · OCP -> IEnviadorCodigo)"]
+    G --> H["AlertaNotificador.mostrar('Modo de prueba: tu código es ...', 'info')"]
+    H --> I["UI: muestra correo enmascarado +<br/>temporizador 60s (reiniciar cada 1s)"]
+
+    I --> J{"¿temporizador llega a 0?"}
+    J -->|"Sí"| K["VerificacionService.expirarCodigo()<br/>(codigoActual = null)"]
+    K --> L["UI: 'Tu código expiró.' +<br/>habilitar 'Reenviar código'"]
+    J -->|"No · Click: 'Comprobar código'"| M["VerificacionController.manejarEnvio({codigo})<br/>(polimorfismo)"]
+    M --> N["VerificacionService.validarCodigo(codigo)<br/>compara en mayúsculas con codigoActual"]
+    N --> O{"¿código correcto y vigente?"}
+    O -->|"No"| P["AlertaNotificador error + limpia el input y lo enfoca"]
+    O -->|"Sí"| Q["UI: oculta botón, deshabilita input,<br/>muestra contenedor de carga"]
+    Q --> R["setTimeout 2000ms -> login.html"]

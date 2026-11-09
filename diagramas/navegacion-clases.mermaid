@@ -1,0 +1,54 @@
+classDiagram
+
+    class ConfiguracionZonas {
+        <<config>>
+        +array ZONAS$ = objeto por zona
+        +string DESTINO_COMUN$ = pre-partida.html
+    }
+
+    class ConfiguracionClanes {
+        <<config>>
+        +object CLANES$ = 9 clanes
+        +object DESTINOS_JUEGO$ = mapa HTML por clan
+    }
+
+    class RepositorioClanes {
+        +obtener(idClan) object
+        +obtenerDestinoJuego(idClan) string
+        +existe(idClan) boolean
+    }
+
+    class VistaClan {
+        +mostrar(clan) void
+        +mostrarBotonIniciar() void
+        +marcarConfirmado() void
+    }
+
+    class MapaInteractivo {
+        -HTMLElement overlay
+        -HTMLElement video
+        -array zonas
+        -function alSeleccionarZona
+        -number anchoVideo
+        -number altoVideo
+        +escalaActual() number
+        -#cablearBotones() void
+        -#cablearEscalado() void
+        -#reposicionar() void
+    }
+
+    class ModoCoordenadas {
+        -HTMLElement overlay
+        -MapaInteractivo mapaInteractivo
+        -boolean activo
+        -#cablearToggle() void
+        -#cablearClickOverlay() void
+        -#marcarPunto(evento, rect) void
+    }
+
+    RepositorioClanes --> ConfiguracionClanes : lee CLANES y DESTINOS_JUEGO
+    MapaInteractivo --> ConfiguracionZonas : consume ZONAS
+    ModoCoordenadas --> MapaInteractivo : usa escalaActual
+
+    RepositorioClanes --> VistaClan : orquesta pintado
+    ModoCoordenadas --> ConfiguracionZonas : dev tool sobre el mapa

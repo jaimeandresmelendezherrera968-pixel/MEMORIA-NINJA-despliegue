@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://ninja-memory.onrender.com/api/:path*"
+    },
+    {
+      "source": "/",
+      "destination": "/login.html"
+    }
+  ]
+}

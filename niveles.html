@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mapa Ninja</title>
+
+    <link rel="stylesheet" href="css/niveles.css">
+
+    <!-- GUARD DE SESI├ôN (valida contra el servidor; nunca redirige) -->
+    <script src="js/sesion-guard.js"></script>
+</head>
+
+<body>
+
+<div class="mapa-container">
+
+    <video id="mapaGlow" class="mapa-glow" autoplay muted loop playsinline aria-hidden="true" tabindex="-1">
+        <source src="assets/mapa1.mp4" type="video/mp4">
+    </video>
+
+    <video id="mapaVideo" autoplay muted loop playsinline>
+
+        <source src="assets/mapa1.mp4" type="video/mp4">
+
+    </video>
+
+    <div id="overlay">
+
+        <!-- KONOHA -->
+
+        <button id="sarutobi" class="zona sarutobi"></button>
+
+        <button id="hyuga" class="zona hyuga"></button>
+
+        <button id="uzumaki" class="zona uzumaki"></button>
+
+        <button id="uchiha" class="zona uchiha"></button>
+
+        <!-- ALDEAS -->
+
+        <button id="arena" class="zona arena"></button>
+
+        <button id="roca" class="zona roca"></button>
+
+        <button id="niebla" class="zona niebla"></button>
+
+        <button id="nube" class="zona nube"></button>
+
+        <!-- FINAL -->
+
+        <button id="akatsuki" class="zona akatsuki"></button>
+
+    </div>
+
+    <!-- Volver al men├║ (shuriken) -->
+    <a id="btnVolverMenu" class="btn-volver-mapa" href="menu.html"
+       aria-label="Volver al men├║ principal" title="Volver al men├║ principal">
+        <span class="btn-volver-icono" aria-hidden="true">
+            <svg viewBox="0 0 100 100" focusable="false">
+                <path class="shuriken" d="M50 3 L61 39 L97 50 L61 61 L50 97 L39 61 L3 50 L39 39 Z" />
+                <circle class="shuriken-centro" cx="50" cy="50" r="9" />
+            </svg>
+        </span>
+        <span class="btn-volver-texto">Menú</span>
+    </a>
+
+</div>
+
+<script type="module" src="js/niveles.js"></script>
+</body>
+
+</html>

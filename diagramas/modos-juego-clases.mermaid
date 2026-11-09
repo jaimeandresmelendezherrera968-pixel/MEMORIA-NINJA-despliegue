@@ -1,0 +1,297 @@
+classDiagram
+
+    class Jugador {
+        -string nombre
+        -number puntaje
+        +sumarPuntos(puntos) void
+        +reiniciarPuntaje() void
+        +getNombre() string
+        +getPuntaje() number
+    }
+
+    class Partida {
+        -Jugador jugador
+        -number movimientos
+        -number segundos
+        -array cartasVolteadas
+        -number cartasEncontradas
+        +aumentarMovimientos() void
+        +agregarCartaVolteada(carta) void
+        +limpiarCartasVolteadas() void
+        +obtenerJugador() Jugador
+        +reiniciar() void
+    }
+
+    class Carta {
+        -string id
+        -string imagen
+        -boolean volteada
+        -boolean encontrada
+        +voltear() void
+        +ocultar() void
+        +marcarEncontrada() void
+        +getId() string
+        +getImagen() string
+        +estaVolteada() boolean
+        +estaEncontrada() boolean
+    }
+
+    class JuegoService {
+        -Partida partida
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        +iniciar() array
+        +voltearCarta(carta) boolean
+        +verificarPareja() boolean
+        +finalizarIntento() void
+        +aumentarMovimiento() void
+        +verificarVictoria(total) boolean
+    }
+
+    class CartaService {
+        -string rutaBack
+        -string rutaAldea
+        -array idsCartas
+        +obtenerCartas() array
+        +mezclar(cartas) array
+    }
+
+    class PuntajeService {
+        -number puntosPorPareja
+        +calcularPuntos() number
+        +agregarPuntos(jugador) void
+    }
+
+    class TiempoService {
+        -number segundos
+        -number temporizador
+        +iniciar(callback) void
+        +detener() void
+        +reiniciar(segundos) void
+        +obtenerTiempo() number
+    }
+
+    class SecuenciaService {
+        +generarSecuencia(ids) array
+    }
+
+    class IJugadorRepository {
+        <<interface>>
+        +guardar(jugador) void
+        +obtener(nombre) Jugador
+    }
+
+    class IPartidaRepository {
+        <<interface>>
+        +guardar(partida) void
+        +obtener() object
+    }
+
+    class JugadorRepository {
+        +guardar(jugador) void
+        +obtener(nombre) Jugador
+    }
+
+    class PartidaRepository {
+        +guardar(partida) void
+        +obtener() object
+    }
+
+    class UzumakiController {
+        -JuegoService juegoService
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+        +mostrarVictoria() void
+        +mostrarDerrota() void
+    }
+
+    class UchihaController {
+        -JuegoService juegoService
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+    }
+
+    class HyugaController {
+        -JuegoService juegoService
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+    }
+
+    class SarutobiController {
+        -JuegoService juegoService
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+    }
+
+    class RocaController {
+        -JuegoService juegoService
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+    }
+
+    class NubeController {
+        -JuegoService juegoService
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+    }
+
+    class OrdenController {
+        -JuegoService juegoService
+        -SecuenciaService secuenciaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        +iniciar() void
+        +crearCartas() void
+        +mostrarSecuencia() void
+        +seleccionarCarta(carta) void
+        +completarRonda() void
+        +perder() void
+    }
+
+    class ArenaController {
+        -JuegoService juegoService
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+    }
+
+    class AkatsukiController {
+        -JuegoService juegoService
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+    }
+
+    class NieblaController {
+        -JuegoService juegoService
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+    }
+
+    class MuerteController {
+        -Jugador jugador1
+        -Jugador jugador2
+        -Partida partida
+        -JuegoService juegoService
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        +iniciar() void
+        +generarTablero() void
+        +voltearCarta(elemento, carta) void
+        +verificarCoincidencia() void
+        +tiempoAgotado() void
+        +mostrarVictoria() void
+    }
+
+    IJugadorRepository <|.. JugadorRepository : LSP
+    IPartidaRepository <|.. PartidaRepository : LSP
+
+    Partida *-- Jugador : 1 jugador
+    Partida o-- Carta : cartasVolteadas
+    JuegoService --> Partida : compone
+    JuegoService --> CartaService : inyectado
+    JuegoService --> PuntajeService : inyectado
+    CartaService --> Carta : crea instancias
+    PuntajeService --> Jugador : modifica puntaje
+
+    UzumakiController --> JuegoService : compone
+    UzumakiController --> CartaService
+    UzumakiController --> IJugadorRepository : modo con repos
+    UzumakiController --> IPartidaRepository : modo con repos
+    UchihaController --> JuegoService : compone
+    UchihaController --> CartaService
+    UchihaController --> IJugadorRepository : modo con repos
+    UchihaController --> IPartidaRepository : modo con repos
+    HyugaController --> JuegoService : compone
+    HyugaController --> CartaService
+    HyugaController --> IJugadorRepository : modo con repos
+    HyugaController --> IPartidaRepository : modo con repos
+    SarutobiController --> JuegoService : compone
+    SarutobiController --> CartaService
+    SarutobiController --> IJugadorRepository : modo con repos
+    SarutobiController --> IPartidaRepository : modo con repos
+    RocaController --> JuegoService : compone
+    RocaController --> CartaService
+    NubeController --> JuegoService : compone
+    NubeController --> CartaService
+    OrdenController --> JuegoService : compone
+    OrdenController --> SecuenciaService : en vez de CartaService
+    OrdenController --> IJugadorRepository : modo con repos
+    OrdenController --> IPartidaRepository : modo con repos
+    ArenaController --> JuegoService : compone
+    ArenaController --> CartaService
+    AkatsukiController --> JuegoService : compone
+    AkatsukiController --> CartaService
+    NieblaController --> JuegoService : compone
+    NieblaController --> CartaService
+    MuerteController --> JuegoService : compone
+    MuerteController --> CartaService
+    MuerteController --> IJugadorRepository : modo con repos
+    MuerteController --> IPartidaRepository : modo con repos
+
+    UzumakiController --> Jugador : crea
+    UzumakiController --> Partida : crea
+    UchihaController --> Jugador : crea
+    UchihaController --> Partida : crea
+    HyugaController --> Jugador : crea
+    HyugaController --> Partida : crea
+    SarutobiController --> Jugador : crea
+    SarutobiController --> Partida : crea
+    RocaController --> Jugador : crea
+    RocaController --> Partida : crea
+    NubeController --> Jugador : crea
+    NubeController --> Partida : crea
+    OrdenController --> Jugador : crea
+    OrdenController --> Partida : crea
+    ArenaController --> Jugador : crea
+    ArenaController --> Partida : crea
+    AkatsukiController --> Jugador : crea
+    AkatsukiController --> Partida : crea
+    NieblaController --> Jugador : crea
+    NieblaController --> Partida : crea
+    MuerteController --> Jugador : crea (modo 2 jugadores)
+    MuerteController --> Partida : crea con jugador1 y jugador2

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Objetos PostgreSQL — Explicación línea por línea</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: radial-gradient(circle at top left, #1b2a4a 0%, #0d1117 45%, #090c10 100%);
+    color: #c9d1d9;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 14px;
+    margin: 0;
+    padding: 30px 36px 60px;
+  }
+  h1 {
+    color: #ffffff;
+    font-size: 26px;
+    margin: 0 0 4px;
+    background: linear-gradient(90deg, #58a6ff, #bc8cff, #3fb950);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitulo { color: #8b949e; margin: 0 0 28px; font-size: 13px; }
+
+  .card {
+    border-radius: 14px;
+    padding: 18px 20px 14px;
+    margin-bottom: 26px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.45);
+    border: 1px solid #30363d;
+  }
+  .card-head { display: flex; align-items: center; margin-bottom: 4px; }
+  .card-head h2 { font-size: 20px; margin: 0; color: #f0f6fc; }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.3px;
+    margin-right: 12px;
+    text-transform: uppercase;
+  }
+  .badge-trigger { background: #ffa657; color: #2b1400; }
+  .badge-vista   { background: #58a6ff; color: #001b33; }
+  .badge-proc    { background: #3fb950; color: #00210a; }
+  .badge-acid    { background: #bc8cff; color: #1a0033; }
+
+  .ruta { color: #8b949e; font-size: 12px; margin: 12px 0 6px; font-style: italic; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  td { vertical-align: top; padding: 4px 14px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  td.cod {
+    font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+    font-size: 13.5px;
+    white-space: pre;
+    color: #e6edf3;
+    background: #12161c;
+    overflow-x: auto;
+    width: 58%;
+  }
+  td.exp { width: 42%; border-right: 3px solid #30363d; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  tr.blanco td { padding: 7px 14px; }
+
+  /* Colores por sección */
+  .card-trigger { background: linear-gradient(180deg, #241608, #0d1117); border-color: #6b451c; }
+  .card-trigger .card-head h2 { color: #ffd9a8; }
+  table.trigger td.exp { color: #ffb877; background: #1c1207; border-right-color: #6b451c; }
+
+  .card-vista { background: linear-gradient(180deg, #0b1c33, #0d1117); border-color: #1f4778; }
+  .card-vista .card-head h2 { color: #a9d3ff; }
+  table.vista td.exp { color: #79c0ff; background: #0a1526; border-right-color: #1f4778; }
+
+  .card-proc { background: linear-gradient(180deg, #0a2313, #0d1117); border-color: #1f6b34; }
+  .card-proc .card-head h2 { color: #a5f3b6; }
+  table.proc td.exp { color: #7ee787; background: #0a1a0e; border-right-color: #1f6b34; }
+
+  .card-acid { background: linear-gradient(180deg, #1c1233, #0d1117); border-color: #5a3a8f; }
+  .card-acid .card-head h2 { color: #dcc5ff; }
+  table.acid td.exp { color: #d2a8ff; background: #140d24; border-right-color: #5a3a8f; }
+
+  .acid-letra {
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 900;
+    padding: 2px 10px;
+    border-radius: 8px;
+    margin-right: 8px;
+    background: #bc8cff;
+    color: #1a0033;
+  }
+  .acid-sub { color: #dcc5ff; font-size: 15px; font-weight: 700; margin: 14px 0 2px; }
+
+  /* Colores de sintaxis dentro del código */
+  td.cod .kw  { color: #ff7b72; font-weight: 700; }   /* palabras clave (SELECT, CREATE, const...) */
+  td.cod .str { color: #a5d6ff; }                     /* cadenas de texto ("...") */
+  td.cod .num { color: #79c0ff; }                     /* números */
+  td.cod .typ { color: #ffa657; }                     /* tipos de datos (TEXT, INTEGER...) */
+  td.cod .com { color: #8b949e; font-style: italic; } /* comentarios */
+</style>
+</head>
+<body>
+
+<h1>Objetos PostgreSQL — explicación línea por línea</h1>
+<p class="subtitulo">Izquierda: qué hace cada línea &nbsp;|&nbsp; Derecha: la línea de código</p>
+
+<!-- ================= 1. TRIGGER ================= -->
+<div class="card card-trigger">
+  <div class="card-head"><span class="badge badge-trigger">Trigger</span><h2>trg_partidas_actualizar_fecha</h2></div>
+  <div class="ruta">src/infraestructura/schema-postgres.sql</div>
+  <table class="trigger">
+    <tr><td class="exp">Declara (o reemplaza) la función que ejecutará el trigger</td><td class="cod">CREATE OR REPLACE FUNCTION fn_partidas_actualizar_fecha()</td></tr>
+    <tr><td class="exp">Indica que la función devuelve una fila de tipo TRIGGER</td><td class="cod">RETURNS TRIGGER AS $$</td></tr>
+    <tr><td class="exp">Inicio del cuerpo de la función</td><td class="cod">BEGIN</td></tr>
+    <tr><td class="exp">Asigna la fecha y hora actuales al campo de la fila que se actualiza</td><td class="cod">  NEW.actualizada_en = NOW();</td></tr>
+    <tr><td class="exp">Devuelve la fila ya modificada</td><td class="cod">  RETURN NEW;</td></tr>
+    <tr><td class="exp">Fin del cuerpo de la función</td><td class="cod">END;</td></tr>
+    <tr><td class="exp">Indica que el cuerpo está escrito en PL/pgSQL</td><td class="cod">$$ LANGUAGE plpgsql;</td></tr>
+    <tr class="blanco"><td>&nbsp;</td><td></td></tr>
+    <tr><td class="exp">Elimina el trigger si ya existía, para recrearlo sin errores</td><td class="cod">DROP TRIGGER IF EXISTS trg_partidas_actualizar_fecha ON partidas;</td></tr>
+    <tr><td class="exp">Crea el trigger con ese nombre</td><td class="cod">CREATE TRIGGER trg_partidas_actualizar_fecha</td></tr>
+    <tr><td class="exp">Se dispara ANTES de cada UPDATE sobre la tabla partidas</td><td class="cod">BEFORE UPDATE ON partidas</td></tr>
+    <tr><td class="exp">Se ejecuta una vez por cada fila afectada</td><td class="cod">FOR EACH ROW</td></tr>
+    <tr><td class="exp">Acción a ejecutar: llama a la función creada arriba</td><td class="cod">EXECUTE FUNCTION fn_partidas_actualizar_fecha();</td></tr>
+  </table>
+
+  <div class="ruta">Dónde se dispara — src/repositories/PartidaRepositorySQL.js</div>
+  <table class="trigger">
+    <tr><td class="exp">Prepara la sentencia SQL y la guarda en la propiedad #insertarPartida</td><td class="cod">this.#insertarPartida = this.database.db.prepare(`</td></tr>
+    <tr><td class="exp">Inserta una fila en la tabla partidas</td><td class="cod">  INSERT INTO partidas (id, estado_json)</td></tr>
+    <tr><td class="exp">Con los dos valores recibidos (los ?)</td><td class="cod">  VALUES (?, ?)</td></tr>
+    <tr><td class="exp">Si el id ya existe hace UPDATE: AQUÍ se dispara el trigger</td><td class="cod">  ON CONFLICT(id) DO UPDATE SET</td></tr>
+    <tr><td class="exp">Actualiza el estado guardado con el valor nuevo</td><td class="cod">    estado_json    = excluded.estado_json,</td></tr>
+    <tr><td class="exp">Actualiza la fecha (el trigger también lo haría automáticamente)</td><td class="cod">    actualizada_en = CURRENT_TIMESTAMP</td></tr>
+    <tr><td class="exp">Fin de la preparación de la sentencia</td><td class="cod">`);</td></tr>
+  </table>
+</div>
+
+<!-- ================= 2. VISTA ================= -->
+<div class="card card-vista">
+  <div class="card-head"><span class="badge badge-vista">Vista</span><h2>vw_partidas_recientes</h2></div>
+  <div class="ruta">schema-postgres.sql</div>
+  <table class="vista">
+    <tr><td class="exp">Crea o reemplaza la vista con ese nombre</td><td class="cod">CREATE OR REPLACE VIEW vw_partidas_recientes AS</td></tr>
+    <tr><td class="exp">Inicio de la consulta guardada</td><td class="cod">SELECT</td></tr>
+    <tr><td class="exp">Selecciona el id de la partida</td><td class="cod">  id,</td></tr>
+    <tr><td class="exp">Selecciona la fecha de creación</td><td class="cod">  creada_en,</td></tr>
+    <tr><td class="exp">Selecciona la fecha de última actualización</td><td class="cod">  actualizada_en</td></tr>
+    <tr><td class="exp">Toma los datos de la tabla partidas</td><td class="cod">FROM partidas</td></tr>
+    <tr><td class="exp">Ordena de la más reciente a la más antigua</td><td class="cod">ORDER BY actualizada_en DESC, creada_en DESC;</td></tr>
+  </table>
+
+  <div class="ruta">Uso en Node — src/repositories/VistaRepositorySQL.js</div>
+  <table class="vista">
+    <tr><td class="exp">Prepara la consulta a la vista</td><td class="cod">this.#partidasRecientes = this.database.db.prepare(</td></tr>
+    <tr><td class="exp">Trae todas las columnas de la vista (la lógica vive en la BD)</td><td class="cod">  "SELECT * FROM vw_partidas_recientes"</td></tr>
+    <tr><td class="exp">Fin de la preparación</td><td class="cod">);</td></tr>
+    <tr><td class="exp">Método asíncrono del repositorio</td><td class="cod">async partidasRecientes() {</td></tr>
+    <tr><td class="exp">Ejecuta la consulta y devuelve todas las filas</td><td class="cod">  return this.#partidasRecientes.all();</td></tr>
+    <tr><td class="exp">Fin del método</td><td class="cod">}</td></tr>
+  </table>
+</div>
+
+<!-- ================= 3. VISTA ================= -->
+<div class="card card-vista">
+  <div class="card-head"><span class="badge badge-vista">Vista</span><h2>vw_historial_detallado</h2></div>
+  <div class="ruta">schema-postgres.sql</div>
+  <table class="vista">
+    <tr><td class="exp">Crea o reemplaza la vista</td><td class="cod">CREATE OR REPLACE VIEW vw_historial_detallado AS</td></tr>
+    <tr><td class="exp">Inicio de la consulta guardada</td><td class="cod">SELECT</td></tr>
+    <tr><td class="exp">Columnas del historial + el nombre del usuario</td><td class="cod">  h.id, h.id_usuario, u.usuario, h.id_partida, h.zona,</td></tr>
+    <tr><td class="exp">Resto de columnas del historial</td><td class="cod">  h.puntaje, h.modo, h.ganador, h.jugada_en</td></tr>
+    <tr><td class="exp">Tabla base, con el alias h</td><td class="cod">FROM historial_partidas h</td></tr>
+    <tr><td class="exp">Une el usuario correspondiente (LEFT: aparece aunque no exista)</td><td class="cod">LEFT JOIN usuarios u ON u.id = h.id_usuario</td></tr>
+    <tr><td class="exp">Ordena por la jugada más reciente primero</td><td class="cod">ORDER BY h.jugada_en DESC;</td></tr>
+  </table>
+
+  <div class="ruta">Uso en Node — VistaRepositorySQL.js</div>
+  <table class="vista">
+    <tr><td class="exp">Prepara la consulta a la vista</td><td class="cod">this.#historialDetallado = this.database.db.prepare(</td></tr>
+    <tr><td class="exp">Trae todas las filas (el JOIN ya está guardado en la BD)</td><td class="cod">  "SELECT * FROM vw_historial_detallado"</td></tr>
+    <tr><td class="exp">Fin de la preparación</td><td class="cod">);</td></tr>
+    <tr><td class="exp">Método asíncrono</td><td class="cod">async historialDetallado() {</td></tr>
+    <tr><td class="exp">Ejecuta y devuelve todas las filas</td><td class="cod">  return this.#historialDetallado.all();</td></tr>
+    <tr><td class="exp">Fin del método</td><td class="cod">}</td></tr>
+  </table>
+</div>
+
+<!-- ================= 4. VISTA ================= -->
+<div class="card card-vista">
+  <div class="card-head"><span class="badge badge-vista">Vista</span><h2>vw_ranking_mejor_puntaje</h2></div>
+  <div class="ruta">schema-postgres.sql</div>
+  <table class="vista">
+    <tr><td class="exp">Crea o reemplaza la vista</td><td class="cod">CREATE OR REPLACE VIEW vw_ranking_mejor_puntaje AS</td></tr>
+    <tr><td class="exp">Inicio de la consulta guardada</td><td class="cod">SELECT</td></tr>
+    <tr><td class="exp">Id del usuario, renombrado como id_usuario</td><td class="cod">  u.id AS id_usuario,</td></tr>
+    <tr><td class="exp">Nombre del usuario</td><td class="cod">  u.usuario,</td></tr>
+    <tr><td class="exp">El puntaje más alto de ese usuario</td><td class="cod">  MAX(h.puntaje) AS mejor_puntaje,</td></tr>
+    <tr><td class="exp">Cuenta cuántas partidas jugó</td><td class="cod">  COUNT(h.id) AS total_partidas,</td></tr>
+    <tr><td class="exp">Fecha de su última jugada</td><td class="cod">  MAX(h.jugada_en) AS ultima_jugada</td></tr>
+    <tr><td class="exp">Tabla base, alias h</td><td class="cod">FROM historial_partidas h</td></tr>
+    <tr><td class="exp">Une el usuario (INNER: solo si existe)</td><td class="cod">INNER JOIN usuarios u ON u.id = h.id_usuario</td></tr>
+    <tr><td class="exp">Agrupa todas las filas de cada usuario en una sola</td><td class="cod">GROUP BY u.id, u.usuario</td></tr>
+    <tr><td class="exp">Ordena de mayor a menor puntaje</td><td class="cod">ORDER BY mejor_puntaje DESC NULLS LAST, total_partidas DESC;</td></tr>
+  </table>
+
+  <div class="ruta">Uso en Node — VistaRepositorySQL.js</div>
+  <table class="vista">
+    <tr><td class="exp">Prepara la consulta a la vista</td><td class="cod">this.#rankingMejorPuntaje = this.database.db.prepare(</td></tr>
+    <tr><td class="exp">Trae todo el ranking (el GROUP BY ya está en la BD)</td><td class="cod">  "SELECT * FROM vw_ranking_mejor_puntaje"</td></tr>
+    <tr><td class="exp">Fin de la preparación</td><td class="cod">);</td></tr>
+    <tr><td class="exp">Método asíncrono</td><td class="cod">async rankingMejorPuntaje() {</td></tr>
+    <tr><td class="exp">Ejecuta y devuelve el ranking completo</td><td class="cod">  return this.#rankingMejorPuntaje.all();</td></tr>
+    <tr><td class="exp">Fin del método</td><td class="cod">}</td></tr>
+  </table>
+</div>
+
+<!-- ================= 5. VISTA ================= -->
+<div class="card card-vista">
+  <div class="card-head"><span class="badge badge-vista">Vista</span><h2>vw_usuarios_resumen</h2></div>
+  <div class="ruta">schema-postgres.sql</div>
+  <table class="vista">
+    <tr><td class="exp">Crea o reemplaza la vista</td><td class="cod">CREATE OR REPLACE VIEW vw_usuarios_resumen AS</td></tr>
+    <tr><td class="exp">Inicio de la consulta guardada</td><td class="cod">SELECT</td></tr>
+    <tr><td class="exp">Datos básicos del usuario</td><td class="cod">  u.id, u.usuario, u.correo, u.nacimiento, u.creado_en,</td></tr>
+    <tr><td class="exp">Cuenta sus partidas (0 si no jugó ninguna)</td><td class="cod">  COUNT(h.id) AS total_partidas,</td></tr>
+    <tr><td class="exp">Máximo puntaje ignorando nulos (exclusivo de PostgreSQL)</td><td class="cod">  MAX(h.puntaje) FILTER (WHERE h.puntaje IS NOT NULL) AS max_puntaje,</td></tr>
+    <tr><td class="exp">Fecha de su última partida</td><td class="cod">  MAX(h.jugada_en) AS ultima_partida</td></tr>
+    <tr><td class="exp">Tabla base: todos los usuarios</td><td class="cod">FROM usuarios u</td></tr>
+    <tr><td class="exp">LEFT: aparecen aunque no tengan historial</td><td class="cod">LEFT JOIN historial_partidas h ON h.id_usuario = u.id</td></tr>
+    <tr><td class="exp">Agrupa por usuario</td><td class="cod">GROUP BY u.id, u.usuario, u.correo, u.nacimiento, u.creado_en</td></tr>
+    <tr><td class="exp">Más partidas primero, luego nombre A-Z</td><td class="cod">ORDER BY total_partidas DESC, u.usuario ASC;</td></tr>
+  </table>
+
+  <div class="ruta">Uso en Node — VistaRepositorySQL.js</div>
+  <table class="vista">
+    <tr><td class="exp">Prepara la consulta a la vista</td><td class="cod">this.#usuariosResumen = this.database.db.prepare(</td></tr>
+    <tr><td class="exp">Trae todo el resumen (el FILTER y el GROUP BY viven en la BD)</td><td class="cod">  "SELECT * FROM vw_usuarios_resumen"</td></tr>
+    <tr><td class="exp">Fin de la preparación</td><td class="cod">);</td></tr>
+    <tr><td class="exp">Método asíncrono</td><td class="cod">async usuariosResumen() {</td></tr>
+    <tr><td class="exp">Ejecuta y devuelve las filas</td><td class="cod">  return this.#usuariosResumen.all();</td></tr>
+    <tr><td class="exp">Fin del método</td><td class="cod">}</td></tr>
+  </table>
+</div>
+
+<!-- ================= 6. PROCEDIMIENTO ================= -->
+<div class="card card-proc">
+  <div class="card-head"><span class="badge badge-proc">Procedimiento</span><h2>sp_registrar_partida</h2></div>
+  <div class="ruta">schema-postgres.sql</div>
+  <table class="proc">
+    <tr><td class="exp">Crea o reemplaza el procedimiento</td><td class="cod">CREATE OR REPLACE PROCEDURE public.sp_registrar_partida(</td></tr>
+    <tr><td class="exp">Parámetro 1: id del usuario</td><td class="cod">    p_id_usuario TEXT,</td></tr>
+    <tr><td class="exp">Parámetro 2: zona jugada</td><td class="cod">    p_zona       TEXT,</td></tr>
+    <tr><td class="exp">Parámetro 3: puntaje obtenido</td><td class="cod">    p_puntaje    INTEGER,</td></tr>
+    <tr><td class="exp">Parámetro 4: modo de juego</td><td class="cod">    p_modo       TEXT,</td></tr>
+    <tr><td class="exp">Parámetro 5: ganador</td><td class="cod">    p_ganador    TEXT</td></tr>
+    <tr><td class="exp">Fin de la lista de parámetros</td><td class="cod">)</td></tr>
+    <tr><td class="exp">Lenguaje en que está escrito: PL/pgSQL</td><td class="cod">LANGUAGE plpgsql</td></tr>
+    <tr><td class="exp">Empieza el cuerpo del procedimiento</td><td class="cod">AS $BODY$</td></tr>
+    <tr><td class="exp">Inicio de la lógica</td><td class="cod">BEGIN</td></tr>
+    <tr><td class="exp">Inserta una fila en la tabla del historial</td><td class="cod">    INSERT INTO historial_partidas (id, id_usuario, zona, puntaje, modo, ganador)</td></tr>
+    <tr><td class="exp">ID generado por la BD + los valores de los parámetros</td><td class="cod">    VALUES (gen_random_uuid()::TEXT, p_id_usuario, p_zona, p_puntaje, p_modo, p_ganador);</td></tr>
+    <tr><td class="exp">Fin de la lógica</td><td class="cod">END;</td></tr>
+    <tr><td class="exp">Fin del cuerpo</td><td class="cod">$BODY$;</td></tr>
+  </table>
+
+  <div class="ruta">Ejecución desde Node — src/repositories/ProcedimientoRepositorySQL.js</div>
+  <table class="proc">
+    <tr><td class="exp">Solo prepara el CALL si el motor es PostgreSQL</td><td class="cod">if (database.motor === "postgres") {</td></tr>
+    <tr><td class="exp">Prepara la llamada al procedimiento</td><td class="cod">  this.#callRegistrarPartida = database.db.prepare(</td></tr>
+    <tr><td class="exp">Sentencia CALL con 5 parámetros</td><td class="cod">    "CALL sp_registrar_partida(?, ?, ?, ?, ?)"</td></tr>
+    <tr><td class="exp">Fin de la preparación</td><td class="cod">  );</td></tr>
+    <tr><td class="exp">Fin del if</td><td class="cod">}</td></tr>
+    <tr class="blanco"><td>&nbsp;</td><td></td></tr>
+    <tr><td class="exp">Método que registra el resultado de la partida</td><td class="cod">async registrarResultado({ idUsuario, zona, puntaje, modo, ganador }) {</td></tr>
+    <tr><td class="exp">¿Estamos en PostgreSQL?</td><td class="cod">  if (this.database.motor === "postgres") {</td></tr>
+    <tr><td class="exp">Ejecuta el CALL con los valores recibidos</td><td class="cod">    await this.#callRegistrarPartida.run(idUsuario, zona, puntaje, modo, ganador);</td></tr>
+    <tr><td class="exp">Termina el método</td><td class="cod">    return;</td></tr>
+    <tr><td class="exp">Fin del if</td><td class="cod">  }</td></tr>
+    <tr><td class="exp">SQLite no tiene CALL: hace el mismo INSERT a mano</td><td class="cod">  await this.#insertarResultado.run(crypto.randomUUID(), idUsuario, ...);</td></tr>
+    <tr><td class="exp">Fin del método</td><td class="cod">}</td></tr>
+  </table>
+
+  <div class="ruta">Endpoint — src/routes/procedimientoRoutes.js</div>
+  <table class="proc">
+    <tr><td class="exp">Ruta HTTP que dispara el procedimiento</td><td class="cod">router.post("/procedimientos/registrar-partida", procedimientoController.registrarResultado);</td></tr>
+  </table>
+</div>
+
+<!-- ================= 7. PROCEDIMIENTO ================= -->
+<div class="card card-proc">
+  <div class="card-head"><span class="badge badge-proc">Procedimiento</span><h2>sp_crear_partida_completa</h2></div>
+  <div class="ruta">schema-postgres.sql</div>
+  <table class="proc">
+    <tr><td class="exp">Crea o reemplaza el procedimiento</td><td class="cod">CREATE OR REPLACE PROCEDURE public.sp_crear_partida_completa(</td></tr>
+    <tr><td class="exp">Parámetro 1: id de la partida</td><td class="cod">    p_id_partida  TEXT,</td></tr>
+    <tr><td class="exp">Parámetro 2: estado completo en JSON</td><td class="cod">    p_estado_json TEXT,</td></tr>
+    <tr><td class="exp">Parámetro 3: id del usuario</td><td class="cod">    p_id_usuario  TEXT,</td></tr>
+    <tr><td class="exp">Parámetro 4: zona</td><td class="cod">    p_zona        TEXT,</td></tr>
+    <tr><td class="exp">Parámetro 5: puntaje</td><td class="cod">    p_puntaje     INTEGER,</td></tr>
+    <tr><td class="exp">Parámetro 6: modo</td><td class="cod">    p_modo        TEXT,</td></tr>
+    <tr><td class="exp">Parámetro 7: ganador</td><td class="cod">    p_ganador     TEXT</td></tr>
+    <tr><td class="exp">Fin de la lista de parámetros</td><td class="cod">)</td></tr>
+    <tr><td class="exp">Lenguaje en que está escrito: PL/pgSQL</td><td class="cod">LANGUAGE plpgsql</td></tr>
+    <tr><td class="exp">Empieza el cuerpo del procedimiento</td><td class="cod">AS $BODY$</td></tr>
+    <tr><td class="exp">Inicio de la lógica</td><td class="cod">BEGIN</td></tr>
+    <tr><td class="exp">Insert 1: guarda el resultado en el historial</td><td class="cod">    INSERT INTO historial_partidas (id, id_usuario, id_partida, zona, puntaje, modo, ganador)</td></tr>
+    <tr><td class="exp">Con sus valores (ID generado por la BD)</td><td class="cod">    VALUES (gen_random_uuid()::TEXT, p_id_usuario, p_id_partida, p_zona, p_puntaje, p_modo, p_ganador);</td></tr>
+    <tr class="blanco"><td>&nbsp;</td><td></td></tr>
+    <tr><td class="exp">Insert 2: guarda la partida (si falla, PostgreSQL revierte el insert 1)</td><td class="cod">    INSERT INTO partidas (id, estado_json) VALUES (p_id_partida, p_estado_json);</td></tr>
+    <tr><td class="exp">Fin de la lógica</td><td class="cod">END;</td></tr>
+    <tr><td class="exp">Fin del cuerpo</td><td class="cod">$BODY$;</td></tr>
+  </table>
+
+  <div class="ruta">Ejecución desde Node — ProcedimientoRepositorySQL.js</div>
+  <table class="proc">
+    <tr><td class="exp">Método que crea la partida y su resultado juntos</td><td class="cod">async crearPartidaCompleta({ idPartida, estadoJson, idUsuario, zona, puntaje, modo, ganador }) {</td></tr>
+    <tr><td class="exp">¿Estamos en PostgreSQL?</td><td class="cod">  if (this.database.motor === "postgres") {</td></tr>
+    <tr><td class="exp">Ejecuta el CALL del procedimiento</td><td class="cod">    await this.#callCrearPartidaCompleta.run(</td></tr>
+    <tr><td class="exp">Con los 7 parámetros</td><td class="cod">      idPartida, estadoJson ?? "{}", idUsuario, zona, puntaje, modo, ganador</td></tr>
+    <tr><td class="exp">El procedimiento ya es atómico por sí solo</td><td class="cod">    );</td></tr>
+    <tr><td class="exp">Termina el método</td><td class="cod">    return;</td></tr>
+    <tr><td class="exp">Fin del if</td><td class="cod">  }</td></tr>
+    <tr class="blanco"><td>&nbsp;</td><td></td></tr>
+    <tr><td class="exp">SQLite: acceso directo a la conexión</td><td class="cod">  const db = this.database.db;</td></tr>
+    <tr><td class="exp">Abre la transacción manual</td><td class="cod">  db.exec("BEGIN");</td></tr>
+    <tr><td class="exp">Intenta ejecutar las dos operaciones</td><td class="cod">  try {</td></tr>
+    <tr><td class="exp">Insert 1: el historial</td><td class="cod">    this.#insertarHistorial.run(...);</td></tr>
+    <tr><td class="exp">Insert 2: la partida</td><td class="cod">    this.#insertarPartida.run(...);</td></tr>
+    <tr><td class="exp">Confirma TODO si no hubo error</td><td class="cod">    db.exec("COMMIT");</td></tr>
+    <tr><td class="exp">Si algo falló durante los inserts...</td><td class="cod">  } catch (error) {</td></tr>
+    <tr><td class="exp">Revierte TODO lo hecho (nada queda a medias)</td><td class="cod">    db.exec("ROLLBACK");</td></tr>
+    <tr><td class="exp">Propaga el error hacia arriba</td><td class="cod">    throw error;</td></tr>
+    <tr><td class="exp">Fin del try/catch</td><td class="cod">  }</td></tr>
+    <tr><td class="exp">Fin del método</td><td class="cod">}</td></tr>
+  </table>
+
+  <div class="ruta">Endpoint — src/routes/procedimientoRoutes.js</div>
+  <table class="proc">
+    <tr><td class="exp">Ruta HTTP que dispara el procedimiento atómico</td><td class="cod">router.post("/procedimientos/crear-partida-completa", ...);</td></tr>
+  </table>
+</div>
+
+<!-- ================= 8. ACID ================= -->
+<div class="card card-acid">
+  <div class="card-head"><span class="badge badge-acid">ACID</span><h2>Las 4 garantías</h2></div>
+  <div class="ruta">Atomicidad · Consistencia · Aislamiento · Durabilidad</div>
+
+  <div class="acid-sub"><span class="acid-letra">A</span>Atomicidad — "o todo, o nada"</div>
+  <div class="ruta">src/repositories/ProcedimientoRepositorySQL.js</div>
+  <table class="acid">
+    <tr><td class="exp">Toma la conexión de la base de datos</td><td class="cod">const db = this.database.db;</td></tr>
+    <tr><td class="exp">ABRE la transacción: todo lo que sigue es un bloque</td><td class="cod">db.exec("BEGIN");</td></tr>
+    <tr><td class="exp">Intenta ejecutar las operaciones del bloque</td><td class="cod">try {</td></tr>
+    <tr><td class="exp">Operación 1: inserta el resultado en el historial</td><td class="cod">  this.#insertarHistorial.run(...);</td></tr>
+    <tr><td class="exp">Operación 2: inserta la partida</td><td class="cod">  this.#insertarPartida.run(...);</td></tr>
+    <tr><td class="exp">CONFIRMA los cambios: se guardan los dos de una vez</td><td class="cod">  db.exec("COMMIT");</td></tr>
+    <tr><td class="exp">Si CUALQUIERA de las dos falló...</td><td class="cod">} catch (error) {</td></tr>
+    <tr><td class="exp">REVIERTE todo: ninguna de las dos queda guardada</td><td class="cod">  db.exec("ROLLBACK");</td></tr>
+    <tr><td class="exp">Vuelve a lanzar el error para avisar del fallo</td><td class="cod">  throw error;</td></tr>
+    <tr><td class="exp">Fin del try/catch</td><td class="cod">}</td></tr>
+  </table>
+  <div class="ruta">Resultado: nunca queda un historial sin su partida (ni al revés). En PostgreSQL el CALL ya garantiza esto solo.</div>
+
+  <div class="acid-sub"><span class="acid-letra">C</span>Consistencia — los datos siempre son válidos</div>
+  <div class="ruta">src/infraestructura/schema-postgres.sql</div>
+  <table class="acid">
+    <tr><td class="exp">Crea la tabla del historial con una regla de integridad</td><td class="cod">CREATE TABLE historial_partidas (</td></tr>
+    <tr><td class="exp">Define la clave foránea (regla de integridad referencial)</td><td class="cod">  CONSTRAINT fk_historial_usuario</td></tr>
+    <tr><td class="exp">El id_usuario del historial DEBE existir en la tabla usuarios</td><td class="cod">    FOREIGN KEY (id_usuario) REFERENCES usuarios(id)</td></tr>
+    <tr><td class="exp">Fin de la tabla</td><td class="cod">);</td></tr>
+  </table>
+  <div class="ruta">Resultado: la BD rechaza guardar historial de un usuario inexistente → los datos nunca quedan "rotos".</div>
+
+  <div class="acid-sub"><span class="acid-letra">I</span>Aislamiento — las operaciones no se pisan</div>
+  <div class="ruta">src/infraestructura/DatabasePostgres.js</div>
+  <table class="acid">
+    <tr><td class="exp">Configura el Pool de conexiones</td><td class="cod">const poolConfig = {</td></tr>
+    <tr><td class="exp">Host de la base de datos</td><td class="cod">  host: config.host || process.env.PGHOST || "localhost",</td></tr>
+    <tr><td class="exp">Puerto de la base de datos</td><td class="cod">  port: config.port || process.env.PGPORT || 5432,</td></tr>
+    <tr><td class="exp">Nombre de la base de datos</td><td class="cod">  database: config.database || process.env.PGDATABASE,</td></tr>
+    <tr><td class="exp">Usuario</td><td class="cod">  user: config.user || process.env.PGUSER,</td></tr>
+    <tr><td class="exp">Contraseña</td><td class="cod">  password: config.password || process.env.PGPASSWORD,</td></tr>
+    <tr><td class="exp">Fin de la configuración</td><td class="cod">};</td></tr>
+    <tr><td class="exp">Crea el Pool: cada petición toma su propia conexión</td><td class="cod">this.pool = new Pool(poolConfig);</td></tr>
+  </table>
+  <div class="ruta">Resultado: dos jugadores jugando a la vez usan conexiones distintas → no hay conflictos entre peticiones.</div>
+
+  <div class="acid-sub"><span class="acid-letra">D</span>Durabilidad — lo guardado no se pierde</div>
+  <div class="ruta">tests/partidaRepositorySQL.test.js</div>
+  <table class="acid">
+    <tr><td class="exp">Prueba: la partida sobrevive a "reiniciar el servidor"</td><td class="cod">it("la partida sobrevive a otra instancia del repositorio", async () => {</td></tr>
+    <tr><td class="exp">Primer proceso: abre la base y guarda la partida</td><td class="cod">  const proceso1 = new PartidaRepositorySQL(new DatabaseSqlite(rutaBase));</td></tr>
+    <tr><td class="exp">Guarda la partida en disco</td><td class="cod">  proceso1.guardar("p-persistente", partida);</td></tr>
+    <tr><td class="exp">CIERRA la conexión (simula apagar el servidor)</td><td class="cod">  proceso1.database.cerrar();</td></tr>
+    <tr><td class="exp">Segundo proceso: conexión NUEVA al mismo archivo</td><td class="cod">  const proceso2 = new PartidaRepositorySQL(new DatabaseSqlite(rutaBase));</td></tr>
+    <tr><td class="exp">Recupera la partida que se había guardado</td><td class="cod">  const recuperada = await proceso2.obtener("p-persistente");</td></tr>
+    <tr><td class="exp">Comprueba que sigue existiendo → la prueba pasa</td><td class="cod">  assert.equal(recuperada.id, "p-persistente");</td></tr>
+    <tr><td class="exp">Fin de la prueba</td><td class="cod">});</td></tr>
+  </table>
+  <div class="ruta">Resultado: lo que se guardó sigue ahí después de cerrar la base → los datos son duraderos.</div>
+</div>
+
+<script src="js/objetos-postgresql-final.js"></script>
+</body>
+</html>

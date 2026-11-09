@@ -1,0 +1,212 @@
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    font-family: 'Fredoka', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background: transparent;
+}
+
+#videofondo {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: -1;
+}
+
+.panel-verificacion {
+    display: flex;
+    flex-direction: row;
+    width: 85%;
+    max-width: 860px;
+    min-height: 400px;
+    background-color: rgba(0, 29, 177, 0.205);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 30px rgba(235, 228, 228, 0.4);
+    box-sizing: border-box;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.lado-izquierdo {
+    width: 52%;
+    padding: 45px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.lado-izquierdo .logo {
+    width: 100%;
+    max-width: 120px;
+    margin-bottom: 20px;
+}
+
+.lado-izquierdo h1 {
+    color: #ffffff;
+    font-size: 24px;
+    margin: 0 0 12px 0;
+}
+
+.lado-izquierdo p {
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.5;
+}
+
+.lado-derecho {
+    width: 48%;
+    padding: 45px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.lado-derecho h3 {
+    color: #ffffff;
+}
+
+.seccion-dinamica {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.seccion-dinamica.activa {
+    display: flex;
+    flex-direction: column;
+    opacity: 1;
+}
+
+.btn-acceso,
+.btn-verificar {
+    background-color: rgba(255, 255, 255, 0.95);
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 320px;
+    font-weight: 500;
+}
+
+.input-codigo {
+    width: 100%;
+    max-width: 320px;
+    padding: 14px;
+    margin-bottom: 20px;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(19, 26, 129, 0.2);
+    border-radius: 8px;
+    color: white;
+    text-align: center;
+    font-size: 16px;
+}
+
+
+/* ============================================
+   AGREGAR ESTO AL FINAL DE TU css/verificacion.css
+   (no reemplaza nada, solo se suma)
+============================================ */
+
+.texto-temporizador {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.texto-reenviar {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.texto-reenviar #btn-reenviar {
+    color: #4db0ff;
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.texto-reenviar #btn-reenviar:hover {
+    color: #ffd700;
+}
+
+#input-correo {
+    width: 100%;
+    max-width: 320px;
+    padding: 14px;
+    margin-bottom: 14px;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(19, 26, 129, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 15px;
+}/* =========================================
+   VERIFICACION MOBILE V/H SIN SCROLL
+   PC: igual (2 columnas). Mobile: opcion A = panel escalado identico al PC.
+   ========================================= */
+html, body {
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    min-height: 100svh;
+    overflow: hidden;
+    padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right))
+             max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+    box-sizing: border-box;
+}
+#videofondo { width: 100vw; height: 100dvh; height: 100svh; }
+/* Escenario de centrado + escala (JS-free) */
+.auth-verify-viewport { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; }
+.auth-verify-viewport .panel-verificacion { pointer-events: auto; }
+
+/* PC intacto */
+@media (min-width: 861px) and (min-height: 520px) {
+  .auth-verify-viewport { position: static; inset: auto; display: contents; }
+}
+
+/* Fit-to-viewport: conserva layout 2 columnas (como PC) sin scroll */
+@media (max-width: 860px), (max-height: 519px) {
+  body { align-items: center; justify-content: center; }
+  .panel-verificacion {
+    flex: 0 0 auto;
+    width: 860px;
+    max-width: none;
+    min-height: 400px;
+    transform-origin: center center;
+    /* escala para que quepa completo en V u H, sin recortar */
+    --escala-v: min(calc((100vw - 16px) / 860), calc((100dvh - 16px) / 400));
+    --escala-v: min(calc((100svw - 16px) / 860), calc((100svh - 16px) / 400));
+    transform: scale(min(1, var(--escala-v)));
+  }
+}
+/* Ajuste fino: si el contenido crece un poco (paso 2), permitir leve holgura */
+@media (max-width: 860px) and (min-aspect-ratio: 1/1) {
+  .panel-verificacion { --escala-v: min(calc((100vw - 12px) / 860), calc((100dvh - 12px) / 460)); --escala-v: min(calc((100svw - 12px) / 860), calc((100svh - 12px) / 460)); transform: scale(min(1, var(--escala-v))); }
+}
+/* === Verificacion: texto más legible/resaltado (sin oscurecer fondo del panel) === */
+.panel-verificacion h1, .panel-verificacion h2, .panel-verificacion h3,
+.lado-izquierdo h1, .lado-derecho h3 { color: #ffffff !important; text-shadow: 0 2px 6px rgba(0,0,0,.75), 0 1px 2px rgba(0,0,0,.9); }
+.panel-verificacion p, .lado-izquierdo p, .lado-derecho p, .texto-temporizador, .texto-reenviar {
+  color: #ffffff !important; opacity: 1 !important; font-weight: 500;
+  text-shadow: 0 1px 4px rgba(0,0,0,.8), 0 0 6px rgba(0,0,0,.35);
+}
+.texto-reenviar #btn-reenviar { color: #7dd3ff !important; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+.texto-reenviar #btn-reenviar:hover { color: #ffe066 !important; }
+.input-codigo, #input-correo {
+  color: #ffffff !important; font-weight: 600;
+  background: rgba(0,0,0,0.28) !important;
+  border: 1px solid rgba(255,255,255,0.45) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,.5);
+}
+.input-codigo::placeholder, #input-correo::placeholder { color: rgba(255,255,255,.9) !important; opacity: 1; font-weight: 500; }
+.btn-acceso, .btn-verificar { color: #0b1020 !important; font-weight: 700; }

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memoria Ninja · Sustentación de base de datos</title>
+<style>
+  :root{
+    --fondo:#0e1017;--panel:#171a24;--panel2:#1f2433;--borde:#2c3346;
+    --texto:#e8ebf5;--sub:#aab2c8;--naranja:#ff8c00;--morado:#bc25ff;
+    --verde:#39d98a;--azul:#58a6ff;--mono:#0b0d13;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--fondo);color:var(--texto);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:17px;line-height:1.55;padding:20px 18px 40px;
+  }
+  .hoja{max-width:780px;margin:0 auto;}
+
+  /* Portada */
+  .portada{
+    background:linear-gradient(160deg,#1b1030,#241033 55%,#2a1206);
+    border:1px solid var(--borde);border-radius:18px;padding:34px 24px;margin-bottom:26px;
+  }
+  .portada .engine{
+    display:inline-block;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--naranja);border:1px solid var(--naranja);border-radius:999px;padding:5px 12px;margin-bottom:18px;
+  }
+  .portada h1{font-size:30px;line-height:1.15;margin:0 0 6px;color:#fff;}
+  .portada h1 .l2{color:var(--morado);}
+  .portada p.sub{font-size:16px;color:var(--sub);margin:14px 0 0;}
+  .portada .juego{margin-top:20px;font-size:14px;color:var(--naranja);font-weight:600;letter-spacing:.04em;}
+  .portada ul.indice{margin:16px 0 0;padding-left:20px;color:var(--sub);font-size:15px;}
+  .portada ul.indice li{margin:4px 0;}
+
+  /* Secciones */
+  section{
+    background:var(--panel);border:1px solid var(--borde);border-radius:16px;
+    padding:22px 20px;margin-bottom:20px;
+  }
+  section .num{font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--morado);font-weight:700;}
+  section h2{font-size:23px;margin:6px 0 4px;color:#fff;line-height:1.2;}
+  section h2 small{display:block;font-size:14px;color:var(--sub);font-weight:400;margin-top:6px;letter-spacing:0;}
+  p{margin:10px 0;}
+  .lead{color:var(--sub);}
+  strong{color:#fff;}
+  .ok{color:var(--verde);font-weight:600;}
+
+  /* Código */
+  code{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+       background:rgba(188,37,255,.14);color:#e9c7ff;padding:1px 6px;border-radius:6px;font-size:14.5px;word-break:break-word;}
+  pre{background:var(--mono);border:1px solid var(--borde);border-left:3px solid var(--naranja);
+      border-radius:12px;padding:14px;overflow-x:auto;margin:10px 0;white-space:pre-wrap;word-break:break-word;}
+  pre code{background:none;color:#d8e0f5;padding:0;font-size:13.8px;line-height:1.5;}
+  .kw{color:var(--morado);}
+  .fn{color:var(--naranja);}
+  .cmt{color:#6b7488;}
+
+  /* Paso (Parte N + CÓDIGO + LO QUE DIGO) */
+  .paso{background:var(--panel2);border:1px solid var(--borde);border-radius:12px;padding:14px 15px;margin:14px 0;}
+  .paso .paso-titulo{font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--azul);font-weight:700;margin-bottom:6px;}
+  .paso .etq{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--sub);font-weight:700;margin:2px 0 -4px;}
+  .paso .dices{
+    font-size:15.5px;background:rgba(88,166,255,.10);border-left:3px solid var(--azul);
+    border-radius:0 10px 10px 0;padding:10px 13px;margin:8px 0 2px;
+  }
+  .paso .dices b{color:#9cc7ff;}
+
+  /* Veredicto */
+  .veredicto{display:flex;gap:11px;align-items:flex-start;background:rgba(57,217,138,.12);
+    border:1px solid rgba(57,217,138,.45);border-radius:13px;padding:14px 15px;margin:14px 0;}
+  .veredicto .icono{font-size:21px;line-height:1.1;flex:0 0 auto;}
+  .veredicto .txt{font-size:15.5px;}
+  .veredicto .txt b{color:#8ff0bd;}
+  .veredicto.no{background:rgba(255,140,0,.12);border-color:rgba(255,140,0,.45);}
+  .veredicto.no .txt b{color:#ffcf99;}
+
+  .nota{background:rgba(255,140,0,.10);border:1px solid rgba(255,140,0,.35);border-radius:12px;
+    padding:12px 14px;font-size:14.5px;color:#ffd8a8;margin-top:14px;}
+  .nota b{color:#fff;}
+
+  ol.pasos{margin:12px 0;padding-left:22px;}
+  ol.pasos li{margin:10px 0;font-size:15.5px;}
+
+  footer{text-align:center;color:var(--sub);font-size:13px;border-top:1px solid var(--borde);padding-top:16px;margin-top:8px;}
+
+  /* Impresión */
+  @page{size:A4 portrait;margin:12mm 10mm;}
+  @media print{
+    body{background:#fff;color:#111;padding:0;font-size:15px;}
+    section,.portada,.paso,.veredicto,.nota{background:#fff;border-color:#d8dbe6;}
+    .hoja{max-width:none;}
+    section,.paso,.veredicto,.nota,pre{break-inside:avoid;}
+    .portada,.seccion-nueva{page-break-before:always;}
+    pre{background:#f6f7fb;}
+    pre code{color:#222;}
+    code{background:#efe6f7;color:#5a1a80;}
+    .portada h1,.portada h1 .l2,strong{color:#111;}
+    section h2,section h2 small{color:#111;}
+    .lead,.portada .juego{color:#444;}
+    section .num{color:#7a1aa8;}
+    .paso .paso-titulo{color:#0a4b8c;}
+    .paso .dices{background:#eef4ff;border-left-color:#0a4b8c;color:#123;}
+    .paso .dices b{color:#0a4b8c;}
+    .veredicto{background:#eafaef;border-color:#1a8c4a;}
+    .veredicto.no{background:#fff3e2;border-color:#c66a00;}
+    .veredicto .txt b{color:#0b3d1f;}
+    .nota{background:#fff5e8;color:#5a3a00;}
+    .portada .engine{color:#a55600;border-color:#a55600;}
+  }
+</style>
+</head>
+<body>
+<div class="hoja">
+
+  <!-- ================= PORTADA ================= -->
+  <div class="portada">
+    <span class="engine">PostgreSQL 16 · Node.js</span>
+    <h1>Cómo aplico la lógica de datos <span class="l2">en PostgreSQL</span></h1>
+    <p class="sub">Sustentación de base de datos de <strong>Memoria Ninja</strong>: cada concepto explicado con el objeto real del proyecto (código + lo que digo).</p>
+    <ul class="indice">
+      <li>1. Cómo se aplica el <strong>ACID</strong></li>
+      <li>2. Cómo aplica <strong>CAP</strong></li>
+      <li>3. Las <strong>4 vistas</strong></li>
+      <li>4. Los <strong>2 procedimientos almacenados</strong></li>
+      <li>5. El <strong>trigger</strong></li>
+    </ul>
+    <div class="juego">Todo sale de sql/esquema.sql</div>
+  </div>
+
+  <!-- ================= 1 · ACID ================= -->
+  <section>
+    <div class="num">01 · Cómo se aplica</div>
+    <h2>ACID en mi base de datos
+      <small>Las cuatro garantías las sostiene el motor, no el código de la aplicación.</small>
+    </h2>
+
+    <div class="veredicto">
+      <span class="icono">✅</span>
+      <span class="txt"><b>Sí se aplica, y correctamente.</b> Cada letra está cubierta por un objeto concreto del proyecto y comprobada por pruebas.</span>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">A · Atomicidad</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="cmt">-- database.transaccion(): una conexión dedicada</span>
+<span class="kw">BEGIN</span>  ->  ...sentencias...  ->  <span class="kw">COMMIT</span>
+                      (si algo falla ->  <span class="kw">ROLLBACK</span>)</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">Un procedimiento como <b>sp_crear_partida_completa</b> hace dos inserciones y, si una falla, PostgreSQL revierte las dos: o todo, o nada. Eso lo garantiza la transacción, que se ejecuta sobre una conexión dedicada (<code>BEGIN → COMMIT / ROLLBACK</code>).</div>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">C · Consistencia</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="kw">CONSTRAINT</span> fk_historial_usuario
+  <span class="kw">FOREIGN KEY</span> (id_usuario) <span class="kw">REFERENCES</span> usuarios (id);
+<span class="kw">CHECK</span> (correo <span class="kw">~*</span> <span class="fn">'^[^@\s]+@[^@\s]+\.[^@\s]+$'</span>)</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">La base impone las reglas: clave foránea del historial hacia usuarios, UNIQUE de usuario/correo, y un CHECK con forma de correo. Por eso un resultado para un usuario inexistente se rechaza (error de clave foránea).</div>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">I · Aislamiento</div>
+      <div class="etq">Código</div>
+      <pre><code>... <span class="kw">FOR UPDATE</span>;   <span class="cmt">-- bloquea la fila mientras dura la transacción</span></code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">Con <b>SELECT ... FOR UPDATE</b> dos operaciones concurrentes sobre la misma partida no se pisan, y un código de verificación no se puede usar dos veces. Se usa al leer-modificar-guardar la partida y en <code>fn_confirmar_codigo</code>.</div>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">D · Durabilidad</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="kw">SELECT</span> estado_json <span class="kw">FROM</span> partidas <span class="kw">WHERE</span> id = ?;</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">La escritura se confirma en disco (WAL) y la lectura vuelve a la tabla, no a un caché en memoria. Por eso una partida sigue existiendo después de reiniciar el servidor.</div>
+    </div>
+  </section>
+
+  <!-- ================= 2 · CAP ================= -->
+  <section class="seccion-nueva">
+    <div class="num">02 · Cómo aplica</div>
+    <h2>CAP en mi proyecto
+      <small>El teorema describe sistemas distribuidos con réplicas.</small>
+    </h2>
+
+    <div class="veredicto no">
+      <span class="icono">✅</span>
+      <span class="txt"><b>CAP no se “aplica” porque no corresponde:</b> el proyecto es un sistema <b>CA</b>, y eso no es un defecto.</span>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">El tipo de sistema</div>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">Memoria Ninja es un <b>monolito</b>: un servidor Node.js y <b>una sola instancia</b> de PostgreSQL, sin réplicas. La <b>P</b> de CAP (tolerancia a particiones) describe cortes de red <i>entre nodos que replican datos</i>; al haber un solo nodo, esa partición no existe.</div>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">Por qué no hay disyuntiva</div>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">Como no hay réplicas, no hay que elegir entre consistencia y disponibilidad: el sistema es <b>consistente</b> (ACID del punto 1) y <b>disponible</b> mientras el nodo esté en pie. Recién si algún día agrego réplicas distribuidas, el teorema empezaría a aplicar.</div>
+    </div>
+  </section>
+
+  <!-- ================= 3 · VISTAS ================= -->
+  <section class="seccion-nueva">
+    <div class="num">03 · Abstracción de lectura</div>
+    <h2>Las 4 vistas
+      <small>JOIN, GROUP BY y los cálculos viven en PostgreSQL, no en el código.</small>
+    </h2>
+    <p class="lead">El backend solo hace <code>SELECT * FROM &lt;vista&gt;</code>. La lógica relacional queda definida una sola vez en la base.</p>
+
+    <div class="paso">
+      <div class="paso-titulo">Vista 1 · vw_partidas_recientes</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="kw">CREATE OR REPLACE VIEW</span> vw_partidas_recientes <span class="kw">AS</span>
+<span class="kw">SELECT</span> id, creada_en, actualizada_en
+<span class="kw">FROM</span> partidas
+<span class="kw">ORDER BY</span> actualizada_en <span class="kw">DESC</span>, creada_en <span class="kw">DESC</span>;</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">Muestra las partidas ordenadas por la más reciente. Es la vista que aprovecha el trigger del punto 5: <code>actualizada_en</code> la llena el trigger, y acá se usa para ordenar.</div>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">Vista 2 · vw_historial_detallado</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="kw">CREATE OR REPLACE VIEW</span> vw_historial_detallado <span class="kw">AS</span>
+<span class="kw">SELECT</span> h.id, h.id_usuario, u.usuario, h.id_partida,
+       h.zona, h.puntaje, h.modo, h.ganador, h.jugada_en
+<span class="kw">FROM</span> historial_partidas h
+<span class="kw">LEFT JOIN</span> usuarios u <span class="kw">ON</span> u.id = h.id_usuario
+<span class="kw">ORDER BY</span> h.jugada_en <span class="kw">DESC</span>;</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">El historial guarda el <code>id_usuario</code>, pero para mostrar el <b>nombre</b> del jugador hay que cruzar con la tabla <code>usuarios</code>. Ese JOIN lo resuelve la vista; el backend ya recibe el nombre listo.</div>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">Vista 3 · vw_ranking_mejor_puntaje</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="kw">CREATE OR REPLACE VIEW</span> vw_ranking_mejor_puntaje <span class="kw">AS</span>
+<span class="kw">SELECT</span> u.id <span class="kw">AS</span> id_usuario, u.usuario,
+       <span class="fn">MAX</span>(h.puntaje)  <span class="kw">AS</span> mejor_puntaje,
+       <span class="fn">COUNT</span>(h.id)     <span class="kw">AS</span> total_partidas,
+       <span class="fn">MAX</span>(h.jugada_en)<span class="kw">AS</span> ultima_jugada
+<span class="kw">FROM</span> historial_partidas h
+<span class="kw">INNER JOIN</span> usuarios u <span class="kw">ON</span> u.id = h.id_usuario
+<span class="kw">GROUP BY</span> u.id, u.usuario
+<span class="kw">ORDER BY</span> mejor_puntaje <span class="kw">DESC</span>;</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">Es el ranking. Con <b>MAX</b> saco el mejor puntaje y con <b>COUNT</b> cuántas partidas jugó; <b>GROUP BY</b> agrupa por usuario. Toda la estadística la calcula la base, no el código de Node.</div>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">Vista 4 · vw_usuarios_resumen</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="kw">CREATE OR REPLACE VIEW</span> vw_usuarios_resumen <span class="kw">AS</span>
+<span class="kw">SELECT</span> u.id, u.usuario, u.correo, u.nacimiento, u.creado_en,
+       <span class="fn">COUNT</span>(h.id) <span class="kw">AS</span> total_partidas,
+       <span class="fn">MAX</span>(h.puntaje) <span class="kw">FILTER</span> (<span class="kw">WHERE</span> h.puntaje <span class="kw">IS NOT NULL</span>) <span class="kw">AS</span> max_puntaje,
+       <span class="fn">MAX</span>(h.jugada_en) <span class="kw">AS</span> ultima_partida
+<span class="kw">FROM</span> usuarios u
+<span class="kw">LEFT JOIN</span> historial_partidas h <span class="kw">ON</span> h.id_usuario = u.id
+<span class="kw">GROUP BY</span> u.id, u.usuario, u.correo, u.nacimiento, u.creado_en;</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">Resume cada cuenta con sus estadísticas en <b>una sola consulta</b>. El <code>FILTER (WHERE ...)</code> calcula el máximo solo sobre puntajes no nulos, y el <b>LEFT JOIN</b> hace que también aparezcan los usuarios que todavía no jugaron.</div>
+    </div>
+  </section>
+
+  <!-- ================= 4 · PROCEDIMIENTOS ================= -->
+  <section class="seccion-nueva">
+    <div class="num">04 · Escritura encapsulada</div>
+    <h2>Los 2 procedimientos almacenados
+      <small>El backend los dispara con CALL; la lógica vive en el motor.</small>
+    </h2>
+
+    <div class="paso">
+      <div class="paso-titulo">Procedimiento 1 · sp_registrar_partida</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="kw">CREATE OR REPLACE PROCEDURE</span> sp_registrar_partida(
+    p_id_usuario TEXT,
+    p_zona       TEXT,
+    p_puntaje    INTEGER,
+    p_modo       TEXT,
+    p_ganador    TEXT
+)
+<span class="kw">LANGUAGE</span> plpgsql <span class="kw">AS</span> $BODY$
+<span class="kw">BEGIN</span>
+    <span class="kw">INSERT INTO</span> historial_partidas
+        (id, id_usuario, zona, puntaje, modo, ganador)
+    <span class="kw">VALUES</span> (
+        <span class="fn">gen_random_uuid()</span>::TEXT,
+        p_id_usuario, p_zona, p_puntaje, p_modo, p_ganador
+    );
+<span class="kw">END</span>;
+$BODY$;</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">Recibe los 5 datos del resultado y guarda <b>una fila en <code>historial_partidas</code></b>. <code>gen_random_uuid()</code> genera el id único del registro. En mi juego lo invoca el endpoint <code>POST /api/procedimientos/registrar-partida</code> con un <b>CALL</b>.</div>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">Procedimiento 2 · sp_crear_partida_completa</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="kw">CREATE OR REPLACE PROCEDURE</span> sp_crear_partida_completa(
+    p_id_partida  TEXT,
+    p_estado_json TEXT,
+    p_id_usuario  TEXT,
+    p_zona        TEXT,
+    p_puntaje     INTEGER,
+    p_modo        TEXT,
+    p_ganador     TEXT
+)
+<span class="kw">LANGUAGE</span> plpgsql <span class="kw">AS</span> $BODY$
+<span class="kw">BEGIN</span>
+    <span class="kw">INSERT INTO</span> historial_partidas
+        (id, id_usuario, id_partida, zona, puntaje, modo, ganador)
+    <span class="kw">VALUES</span> (
+        <span class="fn">gen_random_uuid()</span>::TEXT,
+        p_id_usuario, p_id_partida, p_zona, p_puntaje, p_modo, p_ganador
+    );
+
+    <span class="kw">INSERT INTO</span> partidas (id, estado_json)
+    <span class="kw">VALUES</span> (p_id_partida, p_estado_json);
+<span class="kw">END</span>;
+$BODY$;</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">Este hace <b>dos inserciones en una sola operación</b>: primero el resultado en <code>historial_partidas</code> (relacionado por <code>id_partida</code>) y después la partida con su <code>estado_json</code> (el tablero, cartas encontradas, etc.). Como es una sola operación, es <b>atómico</b>: o se guardan las dos, o ninguna.</div>
+    </div>
+
+    <div class="nota"><b>Cómo se llaman:</b> PostgreSQL prohíbe subconsultas como argumento de <code>CALL</code>, por eso en las demos van dentro de un bloque <code>DO $$ ... $$</code> que primero resuelve el id del usuario y luego llama al procedimiento.</div>
+  </section>
+
+  <!-- ================= 5 · TRIGGER ================= -->
+  <section class="seccion-nueva">
+    <div class="num">05 · Automatización</div>
+    <h2>El trigger de la tabla partidas
+      <small>Recalcula la fecha de actualización solo, dentro de la base.</small>
+    </h2>
+
+    <div class="veredicto">
+      <span class="icono">✅</span>
+      <span class="txt"><b>Sí se aplica.</b> El trigger se dispara en cada UPDATE real sobre <code>partidas</code>, sin que el backend lo tenga que hacer.</span>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">Parte 1 · La función</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="kw">CREATE OR REPLACE FUNCTION</span> fn_partidas_actualizar_fecha()
+<span class="kw">RETURNS TRIGGER AS</span> $$
+<span class="kw">BEGIN</span>
+    NEW.actualizada_en = <span class="fn">now()</span>;
+    <span class="kw">RETURN</span> NEW;
+<span class="kw">END</span>;
+$$ <span class="kw">LANGUAGE</span> plpgsql;</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">Esta función es la que hace el trabajo. <code>NEW</code> es la fila que se está modificando y <code>now()</code> es la hora actual del servidor: le asignamos la fecha al campo <code>actualizada_en</code> y devolvemos la fila con <code>RETURN NEW</code> para que se guarde.</div>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">Parte 2 · El trigger que la engancha</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="kw">CREATE TRIGGER</span> trg_partidas_actualizar_fecha
+    <span class="kw">BEFORE UPDATE ON</span> partidas
+    <span class="kw">FOR EACH ROW</span> <span class="kw">EXECUTE FUNCTION</span> fn_partidas_actualizar_fecha();</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices"><b>BEFORE UPDATE</b> significa que se ejecuta antes de cada modificación, y <b>FOR EACH ROW</b> que corre por cada fila afectada. Así, cada vez que se actualiza una partida, la fecha se refresca automáticamente.</div>
+    </div>
+
+    <div class="paso">
+      <div class="paso-titulo">Parte 3 · Cómo se demuestra</div>
+      <div class="etq">Código</div>
+      <pre><code><span class="kw">UPDATE</span> partidas <span class="kw">SET</span> estado_json = estado_json
+ <span class="kw">WHERE</span> id = <span class="fn">'partida-demo'</span>;
+
+<span class="kw">SELECT</span> id, creada_en, actualizada_en <span class="kw">FROM</span> partidas;</code></pre>
+      <div class="etq">Lo que digo</div>
+      <div class="dices">Hago un UPDATE cualquiera y el <code>SELECT</code> muestra cómo <code>actualizada_en</code> cambió sola. El backend nunca escribió esa fecha: la puso el trigger.</div>
+    </div>
+  </section>
+
+  <!-- ================= 6 · DEMO ================= -->
+  <section class="seccion-nueva">
+    <div class="num">06 · Guion de demo</div>
+    <h2>Los 5 pasos de la sustentación
+      <small>Todo desde pgAdmin con datos reales.</small>
+    </h2>
+    <ol class="pasos">
+      <li><strong>Cargar datos:</strong> <code>npm run seed:demo</code> (llena tablas y vistas).</li>
+      <li><strong>ACID (1):</strong> mostrar el <code>CALL</code> de <code>sp_crear_partida_completa</code> y mencionar el <code>BEGIN/COMMIT</code>.</li>
+      <li><strong>CAP (2):</strong> explicar que es un monolito de un solo nodo → sistema CA.</li>
+      <li><strong>Vistas (3):</strong> ejecutar los <code>SELECT * FROM vw_...</code>.</li>
+      <li><strong>Procedimientos (4):</strong> ejecutar los <code>CALL sp_...</code>.</li>
+      <li><strong>Trigger (5):</strong> hacer un <code>UPDATE</code> en <code>partidas</code> y ver cambiar <code>actualizada_en</code>.</li>
+    </ol>
+    <p style="color:var(--sub);font-size:14px;">Esquema: <code>sql/esquema.sql</code> · Consultas listas: <code>sql/consultas-demo.sql</code> · Guía: <code>sql/COMO-VER-EN-PGADMIN.md</code>.</p>
+  </section>
+
+  <footer>
+    Memoria Ninja · Sustentación de base de datos · PostgreSQL 16 / Node.js
+  </footer>
+
+</div>
+</body>
+</html>

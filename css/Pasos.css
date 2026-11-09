@@ -1,0 +1,88 @@
+.indicador-pasos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 6px 0 18px;
+}
+
+.paso-punto {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    opacity: 0.45;
+    transition: opacity 0.3s ease;
+}
+
+.paso-punto.activo,
+.paso-punto.completado {
+    opacity: 1;
+}
+
+.paso-numero {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.paso-punto.activo .paso-numero {
+    border-color: #4db0ff;
+    box-shadow: 0 0 10px #4db0ff;
+}
+
+.paso-punto.completado .paso-numero {
+    background: #00c853;
+    border-color: #00c853;
+}
+
+.paso-texto {
+    font-size: 10px;
+    color: #cfe0f5;
+    white-space: nowrap;
+}
+
+.paso-linea {
+    width: 24px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.25);
+    margin-bottom: 16px;
+}/* Recuperar: compacto en mobile V/H sin scroll */
+.indicador-pasos { gap: clamp(2px, 0.8vw, 6px); margin: clamp(2px, 0.8vh, 6px) 0 clamp(6px, 1.4vh, 18px); flex-wrap: nowrap; }
+.paso-texto { font-size: clamp(9px, 1.3vh, 10px); }
+.paso-numero { width: clamp(22px, 3.2vh, 26px); height: clamp(22px, 3.2vh, 26px); font-size: clamp(11px, 1.6vh, 13px); }
+.paso-linea { width: clamp(10px, 3vw, 24px); margin-bottom: clamp(10px, 2vh, 16px); }
+#paso1 p, #paso2 p, #paso3 p { margin: clamp(2px, 0.6vh, 8px) 0; }
+@media (max-height: 700px) {
+  .indicador-pasos { margin: 2px 0 6px; }
+  .paso-linea { margin-bottom: 10px; }
+}
+@media (max-height: 620px) and (orientation: landscape) {
+  .paso-texto { display: none; }
+  .paso-linea { margin-bottom: 0; }
+  .indicador-pasos { margin: 0 0 4px; }
+}
+/* === Recuperar: 3 numeritos/pasos más visibles (sin oscurecer fondos) === */
+.indicador-pasos .paso-punto { opacity: 0.88 !important; }
+.indicador-pasos .paso-punto.activo, .indicador-pasos .paso-punto.completado { opacity: 1 !important; }
+.indicador-pasos .paso-numero {
+  background: rgba(20, 30, 60, 0.72) !important;
+  border: 2px solid rgba(255,255,255,0.85) !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0,0,0,.8);
+  box-shadow: 0 2px 6px rgba(0,0,0,.35);
+}
+.indicador-pasos .paso-punto.activo .paso-numero { border-color: #4db0ff !important; background: rgba(0, 70, 160, 0.75) !important; box-shadow: 0 0 10px #4db0ff, 0 2px 6px rgba(0,0,0,.4) !important; }
+.indicador-pasos .paso-punto.completado .paso-numero { background: #009624 !important; border-color: #00e676 !important; }
+.indicador-pasos .paso-texto { color: #ffffff !important; font-weight: 600; font-size: 11px; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+.indicador-pasos .paso-linea { background: rgba(255,255,255,0.55) !important; height: 2px; }
+#paso1 p, #paso2 p, #paso3 p { color: #ffffff !important; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,.85); }

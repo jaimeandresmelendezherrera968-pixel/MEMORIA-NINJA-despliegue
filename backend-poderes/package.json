@@ -1,0 +1,31 @@
+{
+  "name": "memorice-duel-backend",
+  "version": "1.0.0",
+  "description": "Backend del sistema de poderes de Memorice Duel - POO + SOLID",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test --test-concurrency=1",
+    "pretest": "node scripts/db-setup.js --test",
+    "db:setup": "node scripts/db-setup.js",
+    "db:test-setup": "node scripts/db-setup.js --test",
+    "check:js": "node scripts/verificar-sintaxis.js",
+    "seed:demo": "node scripts/seed-demo.js",
+    "correo:probar": "node scripts/probar-correo.js"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.7",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "nodemailer": "^10.1.0",
+    "pg": "^8.23.1",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
+  }
+}

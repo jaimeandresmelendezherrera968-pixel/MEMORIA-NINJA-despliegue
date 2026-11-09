@@ -1,0 +1,384 @@
+﻿html, body {
+  font-family: "Fredoka", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+
+  background-size: cover;
+  background-position: center;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: 100svh;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+           max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+}
+
+#videofondo{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  z-index: -1;
+}
+
+.login-contenedor {
+  margin: 0 auto;
+  text-align: center;
+  padding: clamp(14px, 3.2vh, 40px) clamp(16px, 3vw, 30px);
+  border-radius: 10px;
+  width: min(340px, 92vw);
+  max-height: calc(100dvh - 16px);
+  max-height: calc(100svh - 16px);
+  color: white;
+  box-shadow: 0 0 12px rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2px, 0.9vh, 8px);
+  overflow: hidden;
+}
+
+/* Registro: mÃ¡s campos â€” sin transform que desborde; se compacta por altura (abajo) */
+.login-contenedor.registro {
+  transform: none;
+}
+
+/* Mismo ancho real para todos los campos y botones:
+   el padding (incluido el espacio del ojo) queda dentro del 100%. */
+.login-contenedor * {
+  box-sizing: border-box;
+}
+
+h1 {
+  font-family: "Fredoka", sans-serif;
+  font-size: clamp(24px, 4.8vh, 40px);
+  margin: clamp(2px, 0.8vh, 10px) 0;
+  text-shadow: 
+  -2px -2px 0 black,
+     2px -2px 0 black,
+    -2px  2px 0 black,
+     2px  2px 0 black,
+    -3px  0px 0 black,
+     3px  0px 0 black,
+     0px -3px 0 black,
+     0px  3px 0 black;
+
+}
+
+input {
+  width: 100%;
+  padding: clamp(9px, 1.6vh, 15px);
+  margin: clamp(3px, 0.9vh, 10px) 0;
+  font-size: 16px; /* evita auto-zoom iOS */
+
+  border: none;
+  border-radius: 10px;
+
+  background: rgba(0, 0, 0, 0.4);
+  color: rgba(255,255,255,0.9);
+}
+input::placeholder {
+  color: rgba(255,255,255,0.7);
+}
+input:focus {
+  outline: none;
+  box-shadow: 0 0 8px #00aaff;
+}
+
+button {
+  font-family: "Fredoka", sans-serif;
+  font-size: clamp(13px, 1.8vh, 15px);
+  width: 100%;
+  padding: clamp(9px, 1.6vh, 15px);
+  margin-top: clamp(4px, 1.2vh, 15px);
+  background: linear-gradient(to right, #ff1f1f, #ff7918, #0062ff);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* BotÃ³n secundario: entrar como invitado (sin cuenta) */
+.btn-invitado {
+  background: rgba(0, 0, 0, 0.45);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  color: #fff;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-invitado:hover,
+.btn-invitado:focus-visible {
+  background: rgba(0, 0, 0, 0.65);
+  border-color: #00aaff;
+  outline: none;
+}
+
+/* ===========================
+   RECORDAR SESIÃ“N
+=========================== */
+
+.recordar-sesion {
+  display: flex;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.recordar-sesion label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.recordar-sesion input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+  background: none;
+  border-radius: 3px;
+  accent-color: #ff7b00;
+  cursor: pointer;
+}
+
+.input-pass {
+  position: relative;
+  width: 100%;
+  margin: clamp(3px, 0.9vh, 10px) 0;
+}
+
+.input-pass input {
+  width: 100%;
+  padding: clamp(9px, 1.6vh, 15px);
+  padding-right: 45px;
+  margin: 0;
+  font-size: 16px;
+}
+
+/* Sharingan PNG */
+.ojo {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+
+  opacity: 0.5;
+  transition: 0.3s;
+}
+
+/* efecto al pasar el mouse */
+.ojo:hover {
+  transform: translateY(-50%) scale(1.15);
+}
+
+/* cuando estÃ¡ activo */
+.ojo.activo {
+  opacity: 1; 
+}
+
+.ojo {
+  animation: girar 3s linear infinite;
+}
+
+@keyframes girar {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+/* ===========================
+   TÃ‰RMINOS Y POLÃTICA
+=========================== */
+
+.aceptacion{
+    margin-top: clamp(4px, 1vh, 15px);
+    text-align:left;
+    color:white;
+    font-size: clamp(11px, 1.5vh, 14px);
+}
+
+.check-label{
+    display:block;
+    margin-bottom: clamp(2px, 0.7vh, 10px);
+    line-height: 1.35;
+}
+
+.check-label input{
+    width:auto;
+    margin-right:8px;
+    transform:scale(1.1);
+}
+
+.link-modal{
+    color:#4db8ff;
+    cursor:pointer;
+    font-weight:bold;
+    transition:.3s;
+}
+
+.link-modal:hover{
+    color:#ffd700;
+    text-decoration:underline;
+}
+
+/* ===========================
+   MODAL
+=========================== */
+
+.modal{
+    display:none;
+    position:fixed;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.75);
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+
+.modal-contenido{
+
+    width:700px;
+    max-width:90%;
+
+    max-height:80vh;
+    max-height:calc(100dvh - 24px);
+    overflow-y:auto;
+
+    padding: clamp(14px, 2.5vh, 30px);
+
+    border-radius:15px;
+
+    background:rgba(20,20,35,.95);
+
+    color:white;
+
+    box-shadow:0 0 30px rgba(0,0,0,.5);
+
+}
+
+.modal-contenido h2{
+
+    margin-top:0;
+    text-align:center;
+    color:#ffd700;
+
+}
+
+.modal-contenido p{
+
+    line-height:1.7;
+    text-align:justify;
+
+}
+
+.cerrar{
+
+    float:right;
+    font-size:30px;
+    cursor:pointer;
+    color:white;
+
+}
+
+.cerrar:hover{
+
+    color:red;
+
+}/* =========================================
+   AUTH MOBILE V/H SIN SCROLL (PC intacto visualmente)
+   login / registro / recuperar comparten .login-contenedor
+   ========================================= */
+.login-contenedor > img[alt="logo"], .login-contenedor .logo {
+  width: auto;
+  max-width: min(75%, 220px);
+  max-height: clamp(48px, 12vh, 110px);
+  height: auto;
+  object-fit: contain;
+  flex: 0 1 auto;
+}
+.login-contenedor p { margin: clamp(2px, 0.6vh, 8px) 0; font-size: clamp(12px, 1.7vh, 15px); }
+.login-contenedor a { font-size: inherit; }
+
+/* Registro: formulario largo â€” compacto para caber sin scroll de pÃ¡gina */
+.login-contenedor.registro { width: min(360px, 94vw); gap: clamp(1px, 0.55vh, 6px); }
+.login-contenedor.registro h1 { font-size: clamp(22px, 4vh, 36px); margin: 2px 0; }
+.login-contenedor.registro input { padding: clamp(7px, 1.25vh, 12px); margin: clamp(2px, 0.55vh, 6px) 0; }
+.login-contenedor.registro button { padding: clamp(8px, 1.3vh, 13px); margin-top: clamp(3px, 0.8vh, 10px); }
+.login-contenedor.registro > img { max-height: clamp(40px, 9vh, 90px); }
+.login-contenedor.registro p { margin: 2px 0; font-size: clamp(11px, 1.5vh, 14px); }
+
+/* Alturas acotadas (mÃ³vil horizontal / pantallas bajas): encaje sin scroll */
+@media (max-height: 740px) {
+  .login-contenedor { padding: clamp(8px, 1.8vh, 16px) clamp(12px, 2.5vw, 20px); gap: clamp(1px, 0.5vh, 4px); }
+  .login-contenedor h1 { font-size: clamp(20px, 4.8vh, 30px); }
+  .login-contenedor > img[alt="logo"] { max-height: clamp(34px, 9vh, 64px); }
+  .login-contenedor input, .login-contenedor .input-pass input { padding: clamp(7px, 1.4vh, 11px); margin: clamp(2px, 0.5vh, 5px) 0; }
+  .login-contenedor button { padding: clamp(7px, 1.4vh, 11px); margin-top: clamp(2px, 0.6vh, 6px); }
+  .login-contenedor p { margin: 1px 0; line-height: 1.2; }
+  .login-contenedor.registro { width: min(380px, 96vw); }
+  .login-contenedor.registro .aceptacion { font-size: clamp(10px, 1.6vh, 12px); }
+}
+@media (max-height: 620px) and (orientation: landscape) {
+  .login-contenedor { width: min(420px, 96vw); padding: 6px 14px; }
+  .login-contenedor h1 { font-size: clamp(18px, 5.2vh, 24px); margin: 0; }
+  .login-contenedor > img[alt="logo"] { max-height: clamp(28px, 10vh, 46px); }
+  .login-contenedor input, .login-contenedor button, .login-contenedor .input-pass input { padding: 6px 10px; font-size: 14px; margin: 1px 0; }
+  .login-contenedor p, .login-contenedor a, .login-contenedor label { font-size: 12px; }
+  .login-contenedor.registro { width: min(520px, 96vw); }
+  .login-contenedor.registro input, .login-contenedor.registro button { padding: 5px 8px; font-size: 13px; }
+  .login-contenedor.registro h1 { font-size: clamp(16px, 4.8vh, 22px); }
+}
+@supports (height: 1svh) {
+  .login-contenedor { max-height: calc(100svh - 16px); }
+}
+
+/* === AUTH: texto más legible/resaltado (sin oscurecer fondos) === */
+.login-contenedor { color: #ffffff; }
+.login-contenedor h1 { color: #ffffff; text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, -3px 0 0 #000, 3px 0 0 #000, 0 -3px 0 #000, 0 3px 0 #000, 0 3px 8px rgba(0,0,0,.8); }
+.login-contenedor p, .login-contenedor label, .login-contenedor span, .login-contenedor a, #msg {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.85), 0 0 6px rgba(0,0,0,.45);
+  opacity: 1 !important;
+  font-weight: 500;
+}
+.login-contenedor a { color: #ffffff !important; text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
+.login-contenedor a:hover { color: #7dd3ff !important; }
+#msg { font-weight: 600; }
+input { color: #ffffff !important; font-weight: 500; }
+input::placeholder { color: rgba(255,255,255,.92) !important; opacity: 1; font-weight: 500; }
+.btn-invitado { color: #ffffff !important; border-color: rgba(255,255,255,.75); font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+.recordar-sesion label { color: #ffffff !important; font-weight: 600; }
+.aceptacion { color: #ffffff !important; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+.check-label { color: #ffffff !important; font-weight: 500; }
+.link-modal { color: #7dd3ff !important; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+.link-modal:hover { color: #ffe066 !important; }
+.ojo { opacity: 0.85; filter: drop-shadow(0 1px 2px rgba(0,0,0,.8)); }
+.ojo.activo { opacity: 1; }
+/* textos inline con style blanco en HTML ya ok; reforzar */
+.login-contenedor [style*="color:white"], .login-contenedor [style*="color: white"],
+.login-contenedor [style*="color:#fff"], .login-contenedor [style*="color: #fff"] { color: #ffffff !important; text-shadow: 0 1px 3px rgba(0,0,0,.85) !important; }

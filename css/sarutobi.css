@@ -1,0 +1,66 @@
+﻿/* Sarutobi - = uchiha layout/posiciones/tamaños; contenido(colores/cartas/respaldo) propio */
+html, body { height: 100%; overflow: hidden; }
+body { font-family: Arial, sans-serif; background-color: #342141; color: #f0f6ff; text-align: center; padding: 0; margin: 0; }
+.zona-fit-root { width: 100vw; height: 100vh; height: 100dvh; position: relative; overflow: hidden; z-index: 1; }
+.zona-fit-canvas { width: 660px; position: absolute; top: 50%; left: 50%; transform-origin: center center; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
+#videofondo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; object-fit: cover; object-position: center; z-index: -1; pointer-events: none; }
+.game-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; max-width: 980px; margin: 0 auto 10px; }
+.player-info { text-align: left; }
+.turn-info { font-weight: 700; color: #ffd166; }
+.stats { margin: 0 auto 6px; }
+.stats span { margin-left: 12px; color: #bcd3ff; }
+/* Tamaños/posiciones = uchiha. Selectores reforzados para ganar a tema-aldea (cargado después). Colores propios. */
+#boardFrame, html body[data-tema-aldea] #boardFrame { display: flex; justify-content: center; margin: 18px auto; padding: 18px; width: max-content; max-width: 100%; background: linear-gradient(180deg,#3b2f20,#2d2418); border-radius: 14px; border: 8px solid #b8843b; box-shadow: 0 18px 60px rgba(0,0,0,0.6); }
+#board, html body[data-tema-aldea] #board, html body[data-tema-aldea] #boardFrame #board { display: grid; grid-template-columns: repeat(4, 108px); gap: 28px; padding: 28px; background: #1b1b1b; border-radius: 10px; width: max-content; --carta-ancho: 108px; }
+.card, html body[data-tema-aldea] .card { width: 108px; height: 151px; position: relative; transform-style: preserve-3d; transition: transform .45s ease; cursor: pointer; border-radius: 8px; perspective: 900px; }
+.card.flipped { transform: rotateY(180deg); }
+.card img { width: 100%; height: 100%; position: absolute; left: 0; top: 0; border-radius: 8px; object-fit: fill; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.back { transform: rotateY(0deg); }
+.front { transform: rotateY(180deg); }
+.card.found { pointer-events: none; animation: desaparecerCarta .7s ease forwards; }
+/* Botón volver: en flujo como uchiha (tema-aldea lo pone fixed; aquí se revierte). */
+.boton, html body[data-tema-aldea]:not(.pantalla-online) .boton { position: static; display: inline-block; left: auto; bottom: auto; z-index: auto; padding: 12px 25px; background: linear-gradient(135deg,#3b2f20,#b8843b); color: white; text-decoration: none; border-radius: 10px; border: 2px solid #d4a45a; font-size: 18px; font-weight: bold; transition: .3s; box-shadow: 0 0 10px rgba(184,132,59,0.35); margin-top: 4px; text-transform: none; letter-spacing: normal; gap: 0; }
+.boton::before, html body[data-tema-aldea]:not(.pantalla-online) .boton::before { content: none; }
+.boton:hover { background: linear-gradient(135deg,#b8843b,#e0c070); color: #fff; transform: scale(1.05); box-shadow: 0 0 15px #e0c070, 0 0 30px rgba(184,132,59,0.5); }
+/* Pausa (modal inyectado por PauseModal, fuera del canvas escalado): compacto, SIN scroll. */
+html body[data-tema-aldea] .pausa-overlay { padding: 8px; }
+html body[data-tema-aldea] .pausa-panel { width: min(420px, calc(100vw - 16px)); max-height: calc(100dvh - 16px); max-height: calc(100svh - 16px); overflow-y: auto; overflow-x: hidden; padding: 14px 16px; border-radius: 18px; }
+html body[data-tema-aldea] .pausa-header { margin-bottom: 10px; gap: 10px; }
+html body[data-tema-aldea] .pausa-simbolo { width: 44px; height: 44px; border-radius: 12px; }
+html body[data-tema-aldea] .pausa-header h2 { font-size: clamp(1.4rem, 4.5vw, 2rem); }
+html body[data-tema-aldea] .pausa-header p { font-size: .78rem; margin-top: .15em; }
+html body[data-tema-aldea] .pausa-opciones { gap: 6px; }
+html body[data-tema-aldea] .pausa-fila { padding: 8px 10px; gap: 8px; border-radius: 12px; }
+html body[data-tema-aldea] .pausa-emoji { width: 28px; height: 28px; font-size: .9rem; }
+html body[data-tema-aldea] .pausa-etiqueta strong { font-size: .72rem; }
+html body[data-tema-aldea] .pausa-etiqueta small { font-size: .6rem; }
+html body[data-tema-aldea] .pausa-acciones { gap: 6px; margin-top: 10px; }
+html body[data-tema-aldea] .pausa-btn { padding: 9px 12px; font-size: .72rem; }
+html body[data-tema-aldea] .pausa-ayuda { margin-top: 8px; font-size: .62rem; }
+#modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index: 10000; }
+.panel { background: white; color: #111; padding: 20px; border-radius: 10px; width: 320px; text-align:center; }
+.hidden { display: none !important; }
+.history { max-width:980px; margin: 10px auto; color:#cfe4ff; text-align:left; }
+#recordsList p{ background: rgba(255,255,255,0.03); padding:8px; border-radius:8px; margin:6px 0; }
+.card.emparejada { position: relative; overflow: hidden; transform-style: preserve-3d; perspective: 800px; animation: carta-fade-3d 2s ease-in forwards; }
+.card.emparejada img { filter: brightness(0.2) contrast(1.5); }
+.card.emparejada::before { content:""; position:absolute; inset:-45%; pointer-events:none; z-index:6; background: radial-gradient(circle at 50% 100%, rgba(0,0,0,1), transparent 60%), radial-gradient(circle at 30% 90%, rgba(30,30,30,0.9), transparent 55%), radial-gradient(circle at 70% 85%, rgba(50,50,50,0.8), transparent 60%); transform-origin: bottom center; transform: rotateX(55deg) translateZ(30px); animation: fuego-3d-base .9s infinite ease-in-out; filter: blur(1px); }
+.card.emparejada::after { content:""; position:absolute; inset:-55%; pointer-events:none; z-index:7; background: radial-gradient(circle at 50% 100%, rgba(20,20,20,0.9), transparent 55%), radial-gradient(circle at 40% 95%, rgba(60,60,60,0.7), transparent 50%), radial-gradient(circle at 60% 90%, rgba(90,90,90,0.6), transparent 55%); transform-origin: bottom center; transform: rotateX(65deg) translateZ(55px); animation: fuego-3d-volumen 1.1s infinite ease-in-out; filter: blur(2px); }
+@keyframes fuego-3d-base { 0%{transform:rotateX(55deg) translateZ(25px) scaleY(.9);opacity:.6} 50%{transform:rotateX(60deg) translateZ(35px) scaleY(1.3);opacity:1} 100%{transform:rotateX(55deg) translateZ(25px) scaleY(.9);opacity:.6} }
+@keyframes fuego-3d-volumen { 0%{transform:rotateX(65deg) translateZ(45px) scaleY(.8);opacity:.5} 50%{transform:rotateX(70deg) translateZ(65px) scaleY(1.4);opacity:1} 100%{transform:rotateX(65deg) translateZ(45px) scaleY(.8);opacity:.5} }
+@keyframes carta-fade-3d { 0%{opacity:1;transform:scale(1)} 60%{opacity:.5;transform:scale(.9)} 100%{opacity:0;transform:scale(.6)} }
+@keyframes desaparecerCarta { 0%{opacity:1;transform:rotateY(180deg) scale(1)} 40%{opacity:1;transform:rotateY(180deg) scale(1.08)} 100%{opacity:0;transform:rotateY(180deg) scale(.4)} }
+#victoryModal { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle at center, rgba(238, 172, 76, 0.20), rgba(35, 18, 7, 0.92)); z-index: 15000; }
+#victoryModal.hidden { display: none !important; }
+.victory-panel { width: 420px; max-width: 90%; padding: 30px; text-align: center; background: linear-gradient(145deg,#2b1609,#704019,#351b0b); border: 3px solid #e6b85c; border-radius: 18px; box-shadow: 0 0 15px rgba(230,184,92,.85), 0 0 40px rgba(198,108,32,.6), inset 0 0 25px rgba(255,210,120,.10); animation: victoriaArenaAparecer .5s ease; }
+.victory-icon { font-size: 65px; margin-bottom: 5px; text-shadow: 0 0 5px #fff2c9, 0 0 15px #e6b85c, 0 0 30px #d47728; animation: arenaMovimiento 2s ease-in-out infinite alternate; }
+.victory-panel h2 { margin: 5px 0; color: #fff0c2; font-size: 34px; text-shadow: 0 0 5px #fff5d6, 0 0 12px #e6b85c, 0 0 25px #d47728; }
+.victory-line { width: 80%; height: 4px; margin: 15px auto; background: linear-gradient(90deg, transparent,#b86b24,#e6b85c,#fff0bd,#e6b85c,#b86b24,transparent); box-shadow: 0 0 8px #e6b85c, 0 0 18px #c87529; }
+.victory-message { color: #f8e5c4; font-size: 16px; margin: 8px 0; text-shadow: 0 0 5px rgba(230,184,92,.35); }
+.victory-stats { margin: 20px 0; padding: 12px; background: rgba(25,12,5,.65); border: 1px solid rgba(230,184,92,.55); border-radius: 10px; color: #f0c978; font-size: 17px; font-weight: bold; line-height: 1.7; box-shadow: inset 0 0 15px rgba(230,184,92,.10), 0 0 10px rgba(198,108,32,.3); }
+.victory-buttons { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
+.victory-buttons button { padding: 12px 18px; border: 2px solid #e6b85c; border-radius: 9px; background: linear-gradient(135deg,#874318,#c87529); color: #fff3d5; font-size: 15px; font-weight: bold; cursor: pointer; transition: .25s; box-shadow: 0 0 8px rgba(230,184,92,.45); }
+.victory-buttons button:hover { background: linear-gradient(135deg,#e6b85c,#fff0bd); color: #351b0b; transform: scale(1.05); box-shadow: 0 0 12px #e6b85c, 0 0 25px #d47728; }
+@keyframes victoriaArenaAparecer { from{opacity:0;transform:scale(.7) translateY(30px);filter:blur(6px)} to{opacity:1;transform:scale(1) translateY(0);filter:blur(0)} }
+@keyframes arenaMovimiento { 0%{transform:translateY(0) rotate(-2deg);filter:brightness(1)} 50%{transform:translateY(-5px) rotate(2deg);filter:brightness(1.25)} 100%{transform:translateY(-10px) rotate(-2deg);filter:brightness(1.5)} }
+@media (max-width: 600px) { .victory-buttons{flex-direction:column} .victory-panel{width:85%;padding:25px 15px} }

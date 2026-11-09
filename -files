@@ -1,0 +1,183 @@
+[33md18a9da[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m poderes  d e     sustitucion y de  byakugan
+ .vscode/launch.json |  15 [32m+++[m
+ css/game-online.css | 275 [32m+++++++++++++++++++++++++++++[m[31m-----------[m
+ game-online.html    |  42 [32m++++[m[31m---[m
+ js/board-manager.js |  33 [32m+++++[m
+ js/game-online.js   | 352 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++[m[31m-[m
+ 5 files changed, 623 insertions(+), 94 deletions(-)
+[33maceb2d5[m primer commit
+ Agrupar/css/facil.css                          |  175 [32m+++[m
+ Agrupar/css/style.css                          |  292 [32m+++++[m
+ Agrupar/facil.html                             |   71 [32m++[m
+ Agrupar/img/Batman.png                         |  Bin [31m0[m -> [32m442819[m bytes
+ Agrupar/img/Carpeta 1.png                      |  Bin [31m0[m -> [32m36628[m bytes
+ Agrupar/img/Carpeta 2.png                      |  Bin [31m0[m -> [32m36451[m bytes
+ Agrupar/img/Cupido.png                         |  Bin [31m0[m -> [32m339666[m bytes
+ Agrupar/img/Fondo.mp4                          |  Bin [31m0[m -> [32m272632[m bytes
+ Agrupar/img/LinternaVerde.png                  |  Bin [31m0[m -> [32m455139[m bytes
+ Agrupar/img/Logo.png                           |  Bin [31m0[m -> [32m640503[m bytes
+ Agrupar/img/Marciano.png                       |  Bin [31m0[m -> [32m466957[m bytes
+ Agrupar/img/Medusa.png                         |  Bin [31m0[m -> [32m282019[m bytes
+ Agrupar/img/Minotauro.png                      |  Bin [31m0[m -> [32m329048[m bytes
+ Agrupar/img/Mounstro.png                       |  Bin [31m0[m -> [32m345419[m bytes
+ Agrupar/img/Nave.png                           |  Bin [31m0[m -> [32m464604[m bytes
+ Agrupar/img/Pause.png                          |  Bin [31m0[m -> [32m473[m bytes
+ Agrupar/img/Reloj.png                          |  Bin [31m0[m -> [32m5926[m bytes
+ Agrupar/img/Sirena.png                         |  Bin [31m0[m -> [32m314429[m bytes
+ Agrupar/img/StrangerThings.png                 |  Bin [31m0[m -> [32m477118[m bytes
+ Agrupar/img/Superman.png                       |  Bin [31m0[m -> [32m391369[m bytes
+ Agrupar/img/Zeus.png                           |  Bin [31m0[m -> [32m326838[m bytes
+ Agrupar/img/akatsuki.png                       |  Bin [31m0[m -> [32m1742753[m bytes
+ Agrupar/img/avatars/caballero.jpeg             |  Bin [31m0[m -> [32m50861[m bytes
+ Agrupar/img/avatars/default.png                |  Bin [31m0[m -> [32m19388[m bytes
+ Agrupar/img/avatars/dragon.jpeg                |  Bin [31m0[m -> [32m48119[m bytes
+ Agrupar/img/avatars/hacker.jpeg                |  Bin [31m0[m -> [32m122163[m bytes
+ Agrupar/img/avatars/hechicera.jpeg             |  Bin [31m0[m -> [32m55452[m bytes
+ Agrupar/img/avatars/logo-chakra barra .png     |  Bin [31m0[m -> [32m235520[m bytes
+ Agrupar/img/avatars/mago.jpeg                  |  Bin [31m0[m -> [32m46587[m bytes
+ Agrupar/img/avatars/ninja.jpeg                 |  Bin [31m0[m -> [32m42490[m bytes
+ Agrupar/img/logo -online- bomba .png           |  Bin [31m0[m -> [32m17834[m bytes
+ Agrupar/img/logo -sllo bloq.png                |  Bin [31m0[m -> [32m128988[m bytes
+ Agrupar/img/logo-genyugsu online.png           |  Bin [31m0[m -> [32m74457[m bytes
+ Agrupar/img/logo-online-byakugan.png           |  Bin [31m0[m -> [32m176654[m bytes
+ Agrupar/img/online - juts-sustit.png           |  Bin [31m0[m -> [32m88761[m bytes
+ Agrupar/img/robo-chakra.png                    |  Bin [31m0[m -> [32m148171[m bytes
+ Agrupar/js/facil.js                            |  144 [32m+++[m
+ Agrupar/sonidos/Ganar.mp3                      |  Bin [31m0[m -> [32m226687[m bytes
+ Agrupar/sonidos/Perder.mp3                     |  Bin [31m0[m -> [32m170027[m bytes
+ README.md                                      |  Bin [31m0[m -> [32m134[m bytes
+ assets/ajustes.png                             |  Bin [31m0[m -> [32m4614[m bytes
+ assets/akatsuki.png                            |  Bin [31m0[m -> [32m2182515[m bytes
+ assets/cargar.gif                              |  Bin [31m0[m -> [32m334406[m bytes
+ assets/dd.mp4                                  |  Bin [31m0[m -> [32m1296909[m bytes
+ assets/fire.mp4                                |  Bin [31m0[m -> [32m664908[m bytes
+ assets/fondo.mp4                               |  Bin [31m0[m -> [32m21414206[m bytes
+ assets/game music.mp3                          |  Bin [31m0[m -> [32m2377773[m bytes
+ assets/img/Sharingan_triple.svg.png            |  Bin [31m0[m -> [32m535677[m bytes
+ assets/img/back.png                            |  Bin [31m0[m -> [32m12774[m bytes
+ assets/img/cards/aldeas/arena/1.png            |  Bin [31m0[m -> [32m383586[m bytes
+ assets/img/cards/aldeas/arena/2.png            |  Bin [31m0[m -> [32m317827[m bytes
+ assets/img/cards/aldeas/arena/3.png            |  Bin [31m0[m -> [32m597562[m bytes
+ assets/img/cards/aldeas/arena/4.png            |  Bin [31m0[m -> [32m643073[m bytes
+ assets/img/cards/aldeas/arena/5.png            |  Bin [31m0[m -> [32m594070[m bytes
+ assets/img/cards/aldeas/arena/6.png            |  Bin [31m0[m -> [32m682612[m bytes
+ assets/img/cards/aldeas/arena/7.png            |  Bin [31m0[m -> [32m613356[m bytes
+ assets/img/cards/aldeas/arena/8.png            |  Bin [31m0[m -> [32m501263[m bytes
+ assets/img/cards/aldeas/konoha/4.png           |  Bin [31m0[m -> [32m3261535[m bytes
+ assets/img/cards/aldeas/konoha/6.png           |  Bin [31m0[m -> [32m788256[m bytes
+ assets/img/cards/aldeas/konoha/hyuga/1.jpeg    |  Bin [31m0[m -> [32m350573[m bytes
+ assets/img/cards/aldeas/konoha/hyuga/2.jpeg    |  Bin [31m0[m -> [32m333050[m bytes
+ assets/img/cards/aldeas/konoha/hyuga/3.jpeg    |  Bin [31m0[m -> [32m395735[m bytes
+ assets/img/cards/aldeas/konoha/hyuga/4.jpeg    |  Bin [31m0[m -> [32m376115[m bytes
+ assets/img/cards/aldeas/konoha/hyuga/5.jpeg    |  Bin [31m0[m -> [32m381187[m bytes
+ assets/img/cards/aldeas/konoha/hyuga/6.jpeg    |  Bin [31m0[m -> [32m307173[m bytes
+ assets/img/cards/aldeas/konoha/hyuga/7.jpeg    |  Bin [31m0[m -> [32m369462[m bytes
+ assets/img/cards/aldeas/konoha/hyuga/8.jpeg    |  Bin [31m0[m -> [32m398186[m bytes
+ assets/img/cards/aldeas/konoha/sarutobi/1.jpeg |  Bin [31m0[m -> [32m441769[m bytes
+ assets/img/cards/aldeas/konoha/sarutobi/2.jpeg |  Bin [31m0[m -> [32m467796[m bytes
+ assets/img/cards/aldeas/konoha/sarutobi/3.jpeg |  Bin [31m0[m -> [32m489509[m bytes
+ assets/img/cards/aldeas/konoha/sarutobi/4.jpeg |  Bin [31m0[m -> [32m462402[m bytes
+ assets/img/cards/aldeas/konoha/sarutobi/5.jpeg |  Bin [31m0[m -> [32m474121[m bytes
+ assets/img/cards/aldeas/konoha/sarutobi/6.jpeg |  Bin [31m0[m -> [32m481293[m bytes
+ assets/img/cards/aldeas/konoha/uchiha/1.jpeg   |  Bin [31m0[m -> [32m455139[m bytes
+ assets/img/cards/aldeas/konoha/uchiha/2.jpeg   |  Bin [31m0[m -> [32m324890[m bytes
+ assets/img/cards/aldeas/konoha/uchiha/3.jpeg   |  Bin [31m0[m -> [32m363537[m bytes
+ assets/img/cards/aldeas/konoha/uchiha/4.jpeg   |  Bin [31m0[m -> [32m375102[m bytes
+ assets/img/cards/aldeas/konoha/uchiha/5.jpeg   |  Bin [31m0[m -> [32m563318[m bytes
+ assets/img/cards/aldeas/konoha/uchiha/6.jpeg   |  Bin [31m0[m -> [32m347360[m bytes
+ assets/img/cards/aldeas/konoha/uchiha/7.jpeg   |  Bin [31m0[m -> [32m466957[m bytes
+ assets/img/cards/aldeas/konoha/uzumaki/1.png   |  Bin [31m0[m -> [32m676378[m bytes
+ assets/img/cards/aldeas/konoha/uzumaki/2.png   |  Bin [31m0[m -> [32m175401[m bytes
+ assets/img/cards/aldeas/konoha/uzumaki/3.png   |  Bin [31m0[m -> [32m400799[m bytes
+ assets/img/cards/aldeas/konoha/uzumaki/4.png   |  Bin [31m0[m -> [32m430305[m bytes
+ assets/img/cards/aldeas/konoha/uzumaki/5.png   |  Bin [31m0[m -> [32m406047[m bytes
+ assets/img/cards/aldeas/konoha/uzumaki/6.png   |  Bin [31m0[m -> [32m462083[m bytes
+ assets/img/cards/aldeas/konoha/uzumaki/7.jpeg  |  Bin [31m0[m -> [32m468941[m bytes
+ assets/img/cards/aldeas/konoha/uzumaki/8.png   |  Bin [31m0[m -> [32m169099[m bytes
+ assets/img/cards/aldeas/niebla/1.png           |  Bin [31m0[m -> [32m272993[m bytes
+ assets/img/cards/aldeas/niebla/2.png           |  Bin [31m0[m -> [32m207569[m bytes
+ assets/img/cards/aldeas/niebla/3.png           |  Bin [31m0[m -> [32m199750[m bytes
+ assets/img/cards/aldeas/niebla/4.png           |  Bin [31m0[m -> [32m187791[m bytes
+ assets/img/cards/aldeas/niebla/5.png           |  Bin [31m0[m -> [32m197333[m bytes
+ assets/img/cards/aldeas/niebla/6.png           |  Bin [31m0[m -> [32m181012[m bytes
+ assets/img/cards/aldeas/niebla/7.png           |  Bin [31m0[m -> [32m209320[m bytes
+ assets/img/cards/aldeas/niebla/8.png           |  Bin [31m0[m -> [32m310314[m bytes
+ assets/img/cards/aldeas/nube/1.png             |  Bin [31m0[m -> [32m516383[m bytes
+ assets/img/cards/aldeas/nube/2.png             |  Bin [31m0[m -> [32m250094[m bytes
+ assets/img/cards/aldeas/nube/3.png             |  Bin [31m0[m -> [32m279822[m bytes
+ assets/img/cards/aldeas/nube/4.png             |  Bin [31m0[m -> [32m285515[m bytes
+ assets/img/cards/aldeas/nube/5.png             |  Bin [31m0[m -> [32m560869[m bytes
+ assets/img/cards/aldeas/nube/6.png             |  Bin [31m0[m -> [32m601392[m bytes
+ assets/img/cards/aldeas/nube/7.png             |  Bin [31m0[m -> [32m471868[m bytes
+ assets/img/cards/aldeas/nube/8.png             |  Bin [31m0[m -> [32m561506[m bytes
+ assets/img/cards/aldeas/otros/1.jpeg           |  Bin [31m0[m -> [32m477118[m bytes
+ assets/img/cards/aldeas/otros/2.jpeg           |  Bin [31m0[m -> [32m446077[m bytes
+ assets/img/cards/aldeas/otros/3.jpeg           |  Bin [31m0[m -> [32m464604[m bytes
+ assets/img/cards/aldeas/otros/4.jpeg           |  Bin [31m0[m -> [32m391369[m bytes
+ assets/img/cards/aldeas/otros/5.jpeg           |  Bin [31m0[m -> [32m466957[m bytes
+ assets/img/cards/aldeas/otros/6.jpeg           |  Bin [31m0[m -> [32m442819[m bytes
+ assets/img/cards/aldeas/otros/7.jpeg           |  Bin [31m0[m -> [32m369679[m bytes
+ assets/img/cards/aldeas/roca/1.png             |  Bin [31m0[m -> [32m314429[m bytes
+ assets/img/cards/aldeas/roca/2.png             |  Bin [31m0[m -> [32m297577[m bytes
+ assets/img/cards/aldeas/roca/3.png             |  Bin [31m0[m -> [32m305538[m bytes
+ assets/img/cards/aldeas/roca/4.png             |  Bin [31m0[m -> [32m326838[m bytes
+ assets/img/cards/aldeas/roca/5.png             |  Bin [31m0[m -> [32m345419[m bytes
+ assets/img/cards/aldeas/roca/6.png             |  Bin [31m0[m -> [32m339666[m bytes
+ assets/img/cards/aldeas/roca/7.png             |  Bin [31m0[m -> [32m282019[m bytes
+ assets/img/cards/aldeas/roca/8.png             |  Bin [31m0[m -> [32m329048[m bytes
+ assets/img/fondo_aldea.jpeg                    |  Bin [31m0[m -> [32m259200[m bytes
+ assets/img/logo.png                            |  Bin [31m0[m -> [32m640503[m bytes
+ assets/img/naruto.png                          |  Bin [31m0[m -> [32m15959[m bytes
+ assets/img/sasuke.png                          |  Bin [31m0[m -> [32m209049[m bytes
+ assets/img/vs.jpg                              |  Bin [31m0[m -> [32m354293[m bytes
+ assets/logo-hyuga.png                          |  Bin [31m0[m -> [32m31887[m bytes
+ assets/memory_ninja_background_v2.mp4          |  Bin [31m0[m -> [32m1234993[m bytes
+ assets/menu music .mp3                         |  Bin [31m0[m -> [32m2453975[m bytes
+ assets/naruto vs sasuke.mp4                    |  Bin [31m0[m -> [32m8913375[m bytes
+ assets/uzumaki.png                             |  Bin [31m0[m -> [32m21396[m bytes
+ assets/vs.mp4                                  |  Bin [31m0[m -> [32m1856216[m bytes
+ css/Pasos.css                                  |   58 [32m+[m
+ css/game-online.css                            | 1223 [32m+++++++++++++++++++[m
+ css/game.css                                   |  258 [32m++++[m
+ css/loading.css                                |  169 [32m+++[m
+ css/login.css                                  |  235 [32m++++[m
+ css/menu.css                                   | 1534 [32m++++++++++++++++++++++++[m
+ css/mod.css                                    |  339 [32m++++++[m
+ css/muerte.css                                 |  181 [32m+++[m
+ css/pares.css                                  |  659 [32m++++++++++[m
+ css/pre-partida.css                            |  524 [32m++++++++[m
+ css/style.css                                  |  234 [32m++++[m
+ css/verificacion.css                           |  153 [32m+++[m
+ ddddd.css                                      |    0
+ game-online.html                               |  215 [32m++++[m
+ game.html                                      |   45 [32m+[m
+ jojojoj.html                                   |    0
+ js/board-manager.js                            |  113 [32m++[m
+ js/effects-manager.js                          |    3 [32m+[m
+ js/game-online.js                              |  692 [32m+++++++++++[m
+ js/game.js                                     |  270 [32m+++++[m
+ js/loading.js                                  |   54 [32m+[m
+ js/login.js                                    |   75 [32m++[m
+ js/menu.js                                     |  504 [32m++++++++[m
+ js/mock-server.js                              |   10 [32m+[m
+ js/muerte.js                                   |  381 [32m++++++[m
+ js/pares.js                                    |  518 [32m++++++++[m
+ js/player-manager.js                           |   11 [32m+[m
+ js/power-manager.js                            |    3 [32m+[m
+ js/pre-partida.js                              |   82 [32m++[m
+ js/recuperar.js                                |  142 [32m+++[m
+ js/registro.js                                 |  101 [32m++[m
+ js/room-manager.js                             |    5 [32m+[m
+ js/ui-manager.js                               |   13 [32m+[m
+ js/verificacion.js                             |  123 [32m++[m
+ loading.html                                   |   61 [32m+[m
+ login.html                                     |   73 [32m++[m
+ menu.html                                      |  618 [32m++++++++++[m
+ mod.html                                       |  275 [32m+++++[m
+ muerte.html                                    |   46 [32m+[m
+ pares.html                                     |  231 [32m++++[m
+ pre-partida.html                               |   85 [32m++[m
+ recuperar.html                                 |  184 [32m+++[m
+ registro.html                                  |  126 [32m++[m
+ verifivacion.html                              |   58 [32m+[m
+ 174 files changed, 11366 insertions(+)

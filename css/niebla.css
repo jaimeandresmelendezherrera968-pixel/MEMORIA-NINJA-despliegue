@@ -1,0 +1,844 @@
+/* =====================================================
+   🌫️🌊 FONDO
+   TEMÁTICA ALDEA DE LA NIEBLA
+===================================================== */
+
+body {
+  font-family: Arial, sans-serif;
+
+  background-color: #0b1116;
+
+  color: #e8f1f5;
+
+  text-align: center;
+
+  padding: 20px;
+
+  margin: 0;
+}
+
+
+/* =====================================================
+   🌫️ FONDO DE VIDEO
+===================================================== */
+
+video {
+  position: fixed;
+
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  z-index: -1;
+}
+
+
+/* =====================================================
+   🌊 ENCABEZADO
+===================================================== */
+
+.game-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  gap: 12px;
+
+  max-width: 980px;
+
+  margin: 0 auto 10px;
+}
+
+
+.player-info {
+  text-align: left;
+}
+
+
+.turn-info {
+  font-weight: 700;
+
+  color: #8ed8e8;
+
+  text-shadow:
+    0 0 8px #3b9aaa,
+
+    0 0 15px #1c6673;
+}
+
+
+.stats span {
+  margin-left: 12px;
+
+  color: #b9ccd2;
+}
+
+
+/* =====================================================
+   🌫️ MARCO DEL TABLERO
+===================================================== */
+
+#boardFrame {
+  display: flex;
+
+  justify-content: center;
+
+  margin: 24px auto;
+
+  padding: 18px;
+
+  width: max-content;
+
+  background:
+    linear-gradient(
+      180deg,
+      #26363d,
+      #111b20
+    );
+
+  border-radius: 14px;
+
+  border:
+    8px solid #526a72;
+
+  box-shadow:
+    0 18px 60px rgba(0, 0, 0, 0.8),
+
+    0 0 25px rgba(130, 210, 220, 0.25),
+
+    inset 0 0 20px rgba(200, 240, 245, 0.08);
+}
+
+
+/* =====================================================
+   🃏 TABLERO
+===================================================== */
+
+#board {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 100px);
+
+  gap: 30px;
+
+  padding: 30px;
+
+  background:
+    #11181d;
+
+  border-radius: 10px;
+
+  box-shadow:
+    inset 0 0 25px rgba(130, 220, 230, 0.08);
+}
+
+
+/* =====================================================
+   🃏 CARTA 3D
+===================================================== */
+
+.card {
+  width: 100px;
+
+  height: 140px;
+
+  position: relative;
+
+  transform-style: preserve-3d;
+
+  transition:
+    transform 0.45s ease;
+
+  cursor: pointer;
+
+  border-radius: 8px;
+
+  perspective: 900px;
+}
+
+
+/* =====================================================
+   🔄 CARTA VOLTEADA
+===================================================== */
+
+.card.flipped {
+  transform:
+    rotateY(180deg);
+}
+
+
+/* =====================================================
+   🖼️ IMÁGENES DE LAS CARTAS
+===================================================== */
+
+.card img {
+  width: 100%;
+
+  height: 100%;
+
+  position: absolute;
+
+  left: 0;
+
+  top: 0;
+
+  border-radius: 8px;
+
+  object-fit: fill;
+
+  backface-visibility: hidden;
+
+  -webkit-backface-visibility: hidden;
+}
+
+
+/* =====================================================
+   🌑 PARTE TRASERA
+===================================================== */
+
+.back {
+  transform:
+    rotateY(0deg);
+}
+
+
+/* =====================================================
+   🌊 PARTE FRONTAL
+===================================================== */
+
+.front {
+  transform:
+    rotateY(180deg);
+}
+
+
+/* =====================================================
+   🌫️ CARTA ENCONTRADA
+===================================================== */
+
+.card.found {
+  pointer-events: none;
+
+  animation:
+    desaparecerCarta
+    0.7s
+    ease
+    forwards;
+}
+
+
+/* =====================================================
+   ❌ MODAL DE DERROTA
+===================================================== */
+
+#modal {
+  position: fixed;
+
+  inset: 0;
+
+  background:
+    rgba(5, 14, 18, 0.84);
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  z-index: 10000;
+}
+
+
+/* =====================================================
+   🌑 PANEL DE DERROTA
+===================================================== */
+
+.panel {
+  background:
+    linear-gradient(
+      145deg,
+      #1d2c32,
+      #0c1418
+    );
+
+  color: #e8f1f5;
+
+  padding: 20px;
+
+  border-radius: 10px;
+
+  width: 320px;
+
+  text-align: center;
+
+  border:
+    2px solid #58747c;
+
+  box-shadow:
+    0 0 25px rgba(100, 190, 205, 0.3);
+}
+
+
+/* =====================================================
+   👁️ OCULTAR
+===================================================== */
+
+.hidden {
+  display: none !important;
+}
+
+
+/* =====================================================
+   📜 HISTORIAL
+===================================================== */
+
+.history {
+  max-width: 980px;
+
+  margin: 10px auto;
+
+  color: #b9ccd2;
+
+  text-align: left;
+}
+
+
+#recordsList p {
+  background:
+    rgba(120, 190, 205, 0.05);
+
+  padding: 8px;
+
+  border-radius: 8px;
+
+  margin: 6px 0;
+
+  border-left:
+    3px solid #527985;
+}
+
+
+/* =====================================================
+   🌫️ CARTA EMPAREJADA
+===================================================== */
+
+.card.emparejada {
+  position: relative;
+
+  overflow: hidden;
+
+  transform-style: preserve-3d;
+
+  perspective: 800px;
+
+  animation:
+    carta-fade-3d
+    2s
+    ease-in
+    forwards;
+}
+
+
+/* =====================================================
+   🔙 BOTÓN VOLVER
+===================================================== */
+
+.boton {
+  display: inline-block;
+
+  padding: 12px 25px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #263e45,
+      #47747e
+    );
+
+  color: white;
+
+  text-decoration: none;
+
+  border-radius: 10px;
+
+  border:
+    2px solid #8dcbd5;
+
+  font-size: 18px;
+
+  font-weight: bold;
+
+  transition: 0.3s;
+
+  box-shadow:
+    0 0 10px rgba(100, 200, 215, 0.3);
+}
+
+
+.boton:hover {
+  background:
+    linear-gradient(
+      135deg,
+      #47747e,
+      #71b9c5
+    );
+
+  color: #ffffff;
+
+  transform:
+    scale(1.05);
+
+  box-shadow:
+    0 0 15px #8ed8e8,
+
+    0 0 30px rgba(100, 210, 225, 0.5);
+}
+
+
+/* =====================================================
+   🌫️🌊 MODAL DE VICTORIA
+   ALDEA DE LA NIEBLA
+===================================================== */
+
+#victoryModal {
+  position: fixed;
+
+  inset: 0;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(190, 235, 240, 0.28),
+      rgba(60, 115, 125, 0.38),
+      rgba(4, 12, 16, 0.96)
+    );
+
+  z-index: 15000;
+}
+
+
+/* =====================================================
+   🌫️ OCULTAR MODAL DE VICTORIA
+===================================================== */
+
+#victoryModal.hidden {
+  display: none !important;
+}
+
+
+/* =====================================================
+   🌊 PANEL DE VICTORIA
+   KIRIGAKURE
+===================================================== */
+
+.victory-panel {
+  width: 420px;
+
+  max-width: 90%;
+
+  padding: 30px;
+
+  text-align: center;
+
+  background:
+    linear-gradient(
+      145deg,
+      #0c171b,
+      #1d363d,
+      #31545c,
+      #172b31,
+      #081014
+    );
+
+  border:
+    3px solid #9ddce3;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 0 15px rgba(160, 235, 240, 0.9),
+
+    0 0 35px rgba(80, 170, 185, 0.7),
+
+    0 0 70px rgba(40, 100, 115, 0.45),
+
+    inset 0 0 25px rgba(200, 245, 250, 0.15);
+
+  animation:
+    victoriaNieblaAparecer
+    0.5s
+    ease;
+}
+
+
+/* =====================================================
+   🌫️ ICONO DE NIEBLA
+===================================================== */
+
+.victory-icon {
+  font-size: 65px;
+
+  margin-bottom: 5px;
+
+  text-shadow:
+    0 0 5px #ffffff,
+
+    0 0 12px #d8f7fa,
+
+    0 0 25px #8ed8e8,
+
+    0 0 40px #4c9daa;
+
+  animation:
+    nieblaMovimiento
+    2.5s
+    ease-in-out
+    infinite
+    alternate;
+}
+
+
+/* =====================================================
+   🌊 TÍTULO DE VICTORIA
+===================================================== */
+
+.victory-panel h2 {
+  margin: 5px 0;
+
+  color: #f2fdff;
+
+  font-size: 34px;
+
+  text-shadow:
+    0 0 5px #ffffff,
+
+    0 0 12px #bceff3,
+
+    0 0 25px #75c9d4,
+
+    0 0 35px #377c88;
+}
+
+
+/* =====================================================
+   🌫️ LÍNEA DE NIEBLA
+===================================================== */
+
+.victory-line {
+  width: 80%;
+
+  height: 4px;
+
+  margin: 15px auto;
+
+  background:
+    linear-gradient(
+      90deg,
+
+      transparent,
+
+      #416b73,
+
+      #76bec8,
+
+      #d7f7f9,
+
+      #ffffff,
+
+      #d7f7f9,
+
+      #76bec8,
+
+      #416b73,
+
+      transparent
+    );
+
+  box-shadow:
+    0 0 8px #a7e7ed,
+
+    0 0 18px #4f9ca7;
+}
+
+
+/* =====================================================
+   🌊 MENSAJE DE VICTORIA
+===================================================== */
+
+.victory-message {
+  color: #d8edf0;
+
+  font-size: 16px;
+
+  margin: 8px 0;
+
+  text-shadow:
+    0 0 5px rgba(150, 220, 230, 0.5);
+}
+
+
+/* =====================================================
+   📊 ESTADÍSTICAS DE VICTORIA
+===================================================== */
+
+.victory-stats {
+  margin: 20px 0;
+
+  padding: 12px;
+
+  background:
+    rgba(5, 16, 20, 0.82);
+
+  border:
+    1px solid #77aeb7;
+
+  border-radius: 10px;
+
+  color: #bdeef2;
+
+  font-size: 17px;
+
+  font-weight: bold;
+
+  line-height: 1.7;
+
+  box-shadow:
+    inset 0 0 15px rgba(130, 220, 230, 0.12),
+
+    0 0 10px rgba(90, 180, 195, 0.4);
+}
+
+
+/* =====================================================
+   🌊 BOTONES DE VICTORIA
+===================================================== */
+
+.victory-buttons {
+  display: flex;
+
+  justify-content: center;
+
+  gap: 12px;
+
+  margin-top: 20px;
+}
+
+
+.victory-buttons button {
+  padding: 12px 18px;
+
+  border:
+    2px solid #a9e4e9;
+
+  border-radius: 9px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #20383e,
+      #3f727a,
+      #5da8b2
+    );
+
+  color: #ffffff;
+
+  font-size: 15px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  transition: 0.25s;
+
+  box-shadow:
+    0 0 8px rgba(130, 220, 230, 0.45);
+}
+
+
+/* =====================================================
+   🌫️ HOVER DE BOTONES
+===================================================== */
+
+.victory-buttons button:hover {
+
+  background:
+    linear-gradient(
+      135deg,
+      #4a858e,
+      #76c3cc,
+      #b7edf0
+    );
+
+  color: #0b1a1e;
+
+  transform:
+    scale(1.05);
+
+  box-shadow:
+    0 0 12px #c9f7fa,
+
+    0 0 25px #80d5df,
+
+    0 0 40px #4c9daa;
+}
+
+
+/* =====================================================
+   🌫️ ANIMACIÓN MODAL NIEBLA
+===================================================== */
+
+@keyframes victoriaNieblaAparecer {
+
+  from {
+    opacity: 0;
+
+    transform:
+      scale(0.7)
+      translateY(30px);
+
+    filter:
+      blur(8px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      scale(1)
+      translateY(0);
+
+    filter:
+      blur(0);
+  }
+}
+
+
+/* =====================================================
+   🌫️ MOVIMIENTO DE LA NIEBLA
+===================================================== */
+
+@keyframes nieblaMovimiento {
+
+  0% {
+    transform:
+      translateX(-4px)
+      translateY(0);
+
+    filter:
+      brightness(1);
+  }
+
+  50% {
+    transform:
+      translateX(4px)
+      translateY(-5px);
+
+    filter:
+      brightness(1.25);
+  }
+
+  100% {
+    transform:
+      translateX(-4px)
+      translateY(-10px);
+
+    filter:
+      brightness(1.5);
+  }
+}
+
+
+/* =====================================================
+   🃏 ANIMACIÓN CARTA DESAPARECIENDO
+===================================================== */
+
+@keyframes desaparecerCarta {
+
+  0% {
+    opacity: 1;
+
+    transform:
+      rotateY(180deg)
+      scale(1);
+  }
+
+  40% {
+    opacity: 1;
+
+    transform:
+      rotateY(180deg)
+      scale(1.08);
+  }
+
+  100% {
+    opacity: 0;
+
+    transform:
+      rotateY(180deg)
+      scale(0.4);
+  }
+}
+
+
+/* =====================================================
+   📱 RESPONSIVE
+===================================================== */
+
+@media (max-width: 600px) {
+
+  #board {
+    grid-template-columns:
+      repeat(2, 120px);
+
+    gap: 20px;
+  }
+
+  .card {
+    width: 120px;
+
+    height: 160px;
+  }
+
+  .victory-buttons {
+    flex-direction: column;
+  }
+
+  .victory-panel {
+    width: 85%;
+
+    padding:
+      25px 15px;
+  }
+}
+
+
+/* =====================================================
+   📱 RESPONSIVE PEQUEÑO
+===================================================== */
+
+@media (max-width: 520px) {
+
+  #board {
+    grid-template-columns:
+      repeat(2, 120px);
+  }
+
+  .card {
+    width: 120px;
+
+    height: 160px;
+  }
+}

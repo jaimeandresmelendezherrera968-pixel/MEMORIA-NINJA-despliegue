@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Desafío a Muerte — Memorice Duel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/nivel-base.css">
+    <link rel="stylesheet" href="css/tema-aldea.css">
+    <link rel="stylesheet" href="css/muerte.css">
+    <script src="js/sesion-guard.js"></script>
+</head>
+<body data-tema-aldea="muerte">
+    <audio id="gameMusic" loop><source src="assets/game music.mp3" type="audio/mpeg"></audio>
+    <video autoplay muted loop playsinline id="videofondo"><source src="assets/fondomuerte.mp4" type="video/mp4"></video>
+    <div class="game-shell">
+        <div class="titulo-juego">
+            <h1>DESAFÍO SHINOBI A MUERTE</h1>
+            <p>Encuentra los pares · Aldeas mezcladas</p>
+        </div>
+        <div id="stats" class="stats">
+            <span>Tiempo: <span id="timer">00:00</span></span>
+            <span>Movimientos: <span id="moves">0</span></span>
+            <span>Puntaje: <span id="score">0</span></span>
+        </div>
+        <div id="boardFrame"><div id="board"></div></div>
+        <a href="menu.html" class="boton">volver</a>
+    </div>
+    <div id="modal" class="hidden">
+        <div class="panel">
+            <h2>¡PERDISTE!</h2>
+            <h2>MEJOR VUELVE AL MODO NORMAL JAJAJA</h2>
+            <p id="finalStats"></p>
+            <div class="botones-modal">
+                <button id="restartGame">🔄 Reiniciar</button>
+                <button id="closeModal">Volver</button>
+            </div>
+        </div>
+    </div>
+    <div id="victoryModal" class="hidden">
+        <div class="victory-panel">
+            <div class="victory-icon">🏆</div>
+            <h2>¡VICTORIA!</h2>
+            <div class="victory-line"></div>
+            <p class="victory-message">¡Excelente trabajo, Ninja!</p>
+            <p class="victory-message">No esperaba que lo lograras, buen trabajo ninja.</p>
+            <p id="victoryStats" class="victory-stats"></p>
+            <div class="victory-buttons">
+                <button id="victoryRestart">Jugar de nuevo</button>
+                <button id="victoryClose">Volver al menú</button>
+            </div>
+        </div>
+    </div>
+    <div id="statsModal" class="hidden">
+        <div class="stats-panel">
+            <button id="closeStatsModal" class="stats-close">✕</button>
+            <div class="stats-icon">📊</div>
+            <h2>ESTADÍSTICAS</h2>
+            <p class="stats-subtitle">Rendimiento de tu partida</p>
+            <div class="stats-container">
+                <div class="stat-box"><div class="stat-icon">⏱️</div><h3>TIEMPO</h3><p id="modalTimer">00:00</p></div>
+                <div class="stat-box"><div class="stat-icon">🎯</div><h3>MOVIMIENTOS</h3><p id="modalMoves">0</p></div>
+                <div class="stat-box"><div class="stat-icon">🏆</div><h3>PUNTAJE</h3><p id="modalScore">0</p></div>
+            </div>
+            <button id="continueStats" class="stats-button">CONTINUAR</button>
+        </div>
+    </div>
+    <script type="module" src="js/muerte/Muerte.js"></script>
+</body>
+</html>

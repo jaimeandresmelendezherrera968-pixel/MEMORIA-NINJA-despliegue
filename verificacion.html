@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Ninja Memory - Verificación</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/verificacion.css">
+</head>
+
+<body>
+
+    <video autoplay muted loop playsinline id="videofondo">
+        <source src="assets/memory_ninja_background_v2.mp4" type="video/mp4">
+    </video>
+
+    <div class="panel-verificacion">
+        <div class="lado-izquierdo">
+            <img src="assets/img/logo.png" alt="Logo" class="logo">
+            <h1>Verificación en 2 pasos</h1>
+            <p>Para proteger tu cuenta y el progreso, Ninja Memory quiere asegurarse de que realmente seas tú la persona
+                que intenta acceder.</p>
+        </div>
+
+        <div class="lado-derecho">
+            <div id="paso-1" class="seccion-dinamica activa">
+                <h3>Elige el método de acceso:</h3>
+
+                <input type="email" id="input-correo" class="input-codigo" placeholder="Tu correo registrado">
+
+                <button class="btn-acceso" id="btn-enviar-correo">
+                    📧 Confirmar con correo Electrónico
+                </button>
+            </div>
+
+            <div id="paso-2" class="seccion-dinamica">
+                <h3 id="texto-enviado">Ingresa el código que acaba de llegar a tu dispositivo</h3>
+
+                <input type="text" class="input-codigo" id="input-codigo" placeholder="Ej: 8ZX61F" maxlength="6">
+                <button class="btn-verificar" id="btn-comprobar-codigo">Verificar código</button>
+
+                <p id="temporizador" class="texto-temporizador"></p>
+                <p id="reenviar" class="texto-reenviar" style="display:none;">
+                    ¿No te llegó? <span id="btn-reenviar">Reenviar código</span>
+                </p>
+
+                <div id="contenedor-carga" style="display: none; margin-top: 20px; text-align: center;">
+                    <img src="assets/cargar.gif" alt="Cargando..." style="width: 50px;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type = "module"  src="js/verificacion.js"></script>
+</body>
+
+</html>

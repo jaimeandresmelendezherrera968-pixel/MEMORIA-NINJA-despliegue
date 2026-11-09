@@ -1,0 +1,57 @@
+﻿/* Hyuga - = uchiha layout/posiciones/tamaños; contenido(colores/cartas/respaldo) propio */
+html, body { height: 100%; overflow: hidden; }
+body { font-family: Arial, sans-serif; background-color: rgb(18, 24, 35); color: #f4f8ff; text-align: center; padding: 0; margin: 0; }
+.zona-fit-root { width: 100vw; height: 100vh; height: 100dvh; position: relative; overflow: hidden; z-index: 1; }
+.zona-fit-canvas { width: 660px; position: absolute; top: 50%; left: 50%; transform-origin: center center; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
+#videofondo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; object-fit: cover; object-position: center; z-index: -1; pointer-events: none; }
+.game-header { display:flex; justify-content:space-between; align-items:center; gap:12px; max-width:980px; margin:0 auto 10px; }
+.player-info { text-align:left; }
+.turn-info { font-weight:700; color:#7aa2ff; }
+.stats { margin: 0 auto 6px; }
+.stats span { margin-left:12px; color:#c9d8ff; }
+#boardFrame, html body[data-tema-aldea] #boardFrame { display: flex; justify-content: center; margin: 18px auto; padding: 18px; width: max-content; max-width: 100%; background: linear-gradient(180deg,#1f2538,#141824); border-radius: 14px; border: 8px solid #6b7bff; box-shadow: 0 18px 60px rgba(0,0,0,0.7), 0 0 25px rgba(107,123,255,0.25), inset 0 0 20px rgba(122,162,255,0.08); }
+#board, html body[data-tema-aldea] #board, html body[data-tema-aldea] #boardFrame #board { display: grid; grid-template-columns: repeat(4, 108px); gap: 28px; padding: 28px; background: #10131d; border-radius: 10px; width: max-content; --carta-ancho: 108px; }
+.card, html body[data-tema-aldea] .card.card { width: 108px; height: 151px; position: relative; transform-style: preserve-3d; transition: transform .45s ease; cursor: pointer; border-radius: 8px; perspective: 900px; }
+.card.flipped { transform: rotateY(180deg); }
+.card img { width: 100%; height: 100%; position: absolute; left: 0; top: 0; border-radius: 8px; object-fit: fill; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.back { transform: rotateY(0deg); }
+.front { transform: rotateY(180deg); }
+.card.found { pointer-events: none; animation: desaparecerCarta .7s ease forwards; }
+.card.emparejada { position: relative; overflow: hidden; transform-style: preserve-3d; perspective: 800px; animation: carta-fade-3d 2s ease-in forwards; }
+.boton, html body[data-tema-aldea]:not(.pantalla-online) .boton { position: static; display: inline-block; left: auto; bottom: auto; z-index: auto; padding: 12px 25px; background: linear-gradient(135deg,#1f2538,#6b7bff); color: white; text-decoration: none; border-radius: 10px; border: 2px solid #8aa0ff; font-size: 18px; font-weight: bold; transition: 0.3s; box-shadow: 0 0 10px rgba(107,123,255,0.35); margin-top: 4px; text-transform: none; letter-spacing: normal; gap: 0; }
+.boton::before, html body[data-tema-aldea]:not(.pantalla-online) .boton::before { content: none; }
+.boton:hover{ background: linear-gradient(135deg,#6b7bff,#9db4ff); color: #ffffff; transform: scale(1.05); box-shadow: 0 0 15px #9db4ff, 0 0 30px rgba(107,123,255,0.5); }
+html body[data-tema-aldea] .pausa-overlay { padding: 8px; }
+html body[data-tema-aldea] .pausa-panel { width: min(420px, calc(100vw - 16px)); max-height: calc(100dvh - 16px); max-height: calc(100svh - 16px); overflow-y: auto; overflow-x: hidden; padding: 14px 16px; border-radius: 18px; }
+html body[data-tema-aldea] .pausa-header { margin-bottom: 10px; gap: 10px; }
+html body[data-tema-aldea] .pausa-simbolo { width: 44px; height: 44px; border-radius: 12px; }
+html body[data-tema-aldea] .pausa-header h2 { font-size: clamp(1.4rem, 4.5vw, 2rem); }
+html body[data-tema-aldea] .pausa-header p { font-size: .78rem; margin-top: .15em; }
+html body[data-tema-aldea] .pausa-opciones { gap: 6px; }
+html body[data-tema-aldea] .pausa-fila { padding: 8px 10px; gap: 8px; border-radius: 12px; }
+html body[data-tema-aldea] .pausa-emoji { width: 28px; height: 28px; font-size: .9rem; }
+html body[data-tema-aldea] .pausa-etiqueta strong { font-size: .72rem; }
+html body[data-tema-aldea] .pausa-etiqueta small { font-size: .6rem; }
+html body[data-tema-aldea] .pausa-acciones { gap: 6px; margin-top: 10px; }
+html body[data-tema-aldea] .pausa-btn { padding: 9px 12px; font-size: .72rem; }
+html body[data-tema-aldea] .pausa-ayuda { margin-top: 8px; font-size: .62rem; }
+#modal { position: fixed; inset: 0; background: rgba(10,12,20,0.85); display:flex; justify-content:center; align-items:center; z-index: 10000; }
+.panel { background: linear-gradient(145deg,#1f2538,#141824); color: #f4f8ff; padding: 20px; border-radius: 10px; width: 320px; text-align:center; border: 2px solid #6b7bff; box-shadow: 0 0 25px rgba(107,123,255,0.35); }
+.hidden { display: none !important; }
+.history { max-width:980px; margin: 10px auto; color:#c9d8ff; text-align:left; }
+#recordsList p{ background: rgba(107,123,255,0.08); padding:8px; border-radius:8px; margin:6px 0; border-left:3px solid #6b7bff; }
+#victoryModal { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle at center, rgba(122,162,255,0.25), rgba(20,24,36,0.92), rgba(10,12,20,0.98)); z-index: 15000; }
+#victoryModal.hidden { display: none !important; }
+.victory-panel { width: 420px; max-width: 90%; padding: 30px; text-align: center; background: linear-gradient(145deg,#10131d,#1f2538,#2a3355,#1f2538,#10131d); border: 3px solid #8aa0ff; border-radius: 18px; box-shadow: 0 0 15px rgba(138,160,255,0.9), 0 0 35px rgba(107,123,255,0.7), 0 0 70px rgba(58,72,150,0.45), inset 0 0 25px rgba(122,162,255,0.12); animation: victoriaHyugaAparecer 0.5s ease; }
+.victory-icon { font-size: 65px; margin-bottom: 5px; text-shadow: 0 0 5px #ffffff, 0 0 12px #9db4ff, 0 0 25px #7aa2ff, 0 0 40px #4f5dff; animation: hyugaMovimiento 2s ease-in-out infinite alternate; }
+.victory-panel h2 { margin: 5px 0; color: #ffffff; font-size: 34px; text-shadow: 0 0 5px #ffffff, 0 0 12px #9db4ff, 0 0 25px #7aa2ff, 0 0 35px #4f5dff; }
+.victory-line { width: 80%; height: 4px; margin: 15px auto; background: linear-gradient(90deg, transparent, #4f5dff, #7aa2ff, #9db4ff, #c9d8ff, #9db4ff, #7aa2ff, #4f5dff, transparent); box-shadow: 0 0 8px #7aa2ff, 0 0 18px #4f5dff; }
+.victory-message { color: #e7eeff; font-size: 16px; margin: 8px 0; text-shadow: 0 0 5px rgba(122,162,255,0.4); }
+.victory-stats { margin: 20px 0; padding: 12px; background: rgba(10,12,20,0.82); border: 1px solid #7a8bff; border-radius: 10px; color: #b9c8ff; font-size: 17px; font-weight: bold; line-height: 1.7; box-shadow: inset 0 0 15px rgba(122,162,255,0.12), 0 0 10px rgba(107,123,255,0.4); }
+.victory-buttons { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
+.victory-buttons button { padding: 12px 18px; border: 2px solid #8aa0ff; border-radius: 9px; background: linear-gradient(135deg,#1f2538,#6b7bff,#8aa0ff); color: #ffffff; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.25s; box-shadow: 0 0 8px rgba(138,160,255,0.55); }
+.victory-buttons button:hover { background: linear-gradient(135deg,#6b7bff,#8aa0ff,#c9d8ff); color: #ffffff; transform: scale(1.05); box-shadow: 0 0 12px #9db4ff, 0 0 25px #7aa2ff, 0 0 40px #4f5dff; }
+@keyframes victoriaHyugaAparecer { from { opacity: 0; transform: scale(0.7) translateY(30px); filter: blur(6px); } to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); } }
+@keyframes hyugaMovimiento { 0% { transform: translateY(0) rotate(0deg); filter: brightness(1); } 50% { transform: translateY(-5px) rotate(2deg); filter: brightness(1.25); } 100% { transform: translateY(-10px) rotate(-2deg); filter: brightness(1.5); } }
+@keyframes desaparecerCarta { 0% { opacity: 1; transform: rotateY(180deg) scale(1); } 40% { opacity: 1; transform: rotateY(180deg) scale(1.08); } 100% { opacity: 0; transform: rotateY(180deg) scale(0.4); } }
+@keyframes carta-fade-3d { 0% { opacity: 1; transform: scale(1); } 60% { opacity: 0.5; transform: scale(0.9); } 100% { opacity: 0; transform: scale(0.6); } }

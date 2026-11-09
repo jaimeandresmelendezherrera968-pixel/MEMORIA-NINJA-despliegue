@@ -1,0 +1,6 @@
+{
+    "mermaidPreviewOffline.diagramTheme": "redux-dark-color",
+    "mermaidPreviewOffline.canvas.background": "slate",
+    "mermaidPreviewOffline.canvas.customColor": "#ffffff",
+    "mermaidPreviewOffline.canvas.pattern": "dots"
+}

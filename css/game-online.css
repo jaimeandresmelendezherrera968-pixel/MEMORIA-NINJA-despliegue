@@ -1,0 +1,2858 @@
+/* game.css - simple y legible, ahora con Flexbox responsive (móvil / tablet / PC) */
+
+/* ===== Reset básico útil para que flexbox se comporte bien ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Permanent Marker', Arial, sans-serif;  /* activa la fuente Permanent Marker cargada desde el HTML */
+  background-color: rgb(52, 33, 65);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center top;
+  color: #f0f6ff;
+  text-align: center;
+  padding: 6px 20px;
+  margin: 0;
+  overflow-x: hidden;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  gap: 6px;
+}
+
+.game-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 1250px;
+  margin: 0 auto 4px;
+}
+.player-info { text-align: left; }
+.turn-info { font-weight: 700; color: #ffd166; }
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.stats > span {
+  background: rgba(10, 10, 10, .75);
+  border: 1.5px solid #b8843b;
+  border-radius: 8px;
+  padding: 6px 14px;
+  color: #bcd3ff;
+  box-shadow: 0 0 4px rgba(255,150,0,.08);
+}
+
+.contenedor-principal-juego {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+#boardFrame {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  padding: 12px;
+  width: max-content;
+  max-width: 100%;
+  background: linear-gradient(180deg,#3b2f20,#2d2418);
+  border-radius: 12px;
+  border: 6px solid #b8843b;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+#board {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: 10px;
+  padding: 8px;
+  background: #2a2a2a;
+  border-radius: 8px;
+  max-width: 420px;
+}
+
+.card {
+  width: 90px;
+  height: 125px;
+  flex: 0 0 auto;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform .45s;
+  cursor: pointer;
+  border-radius: 8px;
+  perspective: 900px;
+}
+
+.card.flip {
+  transform: rotateY(180deg);
+}
+
+.card img {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    border-radius: 8px;
+    backface-visibility: hidden;
+    object-fit: fill;
+    image-rendering: auto;
+}
+
+.front {
+  transform: rotateY(180deg);
+}
+
+.card.matched {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.6) inset;
+  opacity: 0.9;
+  transform: scale(0.98);
+  pointer-events: none;
+}
+
+#modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.panel {
+  background: white;
+  color: #111;
+  padding: 20px;
+  border-radius: 10px;
+  width: 320px;
+  max-width: 90vw;
+  text-align: center;
+}
+.hidden {
+  display: none !important;
+}
+
+.history {
+  width: 100%;
+  max-width: 980px;
+  margin: 10px auto;
+  color: #cfe4ff;
+  text-align: left;
+}
+
+#recordsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#recordsList p {
+  background: rgba(255,255,255,0.03);
+  padding: 8px;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.card.emparejada {
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  perspective: 800px;
+
+  animation: carta-fade-3d 2s ease-in forwards;
+}
+
+.card.emparejada img {
+  filter: brightness(0.2) contrast(1.5);
+}
+
+.card.emparejada::before {
+  content: "";
+  position: absolute;
+  inset: -45%;
+  pointer-events: none;
+  z-index: 6;
+
+  background:
+    radial-gradient(circle at 50% 100%, rgba(0,0,0,1), transparent 60%),
+    radial-gradient(circle at 30% 90%, rgba(30,30,30,0.9), transparent 55%),
+    radial-gradient(circle at 70% 85%, rgba(50,50,50,0.8), transparent 60%);
+
+  transform-origin: bottom center;
+  transform: rotateX(55deg) translateZ(30px);
+  animation: fuego-3d-base 0.9s infinite ease-in-out;
+  filter: blur(1px);
+}
+
+.card.emparejada::after {
+  content: "";
+  position: absolute;
+  inset: -55%;
+  pointer-events: none;
+  z-index: 7;
+
+  background:
+    radial-gradient(circle at 50% 100%, rgba(20,20,20,0.9), transparent 55%),
+    radial-gradient(circle at 40% 95%, rgba(60,60,60,0.7), transparent 50%),
+    radial-gradient(circle at 60% 90%, rgba(90,90,90,0.6), transparent 55%);
+
+  transform-origin: bottom center;
+  transform: rotateX(65deg) translateZ(55px);
+  animation: fuego-3d-volumen 1.1s infinite ease-in-out;
+  filter: blur(2px);
+}
+
+@keyframes fuego-3d-base {
+  0% {
+    transform: rotateX(55deg) translateZ(25px) scaleY(0.9);
+    opacity: 0.6;
+  }
+  50% {
+    transform: rotateX(60deg) translateZ(35px) scaleY(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: rotateX(55deg) translateZ(25px) scaleY(0.9);
+    opacity: 0.6;
+  }
+}
+
+@keyframes fuego-3d-volumen {
+  0% {
+    transform: rotateX(65deg) translateZ(45px) scaleY(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: rotateX(70deg) translateZ(65px) scaleY(1.4);
+    opacity: 1;
+  }
+  100% {
+    transform: rotateX(65deg) translateZ(45px) scaleY(0.8);
+    opacity: 0.5;
+  }
+}
+
+@keyframes carta-fade-3d {
+  0% {
+    opacity: 1;
+    transform: rotateY(180deg) scale(1);
+  }
+  60% {
+    opacity: 0.5;
+    transform: rotateY(180deg) scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: rotateY(180deg) scale(0.6);
+  }
+}
+
+video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+}
+
+.boton {
+  display: inline-block;
+  padding: 12px 25px;
+  background-color: #7300f7;
+  color: white;
+  text-decoration: none;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.boton:hover {
+  background-color: #7300f7;
+  transform: scale(1.05);
+}
+
+/*==================================================
+        PANEL LATERAL FIJO - PERSONAJE (COMPACTO PRO)
+==================================================*/
+
+.panel-personaje-lateral{
+    width:220px;
+    flex:0 0 220px;
+
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+
+    padding:10px;
+
+    position:relative;
+
+    background:
+    linear-gradient(180deg,#101015 0%,#09090d 100%);
+
+    border:2px solid #5632a3;
+    border-radius:18px;
+
+    box-shadow:
+    inset 0 0 25px rgba(255,255,255,.03),
+    0 0 18px rgba(132,0,255,.18),
+    0 8px 18px rgba(0,0,0,.6);
+}
+
+.panel-personaje-lateral::before{
+    content:"";
+    position:absolute;
+    inset:4px;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.05);
+    pointer-events:none;
+}
+
+.personaje-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.personaje-header img{
+    width:24px;
+    height:24px;
+}
+
+.nombre-personaje{
+    color:#ffffff;
+    font-size:16px;
+    font-weight:900;
+    letter-spacing:1px;
+    text-transform:uppercase;
+}
+
+.personaje-imagen-container{
+    display:flex;
+    flex-direction:column;
+}
+
+.personaje-imagen{
+
+    width:100%;
+    height:150px;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    overflow:hidden;
+
+    background:
+    radial-gradient(circle,#2b2d35,#17171d);
+
+    border:2px solid #8d5cff;
+    border-radius:18px 18px 0 0;
+
+    box-shadow:
+    inset 0 0 18px rgba(255,255,255,.03),
+    0 0 14px rgba(155,70,255,.35);
+}
+
+.personaje-imagen img{
+
+    width:108px;
+    height:108px;
+
+    object-fit:cover;
+
+    border-radius:50%;
+
+    border:3px solid rgba(255,255,255,.08);
+
+    box-shadow:
+    0 0 18px rgba(150,70,255,.45);
+}
+
+.hp-compacto{
+
+    display:flex;
+    align-items:center;
+    gap:6px;
+
+    background:#18181f;
+
+    border:2px solid #55379d;
+    border-top:none;
+
+    border-radius:0 0 18px 18px;
+
+    padding:8px;
+}
+
+.hp-label{
+    color:#ff4d5e;
+    font-size:10px;
+    font-weight:bold;
+}
+
+.vida-barra-mini{
+    flex:1;
+    height:7px;
+    background:#20222b;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.vida-progreso-mini{
+    width:85%;
+    height:100%;
+    border-radius:20px;
+    background:linear-gradient(90deg,#ff3b57,#ff2038);
+}
+
+.hp-texto{
+    color:#ffffff;
+    font-size:9px;
+    font-weight:bold;
+}
+
+.personaje-habilidad{
+
+    padding:10px;
+
+    background:
+    linear-gradient(180deg,#181820,#111116);
+
+    border:2px solid #6d3ec7;
+
+    border-radius:14px;
+
+    box-shadow:
+    inset 0 0 14px rgba(255,255,255,.03);
+}
+
+.titulo-panel{
+    color:#b765ff;
+    font-size:11px;
+    font-weight:bold;
+    margin-bottom:6px;
+}
+
+.habilidad-contenido{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.habilidad-logo{
+
+    width:30px;
+    height:30px;
+
+    border-radius:50%;
+
+    background:#251631;
+
+    border:0px solid #b866ff;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    flex-shrink:0;
+
+    box-shadow:0 0 10px rgba(184,101,255,.35);
+}
+
+.habilidad-logo img{
+    width:80px;
+    height:80px;
+}
+
+.habilidad-texto h4{
+    color:#b765ff;
+    font-size:10px;
+    margin-bottom:2px;
+}
+
+.habilidad-texto p{
+    color:#d7d7d7;
+    font-size:9px;
+    line-height:12px;
+}
+
+.personaje-chakra{
+
+    padding:10px;
+
+    background:
+    linear-gradient(180deg,#141923,#101217);
+
+    border:2px solid #2b8cff;
+
+    border-radius:14px;
+
+    box-shadow:
+    inset 0 0 14px rgba(255,255,255,.03);
+}
+
+.chakra-contenido{
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+
+.chakra-logo{
+
+    width:30px;
+    height:30px;
+
+    border-radius:50%;
+
+    background:#122231;
+
+    border:1px solid #2ea6ff;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    flex-shrink:0;
+
+    box-shadow:0 0 10px rgba(46,166,255,.35);
+}
+
+.chakra-logo img{
+    width:58px;
+    height:58px;
+}
+
+.chakra-barra{
+    flex:1;
+    height:7px;
+    background:#20222b;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.chakra-progreso{
+    width:70%;
+    height:100%;
+    border-radius:20px;
+    background:linear-gradient(90deg,#28a7ff,#4db8ff);
+}
+
+.chakra-cantidad span{
+    color:#ffffff;
+    font-size:9px;
+    font-weight:bold;
+}
+/*==================================================
+        PANEL LATERAL FIJO - NARUTO (ESTILO PREMIUM)
+==================================================*/
+
+.panel-naruto-lateral{
+    width:220px;
+    flex:0 0 220px;
+
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+
+    padding:10px;
+
+    position:relative;
+
+    background:linear-gradient(180deg,#17171d 0%,#0f0f14 100%);
+
+    border:2px solid #5d38a5;
+    border-radius:16px;
+
+    box-shadow:
+    inset 0 0 18px rgba(255,255,255,.03),
+    0 0 18px rgba(120,70,255,.18),
+    0 8px 18px rgba(0,0,0,.5);
+}
+
+.panel-naruto-lateral::before{
+    content:"";
+    position:absolute;
+    inset:4px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,.04);
+    pointer-events:none;
+}
+
+.panel-naruto-lateral .personaje-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.panel-naruto-lateral .personaje-header img{
+    width:22px;
+    height:22px;
+}
+
+.panel-naruto-lateral .nombre-personaje{
+
+    color:#ffffff;
+
+    font-size:16px;
+
+    font-weight:900;
+
+    letter-spacing:1px;
+
+    text-transform:uppercase;
+
+    text-shadow:0 0 6px rgba(180,120,255,.4);
+}
+
+.panel-naruto-lateral .personaje-imagen-container{
+    display:flex;
+    flex-direction:column;
+}
+
+.panel-naruto-lateral .personaje-imagen{
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    width:100%;
+    height:150px;
+
+    background:
+    radial-gradient(circle,#2b2d35,#17171d);
+
+    border:2px solid #7d4cff;
+
+    border-radius:12px 12px 0 0;
+
+    overflow:hidden;
+
+    box-shadow:
+    inset 0 0 20px rgba(255,255,255,.03),
+    0 0 12px rgba(123,76,255,.28);
+}
+
+.panel-naruto-lateral .personaje-imagen img{
+
+    width:105px;
+    height:105px;
+
+    object-fit:cover;
+
+    border-radius:50%;
+
+    border:3px solid rgba(255,255,255,.12);
+
+    box-shadow:
+    0 0 18px rgba(130,70,255,.45);
+}
+
+.panel-naruto-lateral .hp-compacto{
+
+    display:flex;
+    align-items:center;
+    gap:6px;
+
+    padding:6px 8px;
+
+    background:#1b1b22;
+
+    border:2px solid #7d4cff;
+
+    border-top:none;
+
+    border-radius:0 0 12px 12px;
+}
+
+.panel-naruto-lateral .hp-label{
+
+    color:#ff5b5b;
+
+    font-size:10px;
+
+    font-weight:bold;
+}
+
+.panel-naruto-lateral .vida-barra-mini{
+
+    flex:1;
+
+    height:7px;
+
+    background:#252733;
+
+    border-radius:30px;
+
+    overflow:hidden;
+
+    box-shadow:
+    inset 0 2px 5px rgba(0,0,0,.6);
+}
+
+.panel-naruto-lateral .vida-progreso-mini{
+
+    width:90%;
+
+    height:100%;
+
+    border-radius:30px;
+
+    background:
+    linear-gradient(90deg,#ff3d57,#ff2038);
+
+    box-shadow:
+    0 0 10px rgba(255,60,80,.4);
+}
+
+.panel-naruto-lateral .hp-texto{
+
+    color:#fff;
+
+    font-size:10px;
+
+    font-weight:bold;
+}
+
+.panel-naruto-lateral .personaje-habilidad{
+
+    padding:8px;
+
+    background:
+    linear-gradient(180deg,#1b1b22,#131318);
+
+    border:2px solid #7d4cff;
+
+    border-radius:12px;
+
+    box-shadow:
+    inset 0 0 16px rgba(255,255,255,.03);
+}
+
+.panel-naruto-lateral .titulo-panel{
+
+    color:#b873ff;
+
+    font-size:12px;
+
+    font-weight:900;
+
+    margin-bottom:6px;
+
+    text-transform:uppercase;
+}
+
+.panel-naruto-lateral .habilidad-contenido{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+}
+
+.panel-naruto-lateral .habilidad-logo{
+
+    width:35px;
+    height:35px;
+
+    border-radius:50%;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    background:#241630;
+
+    border:2px solid #b865ff;
+
+    box-shadow:
+    0 0 12px rgba(184,101,255,.35);
+}
+
+.panel-naruto-lateral .habilidad-logo img{
+
+    width:70px;
+    height:70px;
+}
+
+.panel-naruto-lateral .habilidad-texto h4{
+
+    color:#c77bff;
+
+    font-size:11px;
+
+    margin-bottom:3px;
+}
+
+.panel-naruto-lateral .habilidad-texto p{
+
+    color:#d7d7d7;
+
+    font-size:9px;
+
+    line-height:12px;
+}
+
+.panel-naruto-lateral .personaje-chakra{
+
+    padding:8px;
+
+    background:
+    linear-gradient(180deg,#1b1b22,#131318);
+
+    border:2px solid #2ea6ff;
+
+    border-radius:12px;
+
+    box-shadow:
+    inset 0 0 16px rgba(255,255,255,.03);
+}
+
+.panel-naruto-lateral .chakra-contenido{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+}
+
+.panel-naruto-lateral .chakra-logo{
+
+    width:20.7px;
+    height:20.1px;
+
+    border-radius:50%;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    background:#122331;
+
+    border:2px solid #2ea6ff;
+
+    box-shadow:
+    0 0 10px rgba(46,166,255,.4);
+}
+
+.panel-naruto-lateral .chakra-logo img{
+
+    width:50px;
+    height:50px;
+}
+
+.panel-naruto-lateral .chakra-barra{
+
+    flex:1;
+
+    height:7px;
+
+    background:#252733;
+
+    border-radius:30px;
+
+    overflow:hidden;
+
+    box-shadow:
+    inset 0 2px 5px rgba(0,0,0,.6);
+}
+
+.panel-naruto-lateral .chakra-progreso{
+
+    width:68%;
+
+    height:100%;
+
+    border-radius:30px;
+
+    background:
+    linear-gradient(90deg,#23a8ff,#5ab7ff);
+
+    box-shadow:
+    0 0 10px rgba(46,166,255,.4);
+}
+
+.panel-naruto-lateral .chakra-cantidad span{
+
+    color:#fff;
+
+    font-size:10px;
+
+    font-weight:bold;
+}
+
+/*=============================
+ PANEL CARTAS ESPECIALES
+==============================*/
+.special-panel {
+  width: 90%;
+  max-width: 600px;
+  margin: 16px auto 0 auto;
+  padding: 10px 20px;
+
+  background: rgba(10, 10, 10, .88);
+  border: 2px solid #7b5520;
+  border-radius: 8px;
+
+  box-shadow: 0 0 4px rgba(255,150,0,.06), inset 0 0 3px rgba(255,180,0,.03);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.panel-title span {
+  flex: 1;
+  height: 1px;
+  background: #97311b;
+}
+
+.panel-title h2 {
+  color: #ffffff;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 4px red;
+}
+
+.skills {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.skill {
+  position: relative;
+  width: 80px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: .25s;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  --icon-w: 50px;
+  --icon-h: 50px;
+  --uses-bottom: 22px;
+}
+
+.skill img {
+    width: var(--icon-w);
+    height: var(--icon-h);
+  object-fit: contain;
+  transition: .25s;
+  filter: drop-shadow(0 0 4px rgba(255,150,0,.4));
+}
+
+.skill:hover {
+  transform: translateY(-2px);
+}
+
+.skill:hover img {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 6px orange);
+}
+
+.name {
+  margin-top: 2px;
+  font-size: 9px;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  line-height: 11px;
+}
+
+.uses {
+  position: absolute;
+  right: -2px;
+  bottom: var(--uses-bottom);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #19243d;
+  border: 1px solid white;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: bold;
+}
+
+.skill.poder-agotado {
+    opacity: 0.4;
+    filter: grayscale(100%);
+    cursor: not-allowed;
+}
+
+.skill.poder-usado {
+    animation: poder-usado-pulso 0.9s ease;
+    box-shadow: 0 0 18px rgba(255, 215, 0, 0.9);
+}
+
+@keyframes poder-usado-pulso {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+
+.skill.cooldown img {
+  filter: brightness(.45);
+}
+
+/* =====================================================
+   📱💻🖥️ RESPONSIVE — TELÉFONO / TABLET / PC
+   ===================================================== */
+
+@media (max-width: 1024px) {
+  .contenedor-principal-juego {
+    gap: 12px;
+  }
+
+  #board {
+    max-width: 320px;
+  }
+
+  .panel-personaje-lateral,
+  .panel-naruto-lateral {
+    width: 180px;
+    flex: 0 0 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 8px;
+  }
+
+  .game-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .player-info {
+    text-align: center;
+  }
+
+  .contenedor-principal-juego {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .panel-personaje-lateral,
+  .panel-naruto-lateral {
+    width: 100%;
+    max-width: 320px;
+    flex: 0 0 auto;
+  }
+
+  #board {
+    max-width: 100%;
+  }
+
+  .card {
+    width: 70px;
+    height: 98px;
+  }
+
+  .special-panel {
+    width: 95%;
+    margin-top: 14px;
+  }
+
+  .skills {
+    gap: 10px;
+  }
+
+  .skill {
+    width: 68px;
+  }
+}
+
+@media (max-width: 520px) {
+  .card {
+    width: 60px;
+    height: 84px;
+  }
+
+  #board {
+    gap: 6px;
+  }
+
+  .panel-personaje-lateral,
+  .panel-naruto-lateral {
+    max-width: 280px;
+  }
+
+  .panel {
+    width: 90vw;
+  }
+}
+
+
+
+/* ===== TURNO + TIEMPO INDIVIDUAL (NUEVO) ===== */
+
+.turno-estado {
+    display: block;
+    min-height: 1.1em;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #b892ff;
+    text-align: center;
+    margin-top: 4px;
+}
+
+.tiempo-jugador {
+    display: block;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.15rem;
+    color: #e6c667;
+    text-align: center;
+    margin-top: 2px;
+}
+
+.turno-estado.turno-activo {
+    color: #ffd700;
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.85), 0 0 14px rgba(255, 215, 0, 0.5);
+    animation: turnoPulso 1.2s ease-in-out infinite;
+}
+
+@keyframes turnoPulso {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+}
+
+/* ===== COMBO (NUEVO) ===== */
+
+.combo-jugador {
+    display: block;
+    min-height: 1.1em;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 0.95rem;
+    color: #ff8a3d;
+    text-align: center;
+    margin-top: 2px;
+    animation: comboAparece 0.25s ease-out;
+}
+
+.combo-jugador.combo-roto {
+    color: #ff3b3b;
+    animation: comboRotoShake 0.4s ease-in-out;
+}
+
+@keyframes comboAparece {
+    from { transform: scale(0.6); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes comboRotoShake {
+    0%, 100% { transform: translateX(0); }
+    25%      { transform: translateX(-4px); }
+    75%      { transform: translateX(4px); }
+}
+
+
+/* ===== CHAKRA — transición suave (NUEVO) ===== */
+
+.chakra-progreso {
+    transition: width 0.4s ease-out;
+}
+
+
+
+
+/*poderes  especiales*/
+
+
+/* ==========================================
+   EFECTO BYAKUGAN
+========================================== */
+
+.card.byakugan-revelada {
+
+    animation:
+        byakuganPulse 0.8s ease-in-out infinite alternate;
+
+    filter:
+        brightness(1.35)
+        drop-shadow(0 0 8px rgba(255, 255, 255, 0.9))
+        drop-shadow(0 0 18px rgba(120, 220, 255, 0.9));
+
+    transform: scale(1.04);
+
+    z-index: 10;
+}
+
+
+/* ==========================================
+   ANIMACIÓN DE PULSO
+========================================== */
+
+@keyframes byakuganPulse {
+
+    from {
+
+        transform: scale(1.02);
+
+        filter:
+            brightness(1.15)
+            drop-shadow(0 0 6px rgba(255, 255, 255, 0.8))
+            drop-shadow(0 0 12px rgba(120, 220, 255, 0.7));
+
+    }
+
+    to {
+
+        transform: scale(1.07);
+
+        filter:
+            brightness(1.5)
+            drop-shadow(0 0 12px rgba(255, 255, 255, 1))
+            drop-shadow(0 0 25px rgba(120, 220, 255, 1));
+
+    }
+
+}
+
+
+/* ==========================================
+   PODER AGOTADO
+========================================== */
+
+.skill.poder-agotado {
+
+    opacity: 0.35;
+
+    filter: grayscale(1);
+
+    cursor: not-allowed;
+
+}
+
+/* ==========================================
+   ANIMACIÓN BYAKUGAN — brillo + símbolo (NUEVO)
+   Sin esto, la animación no se ve aunque el JS
+   la dispare, porque estas clases no existían.
+========================================== */
+
+.byakugan-brillo-avatar {
+    animation: byakuganBrilloAvatar 0.6s ease-out;
+}
+
+@keyframes byakuganBrilloAvatar {
+    0%   { box-shadow: 0 0 0px rgba(120, 220, 255, 0); }
+    50%  { box-shadow: 0 0 30px rgba(120, 220, 255, 0.9); }
+    100% { box-shadow: 0 0 0px rgba(120, 220, 255, 0); }
+}
+
+.byakugan-simbolo-central {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    font-family: 'Permanent Marker', cursive;
+    font-size: 2rem;
+    color: #9be8ff;
+    text-shadow: 0 0 12px rgba(120, 220, 255, 0.9), 0 0 24px rgba(120, 220, 255, 0.6);
+    z-index: 999;
+    pointer-events: none;
+    animation: byakuganSimboloAparece 0.9s ease-out forwards;
+}
+
+@keyframes byakuganSimboloAparece {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    70%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+
+/* ==========================================
+   SUSTITUCIÓN — animación + estados (NUEVO)
+========================================== */
+
+.sustitucion-brillo-avatar {
+    animation: sustitucionBrilloAvatar 0.6s ease-out;
+}
+
+@keyframes sustitucionBrilloAvatar {
+    0%   { box-shadow: 0 0 0px rgba(140, 100, 60, 0); }
+    50%  { box-shadow: 0 0 30px rgba(180, 140, 90, 0.9); }
+    100% { box-shadow: 0 0 0px rgba(140, 100, 60, 0); }
+}
+
+.sustitucion-simbolo-central {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    font-family: 'Permanent Marker', cursive;
+    font-size: 2rem;
+    color: #d8b26a;
+    text-shadow: 0 0 12px rgba(180, 140, 90, 0.9), 0 0 24px rgba(180, 140, 90, 0.6);
+    z-index: 999;
+    pointer-events: none;
+    animation: sustitucionSimboloAparece 0.9s ease-out forwards;
+}
+
+@keyframes sustitucionSimboloAparece {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    70%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+.sustitucion-estado {
+    display: block;
+    min-height: 1.1em;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 0.8rem;
+    text-align: center;
+    margin-top: 2px;
+}
+
+.sustitucion-estado.sustitucion-activa {
+    color: #d8b26a;
+    animation: sustitucionPulso 1s ease-in-out infinite;
+}
+
+.sustitucion-estado.sustitucion-usada {
+    color: #8ce08c;
+    animation: comboAparece 0.3s ease-out;
+}
+
+@keyframes sustitucionPulso {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.5; }
+}
+
+/* ==========================================
+   AVISO RÁPIDO COMPARTIDO (NUEVO)
+   Para errores de uso de poder: sin chakra,
+   sin usos, no es tu turno, etc.
+========================================== */
+
+.aviso-rapido-central {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.1rem;
+    color: #ff6b6b;
+    background: rgba(10, 10, 10, .88);
+    border: 1.5px solid #ff6b6b;
+    padding: 8px 18px;
+    border-radius: 10px;
+    z-index: 999;
+    pointer-events: none;
+    animation: avisoRapidoAparece 1.2s ease-out forwards;
+}
+
+@keyframes avisoRapidoAparece {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    85%  { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* ==========================================
+   BONO DE CHAKRA POR COMBO — texto flotante (NUEVO)
+========================================== */
+
+.chakra-barra {
+    position: relative; /* necesario para que el texto flote justo encima */
+}
+
+.chakra-bono-flotante {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    transform: translateX(-50%);
+    font-family: 'Permanent Marker', cursive;
+    font-size: 0.7rem;
+    color: #4db8ff;
+    white-space: nowrap;
+    text-shadow: 0 0 6px rgba(77, 184, 255, 0.8);
+    pointer-events: none;
+    animation: chakraBonoFlota 0.9s ease-out forwards;
+}
+
+@keyframes chakraBonoFlota {
+    0%   { opacity: 0; transform: translate(-50%, 0px); }
+    20%  { opacity: 1; transform: translate(-50%, -4px); }
+    80%  { opacity: 1; transform: translate(-50%, -14px); }
+    100% { opacity: 0; transform: translate(-50%, -20px); }
+}
+
+/* ==========================================
+   BONIFICACIÓN DE COMBO — impacto visual fuerte
+   (mismo nivel que la activación de un poder)
+========================================== */
+
+.bonificacion-combo {
+    position: fixed;
+    left: 50%;
+    top: 42%;
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+
+    padding: 14px 32px;
+    background: rgba(10, 10, 10, .9);
+    border: 2px solid #ffd700;
+    border-radius: 14px;
+    box-shadow:
+        0 0 20px rgba(255, 215, 0, 0.6),
+        0 0 45px rgba(255, 215, 0, 0.35),
+        inset 0 0 15px rgba(255, 215, 0, 0.15);
+
+    z-index: 9999;
+    pointer-events: none;
+
+    font-family: 'Permanent Marker', cursive;
+
+    animation: bonificacionComboPunch 1.4s cubic-bezier(.22,1.4,.36,1) forwards;
+}
+
+.bonificacion-combo strong {
+    font-size: 2.6rem;
+    letter-spacing: 1px;
+    color: #ffd700;
+
+    text-shadow:
+        0 0 8px #000,
+        0 0 18px rgba(255, 215, 0, 0.95),
+        0 0 34px rgba(255, 215, 0, 0.6);
+}
+
+.bonificacion-combo span {
+    font-size: 1.5rem;
+    color: #64d8ff;
+
+    text-shadow:
+        0 0 6px #000,
+        0 0 16px rgba(100, 216, 255, 0.9);
+}
+
+@keyframes bonificacionComboPunch {
+
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -35%) scale(0.3) rotate(-4deg);
+    }
+
+    18% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.25) rotate(2deg);
+    }
+
+    30% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    }
+
+    75% {
+        opacity: 1;
+        transform: translate(-50%, -55%) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -75%) scale(0.9);
+    }
+
+}
+
+/* Destello rápido en toda la pantalla, para que el ojo lo capte
+   incluso si estabas mirando otra parte del tablero */
+.combo-flash-overlay {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle, rgba(255,215,0,0.25), transparent 65%);
+    z-index: 9998;
+    pointer-events: none;
+    animation: comboFlashFade 0.5s ease-out forwards;
+}
+
+@keyframes comboFlashFade {
+    0%   { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* ==========================================
+   ROBO DE CHAKRA — animación (NUEVO)
+========================================== */
+
+/* La barra del que pierde chakra tiembla y se oscurece un instante */
+.robo-origen-efecto {
+    animation: roboOrigenTiembla 0.7s ease-in-out;
+}
+
+@keyframes roboOrigenTiembla {
+    0%, 100% { filter: brightness(1); transform: translateX(0); }
+    20%      { filter: brightness(0.4); transform: translateX(-3px); }
+    40%      { filter: brightness(0.4); transform: translateX(3px); }
+    60%      { filter: brightness(0.6); transform: translateX(-2px); }
+    80%      { filter: brightness(0.8); transform: translateX(2px); }
+}
+
+/* La barra del que gana chakra brilla con fuerza */
+.robo-destino-efecto {
+    animation: roboDestinoBrilla 0.7s ease-out;
+}
+
+@keyframes roboDestinoBrilla {
+    0%   { box-shadow: 0 0 0px rgba(46, 166, 255, 0); }
+    40%  { box-shadow: 0 0 22px rgba(46, 166, 255, 1); }
+    100% { box-shadow: 0 0 0px rgba(46, 166, 255, 0); }
+}
+
+/* Rayo de energía que viaja de una barra a la otra */
+.robo-rayo {
+    position: fixed;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffff, #4db8ff 55%, transparent 75%);
+    box-shadow: 0 0 12px 4px rgba(77, 184, 255, 0.9);
+    z-index: 998;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    animation: roboRayoViaja 0.7s ease-in-out forwards;
+}
+
+@keyframes roboRayoViaja {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) translate(0, 0) scale(0.6);
+    }
+    100% {
+        opacity: 0.3;
+        transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(1.4);
+    }
+}
+
+/* Símbolo central grande, mismo estilo que Byakugan/Sustitución */
+.robo-simbolo-central {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.7rem;
+    color: #4db8ff;
+    text-shadow: 0 0 12px rgba(46, 166, 255, 0.9), 0 0 24px rgba(46, 166, 255, 0.6);
+    z-index: 999;
+    pointer-events: none;
+    animation: roboSimboloAparece 0.9s ease-out forwards;
+}
+
+@keyframes roboSimboloAparece {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    70%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+/* ==========================================
+   GENJUTSU — ilusión visual del tablero (NUEVO)
+   Solo efecto visual: nunca toca datos reales
+   de las cartas ni sus posiciones en el DOM.
+   Se ve como un temblor de pantalla + las cartas
+   "ruedan" un momento, y al cortar el efecto todo
+   vuelve exactamente a como estaba antes.
+========================================== */
+
+.genjutsu-ilusion {
+    animation: genjutsuTemblorPantalla 0.28s ease-in-out infinite;
+}
+
+.genjutsu-ilusion .card {
+    animation: genjutsuCartaRueda 0.65s linear infinite;
+}
+
+.genjutsu-ilusion .card:nth-child(2n) {
+    animation-duration: 0.55s;
+    animation-direction: reverse;
+}
+
+.genjutsu-ilusion .card:nth-child(3n) {
+    animation-duration: 0.75s;
+    animation-delay: 0.1s;
+}
+
+.genjutsu-ilusion .card:nth-child(5n) {
+    animation-duration: 0.6s;
+    animation-delay: 0.2s;
+    animation-direction: reverse;
+}
+
+@keyframes genjutsuTemblorPantalla {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    20%  { transform: translate(-6px, 3px) rotate(-0.6deg); }
+    40%  { transform: translate(5px, -4px) rotate(0.5deg); }
+    60%  { transform: translate(-4px, -3px) rotate(-0.4deg); }
+    80%  { transform: translate(6px, 4px) rotate(0.6deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes genjutsuCartaRueda {
+    from { transform: rotateY(0deg) rotateX(0deg); }
+    to   { transform: rotateY(360deg) rotateX(15deg); }
+}
+
+.genjutsu-simbolo-central {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    font-family: 'Permanent Marker', cursive;
+    font-size: 2.6rem;
+    color: #c66bff;
+    text-shadow:
+        0 0 8px #000,
+        0 0 16px rgba(198, 107, 255, 0.95),
+        0 0 36px rgba(198, 107, 255, 0.7);
+    z-index: 999;
+    pointer-events: none;
+    animation: genjutsuSimboloAparece 0.9s ease-out forwards;
+}
+
+@keyframes genjutsuSimboloAparece {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+    70%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+/* Velo púrpura pulsante que cubre toda la pantalla mientras
+   dura el efecto (a diferencia del combo, que es un destello
+   corto, este se queda prendido los 5 segundos completos) */
+.genjutsu-pantalla-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 45%, rgba(160, 60, 220, 0.22), transparent 70%);
+    mix-blend-mode: screen;
+    animation: genjutsuOverlayPulso 1.1s ease-in-out infinite;
+}
+
+@keyframes genjutsuOverlayPulso {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 1; }
+}
+
+/* Resplandor del marco del tablero, pulsando junto con el temblor */
+#boardFrame.genjutsu-ilusion {
+    animation:
+        genjutsuTemblorPantalla 0.28s ease-in-out infinite,
+        genjutsuBordePulso 1.1s ease-in-out infinite;
+}
+
+@keyframes genjutsuBordePulso {
+    0%, 100% { box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 18px rgba(198, 107, 255, 0.5); }
+    50%      { box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 40px rgba(198, 107, 255, 0.95); }
+}
+
+/* ==========================================
+   SELLO DE BLOQUEO — carta encadenada (NUEVO)
+========================================== */
+
+.card.carta-sellada {
+    animation: selloPulsoBorde 1s ease-in-out infinite;
+    cursor: not-allowed;
+    z-index: 15;
+}
+
+.card.carta-sellada::before,
+.card.carta-sellada::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 12;
+    border-radius: 8px;
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(35, 18, 5, 0.85) 0px,
+        rgba(35, 18, 5, 0.85) 6px,
+        transparent 6px,
+        transparent 16px
+    );
+    mix-blend-mode: multiply;
+}
+
+.card.carta-sellada::after {
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(35, 18, 5, 0.65) 0px,
+        rgba(35, 18, 5, 0.65) 6px,
+        transparent 6px,
+        transparent 16px
+    );
+}
+
+@keyframes selloPulsoBorde {
+    0%, 100% {
+        box-shadow: 0 0 12px rgba(255, 100, 20, 0.55), inset 0 0 14px rgba(0, 0, 0, 0.6);
+        filter: brightness(0.8) saturate(1.15);
+    }
+    50% {
+        box-shadow: 0 0 28px rgba(255, 150, 20, 0.95), 0 0 44px rgba(255, 60, 0, 0.55), inset 0 0 14px rgba(0, 0, 0, 0.6);
+        filter: brightness(1.05) saturate(1.35);
+    }
+}
+
+.sello-icono-carta {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.2rem;
+    z-index: 16;
+    pointer-events: none;
+    filter:
+        drop-shadow(0 0 6px #000)
+        drop-shadow(0 0 14px rgba(255, 140, 20, 0.95));
+    animation: selloIconoLatido 0.85s ease-in-out infinite;
+}
+
+@keyframes selloIconoLatido {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25%      { transform: scale(1.18) rotate(-8deg); }
+    75%      { transform: scale(1.18) rotate(8deg); }
+}
+
+.sello-flash-overlay {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle, rgba(255, 130, 20, 0.3), transparent 65%);
+    z-index: 9998;
+    pointer-events: none;
+    animation: comboFlashFade 0.5s ease-out forwards;
+}
+
+.sello-simbolo-central {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    font-family: 'Permanent Marker', cursive;
+    font-size: 2.3rem;
+    color: #ff9a3d;
+    text-shadow:
+        0 0 8px #000,
+        0 0 16px rgba(255, 140, 20, 0.95),
+        0 0 36px rgba(255, 90, 0, 0.7);
+    z-index: 999;
+    pointer-events: none;
+    animation: selloSimboloAparece 0.9s ease-out forwards;
+}
+
+@keyframes selloSimboloAparece {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+    70%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+/* ==========================================
+   BOMBA EXPLOSIVA — el poder más grande (NUEVO)
+   Temblor de TODA la pantalla, destello,
+   onda de choque, número de daño disparado
+   y símbolo central, todo junto.
+========================================== */
+
+.bomba-temblor-pantalla {
+    animation: bombaTemblorFuerte 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes bombaTemblorFuerte {
+    0%, 100% { transform: translate(0, 0); }
+    10%      { transform: translate(-10px, 6px); }
+    20%      { transform: translate(9px, -7px); }
+    30%      { transform: translate(-8px, 8px); }
+    40%      { transform: translate(10px, 5px); }
+    50%      { transform: translate(-9px, -6px); }
+    60%      { transform: translate(7px, 7px); }
+    70%      { transform: translate(-6px, -8px); }
+    80%      { transform: translate(5px, 6px); }
+    90%      { transform: translate(-4px, -3px); }
+}
+
+.bomba-flash-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(255, 220, 150, 0.95), rgba(255, 80, 0, 0.55) 45%, transparent 75%);
+    animation: bombaFlashFade 0.65s ease-out forwards;
+}
+
+@keyframes bombaFlashFade {
+    0%   { opacity: 1; }
+    30%  { opacity: 0.85; }
+    100% { opacity: 0; }
+}
+
+.bomba-onda-choque {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border-radius: 50%;
+    border: 6px solid rgba(255, 150, 40, 0.9);
+    box-shadow: 0 0 30px rgba(255, 100, 0, 0.7);
+    z-index: 9997;
+    pointer-events: none;
+    animation: bombaOndaExpande 0.8s ease-out forwards;
+}
+
+@keyframes bombaOndaExpande {
+    0%   { width: 40px; height: 40px; margin: -20px 0 0 -20px; opacity: 1; border-width: 8px; }
+    100% { width: 1400px; height: 1400px; margin: -700px 0 0 -700px; opacity: 0; border-width: 1px; }
+}
+
+.bomba-golpe-avatar {
+    animation: bombaGolpeAvatar 0.7s ease-in-out;
+}
+
+@keyframes bombaGolpeAvatar {
+    0%   { transform: translate(0,0) rotate(0deg); filter: brightness(1) drop-shadow(0 0 0 rgba(255,60,0,0)); }
+    15%  { transform: translate(-6px, 3px) rotate(-3deg); filter: brightness(1.6) drop-shadow(0 0 20px rgba(255,60,0,0.9)); }
+    30%  { transform: translate(6px, -3px) rotate(3deg); filter: brightness(1.6) drop-shadow(0 0 20px rgba(255,60,0,0.9)); }
+    45%  { transform: translate(-4px, 2px) rotate(-2deg); }
+    60%  { transform: translate(4px, -2px) rotate(2deg); }
+    75%  { transform: translate(-2px, 1px) rotate(-1deg); }
+    100% { transform: translate(0,0) rotate(0deg); filter: brightness(1) drop-shadow(0 0 0 rgba(255,60,0,0)); }
+}
+
+.bomba-numero-dano {
+    position: fixed;
+    transform: translate(-50%, -50%);
+    font-family: 'Permanent Marker', cursive;
+    font-size: 2.4rem;
+    color: #ff3b3b;
+    text-shadow:
+        0 0 6px #000,
+        0 0 16px rgba(255, 59, 59, 0.95),
+        0 0 30px rgba(255, 100, 0, 0.7);
+    z-index: 9999;
+    pointer-events: none;
+    animation: bombaNumeroDispara 1s cubic-bezier(.2,.8,.3,1) forwards;
+}
+
+@keyframes bombaNumeroDispara {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }
+    35%  { transform: translate(-50%, -80%) scale(1.1); }
+    100% { opacity: 0; transform: translate(-50%, -160%) scale(1); }
+}
+
+.bomba-simbolo-central {
+    position: fixed;
+    top: 42%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    font-family: 'Permanent Marker', cursive;
+    font-size: 2.8rem;
+    color: #ffb020;
+    text-shadow:
+        0 0 10px #000,
+        0 0 20px rgba(255, 176, 32, 0.95),
+        0 0 44px rgba(255, 60, 0, 0.75);
+    z-index: 9999;
+    pointer-events: none;
+    animation: bombaSimboloAparece 1s cubic-bezier(.22,1.4,.36,1) forwards;
+}
+
+@keyframes bombaSimboloAparece {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.2) rotate(-6deg); }
+    20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.3) rotate(3deg); }
+    35%  { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    80%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+.online-estado {
+  margin: 8px auto 0;
+  width: max-content;
+  max-width: 92%;
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1.5px solid #35d07f;
+  background: rgba(6, 30, 18, .85);
+  color: #b8ffdc;
+  font-size: .9rem;
+  letter-spacing: .5px;
+  text-align: center;
+}
+
+#board.bloqueado-turno {
+  pointer-events: none;
+  filter: brightness(.72) saturate(.8);
+}
+
+/* =====================================================
+   ONLINE 2V2 � MARCADOR DE EQUIPOS
+   ===================================================== */
+.equipos-online {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
+  align-items: stretch;
+  gap: 10px;
+  width: min(980px, 96vw);
+  margin: 4px auto 0;
+}
+
+.equipo-online {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(15, 15, 24, .92), rgba(5, 5, 10, .92));
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, .03);
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+
+.equipo-online[data-equipo="B"] {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.equipo-online.activo {
+  border-color: #ffd166;
+  box-shadow: 0 0 0 1px rgba(255, 209, 102, .25), 0 0 22px rgba(255, 209, 102, .18);
+  transform: translateY(-1px);
+}
+
+.equipo-online-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 72px;
+  color: #ffd166;
+  font-size: .72rem;
+  letter-spacing: 1.2px;
+}
+
+.equipo-online-titulo strong {
+  color: #fff;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.equipo-online-jugadores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.equipo-online[data-equipo="B"] .equipo-online-jugadores {
+  justify-content: flex-end;
+}
+
+.jugador-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  background: rgba(255, 255, 255, .04);
+  color: #cdd8f0;
+  font-size: .76rem;
+  white-space: nowrap;
+}
+
+.jugador-online.es-yo {
+  border-color: rgba(0, 255, 170, .55);
+  color: #c6ffe9;
+  background: rgba(0, 255, 170, .08);
+}
+
+.jugador-online::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #35d07f;
+  box-shadow: 0 0 7px rgba(53, 208, 127, .8);
+}
+
+.jugador-online.desconectado::before {
+  background: #ff5d5d;
+  box-shadow: 0 0 7px rgba(255, 93, 93, .8);
+}
+
+.equipo-online-separador {
+  align-self: center;
+  color: rgba(255, 255, 255, .28);
+  font-size: 1.1rem;
+}
+
+/* =====================================================
+   MODAL FINAL ONLINE
+   ===================================================== */
+.modal-final {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(115, 0, 247, .24), transparent 55%),
+    rgba(3, 4, 10, .82);
+  backdrop-filter: blur(5px);
+}
+
+.modal-final-panel {
+  position: relative;
+  width: min(560px, 94vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 26px 26px 22px;
+  border: 2px solid #b8843b;
+  border-radius: 18px;
+  background:
+    linear-gradient(160deg, rgba(33, 24, 48, .98), rgba(8, 8, 14, .99)),
+    repeating-linear-gradient(45deg, transparent 0 9px, rgba(255, 255, 255, .015) 9px 10px);
+  box-shadow:
+    0 0 0 1px rgba(255, 209, 102, .12),
+    0 0 38px rgba(115, 0, 247, .28),
+    0 24px 60px rgba(0, 0, 0, .72);
+  text-align: center;
+  animation: modalFinalEntrada .3s cubic-bezier(.22, 1.2, .36, 1);
+}
+
+.modal-final-panel::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(255, 209, 102, .16);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+@keyframes modalFinalEntrada {
+  from { opacity: 0; transform: translateY(16px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-final-icono {
+  font-size: 3rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 16px rgba(255, 209, 102, .45));
+}
+
+.modal-final-panel h2 {
+  margin: 6px 0 2px;
+  font-family: 'Permanent Marker', cursive;
+  font-size: clamp(1.7rem, 5vw, 2.4rem);
+  letter-spacing: 2px;
+  color: #ffd166;
+  text-shadow: 0 0 18px rgba(255, 209, 102, .32);
+}
+
+.modal-final-panel.es-victoria h2 { color: #61ffb0; text-shadow: 0 0 20px rgba(97, 255, 176, .35); }
+.modal-final-panel.es-derrota h2 { color: #ff7b7b; text-shadow: 0 0 20px rgba(255, 123, 123, .3); }
+.modal-final-panel.es-empate h2 { color: #c6b4ff; text-shadow: 0 0 20px rgba(198, 180, 255, .3); }
+
+.modal-final-subtitulo {
+  margin: 0 0 16px;
+  color: #aab7d4;
+  font-family: 'Fredoka', sans-serif;
+  font-size: .92rem;
+}
+
+.modal-final-marcador {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.marcador-equipo {
+  padding: 10px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  background: rgba(255, 255, 255, .035);
+}
+
+.marcador-equipo.ganador {
+  border-color: rgba(97, 255, 176, .5);
+  background: rgba(97, 255, 176, .07);
+}
+
+.marcador-equipo small {
+  display: block;
+  color: #8f9ab5;
+  font-family: 'Fredoka', sans-serif;
+  font-size: .7rem;
+  letter-spacing: 1px;
+}
+
+.marcador-equipo strong {
+  display: block;
+  margin-top: 2px;
+  color: #fff;
+  font-size: 1.3rem;
+}
+
+.marcador-equipo span {
+  display: block;
+  color: #bfc9e2;
+  font-family: 'Fredoka', sans-serif;
+  font-size: .78rem;
+}
+
+.modal-final-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 12px;
+  margin-bottom: 16px;
+  color: #aab7d4;
+  font-family: 'Fredoka', sans-serif;
+  font-size: .82rem;
+}
+
+.modal-final-stats span {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .04);
+}
+
+.modal-final-config {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(0, 0, 0, .22);
+  color: #cdd8f0;
+  font-family: 'Fredoka', sans-serif;
+  font-size: .82rem;
+}
+
+.modal-final-config label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-final-config select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  background: #15151f;
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+}
+
+.modal-final-check input {
+  accent-color: #ffd166;
+}
+
+.modal-final-error {
+  margin: 0 0 10px;
+  color: #ff9b9b;
+  font-family: 'Fredoka', sans-serif;
+  font-size: .82rem;
+}
+
+.modal-final-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-final {
+  min-width: 150px;
+  padding: 10px 18px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  font-family: 'Permanent Marker', cursive;
+  letter-spacing: 1px;
+  color: #fff;
+  cursor: pointer;
+  transition: transform .18s, filter .18s;
+}
+
+.btn-final:hover { transform: translateY(-1px); filter: brightness(1.08); }
+.btn-final:disabled { opacity: .45; cursor: not-allowed; transform: none; filter: none; }
+.btn-final-primario { background: linear-gradient(180deg, #ff9d2e, #c76a00); }
+.btn-final-secundario { background: linear-gradient(180deg, #4b2f7a, #2a1848); }
+
+.modal-final-espera {
+  margin: 10px 0 0;
+  color: #9fabc7;
+  font-family: 'Fredoka', sans-serif;
+  font-size: .8rem;
+}
+
+@media (max-width: 700px) {
+  .equipos-online {
+    grid-template-columns: 1fr;
+    width: 96vw;
+  }
+  .equipo-online[data-equipo="B"] { flex-direction: row; text-align: left; }
+  .equipo-online[data-equipo="B"] .equipo-online-jugadores { justify-content: flex-start; }
+  .equipo-online-separador { display: none; }
+}
+
+@media (max-height: 620px) and (orientation: landscape) {
+  body { padding: 4px 10px; gap: 2px; }
+  .stats > span { padding: 3px 9px; font-size: .78rem; }
+  .online-estado { margin-top: 2px; padding: 3px 10px; font-size: .72rem; }
+  .equipos-online { margin-top: 0; }
+  .equipo-online { padding: 4px 8px; }
+  .equipo-online-titulo strong { font-size: 1rem; }
+  .jugador-online { padding: 2px 7px; font-size: .66rem; }
+  .contenedor-principal-juego { gap: 8px; }
+  .panel-personaje-lateral, .panel-naruto-lateral {
+    width: 170px;
+    flex-basis: 170px;
+    max-height: 58vh;
+    overflow-y: auto;
+  }
+  .panel-personaje-lateral .personaje-habilidad,
+  .panel-naruto-lateral .personaje-habilidad { display: none; }
+  .personaje-imagen { height: 105px; }
+  .personaje-imagen img { width: 78px; height: 78px; }
+  #board { max-width: min(46vw, 420px); gap: 6px; }
+  .card { width: 62px; height: 88px; }
+  .special-panel { margin-top: 6px; }
+  .skill { width: 58px; }
+  .modal-final-panel { width: min(660px, 94vw); padding: 16px 20px; max-height: 94vh; }
+  .modal-final-icono { font-size: 2rem; }
+  .modal-final-panel h2 { font-size: 1.7rem; margin-top: 0; }
+  .modal-final-subtitulo { margin-bottom: 8px; }
+  .modal-final-marcador { margin-bottom: 8px; }
+  .modal-final-stats { margin-bottom: 8px; }
+  .modal-final-config { padding: 8px; margin-bottom: 8px; }
+}
+
+.equipos-online[hidden] {
+  display: none;
+}
+
+.modal-final-config[hidden],
+.modal-final-error[hidden],
+.modal-final-espera[hidden],
+#btnRevanchaFinal[hidden] {
+  display: none !important;
+}
+
+/* =====================================================
+   BANNER DE PODER ONLINE
+   ===================================================== */
+.banner-poder-online {
+  --poder-color: #ffd166;
+  --poder-glow: rgba(255, 209, 102, .45);
+  position: fixed;
+  top: clamp(14px, 8vh, 88px);
+  left: 50%;
+  display: none;
+  align-items: center;
+  gap: 14px;
+  min-width: min(390px, 92vw);
+  max-width: min(560px, 94vw);
+  padding: 10px 22px 10px 12px;
+  border-radius: 14px;
+  border: 2px solid var(--poder-color);
+  background: linear-gradient(135deg, rgba(8, 10, 18, .97), rgba(22, 16, 34, .95));
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, .7),
+    0 0 30px var(--poder-glow),
+    inset 0 0 18px rgba(255, 255, 255, .04);
+  z-index: 10000;
+  pointer-events: none;
+  font-family: 'Permanent Marker', cursive;
+  transform: translate(-50%, -12px) scale(.96);
+  opacity: 0;
+}
+
+.banner-poder-online.visible {
+  display: flex;
+  animation: bannerPoderEntra .24s cubic-bezier(.2, .9, .3, 1.2) forwards;
+}
+
+.banner-poder-online.es-rival {
+  border-style: dashed;
+}
+
+.banner-poder-online.poder-sustitucion {
+  --poder-color: #d8b26a;
+  --poder-glow: rgba(216, 178, 106, .5);
+}
+
+.banner-poder-online.poder-byakugan {
+  --poder-color: #9be8ff;
+  --poder-glow: rgba(120, 220, 255, .55);
+}
+
+.banner-poder-online.poder-robo {
+  --poder-color: #4db8ff;
+  --poder-glow: rgba(77, 184, 255, .5);
+}
+
+.banner-poder-online.poder-genjutsu {
+  --poder-color: #c66bff;
+  --poder-glow: rgba(198, 107, 255, .55);
+}
+
+.banner-poder-online.poder-sello {
+  --poder-color: #ff9a3d;
+  --poder-glow: rgba(255, 140, 20, .5);
+}
+
+.banner-poder-online.poder-bomba {
+  --poder-color: #ff5b3b;
+  --poder-glow: rgba(255, 80, 0, .6);
+}
+
+.banner-poder-icono {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px var(--poder-glow));
+}
+
+.banner-poder-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.banner-poder-titulo {
+  color: var(--poder-color);
+  font-size: clamp(1.05rem, 2.6vw, 1.45rem);
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+  text-shadow: 0 0 12px var(--poder-glow);
+}
+
+.banner-poder-detalle {
+  margin-top: 3px;
+  color: #d8e2f5;
+  font-family: 'Fredoka', sans-serif;
+  font-size: .76rem;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.banner-poder-online.es-rival .banner-poder-detalle {
+  color: #ffb3b3;
+}
+
+@keyframes bannerPoderEntra {
+  0%   { opacity: 0; transform: translate(-50%, -16px) scale(.92); }
+  60%  { opacity: 1; transform: translate(-50%, 2px) scale(1.02); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+.aviso-rapido-central.aviso-info {
+  color: #b8ffdc;
+  border-color: #35d07f;
+}
+
+.aviso-rapido-central.aviso-poder {
+  color: #ffd166;
+  border-color: #ffd166;
+}
+
+.aviso-rapido-central.aviso-error {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+.aviso-rapido-central {
+  max-width: min(520px, 92vw);
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .banner-poder-online {
+    top: 10px;
+    gap: 10px;
+    padding: 8px 14px 8px 8px;
+  }
+  .banner-poder-icono {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+  }
+  .banner-poder-titulo { font-size: 1.05rem; }
+  .banner-poder-detalle { font-size: .66rem; }
+}
+
+
+
+
+
+
+/* =====================================================
+   MEMORIA NINJA ONLINE - ADAPTACIÓN MÓVIL HORIZONTAL
+   Mantiene el diseño original y las funciones del juego
+===================================================== */
+
+/* Evita desbordamientos */
+.contenedor-principal-juego,
+#boardFrame,
+#board {
+    min-width: 0;
+}
+
+/* TABLET Y CELULAR EN HORIZONTAL */
+@media screen and (max-width: 900px) and (orientation: landscape) {
+
+    html {
+        width: 100%;
+        min-height: 100%;
+    }
+
+    body {
+        width: 100%;
+        min-height: 100vh;
+        padding: 5px 7px;
+        gap: 5px;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    /* Estadísticas superiores */
+    .stats {
+        width: 100%;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .stats > span {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    /* Estado online */
+    .online-estado {
+        margin: 2px auto;
+        padding: 3px 8px;
+        font-size: 10px;
+    }
+
+    /* Equipos */
+    .equipos-online {
+        width: 100%;
+        gap: 5px;
+        margin: 2px auto;
+    }
+
+    .equipo-online {
+        padding: 4px 6px;
+        gap: 5px;
+    }
+
+    .equipo-online-titulo {
+        font-size: 9px;
+        min-width: 45px;
+    }
+
+    .equipo-online-titulo strong {
+        font-size: 14px;
+    }
+
+    .jugador-online {
+        padding: 2px 5px;
+        font-size: 9px;
+    }
+
+    /* DISTRIBUCIÓN PRINCIPAL */
+    .contenedor-principal-juego {
+        display: grid;
+        grid-template-columns:
+            minmax(90px, 19%)
+            minmax(0, 1fr)
+            minmax(90px, 19%);
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
+    /* PANEL SASUKE Y NARUTO */
+    .panel-personaje-lateral,
+    .panel-naruto-lateral {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        flex: none;
+        padding: 5px;
+        gap: 4px;
+        max-height: none;
+        overflow: visible;
+        border-radius: 10px;
+    }
+
+    .nombre-personaje {
+        font-size: 12px;
+    }
+
+    .personaje-header {
+        justify-content: center;
+    }
+
+    .personaje-imagen {
+        height: clamp(55px, 17vh, 100px);
+        border-radius: 8px 8px 0 0;
+    }
+
+    .personaje-imagen img {
+        width: clamp(38px, 10vh, 70px);
+        height: clamp(38px, 10vh, 70px);
+    }
+
+    .hp-compacto {
+        padding: 4px;
+        gap: 3px;
+    }
+
+    .hp-label,
+    .hp-texto {
+        font-size: 8px;
+    }
+
+    .vida-barra-mini,
+    .chakra-barra {
+        height: 5px;
+    }
+
+    /* HABILIDADES: NO SE OCULTAN */
+    .personaje-habilidad {
+        display: block;
+        padding: 5px;
+        border-radius: 8px;
+    }
+
+    .titulo-panel {
+        font-size: 9px;
+        margin-bottom: 3px;
+    }
+
+    .habilidad-contenido {
+        gap: 3px;
+    }
+
+    .habilidad-logo {
+        width: 23px;
+        height: 23px;
+    }
+
+    .habilidad-logo img {
+        width: 45px;
+        height: 45px;
+    }
+
+    .habilidad-texto h4 {
+        font-size: 8px;
+    }
+
+    .habilidad-texto p {
+        font-size: 7px;
+        line-height: 9px;
+        margin: 0;
+    }
+
+    /* CHAKRA */
+    .personaje-chakra {
+        padding: 5px;
+        border-radius: 8px;
+    }
+
+    .chakra-contenido {
+        gap: 3px;
+    }
+
+    .chakra-logo {
+        width: 19px;
+        height: 19px;
+    }
+
+    .chakra-logo img {
+        width: 34px;
+        height: 34px;
+    }
+
+    .chakra-cantidad span {
+        font-size: 8px;
+    }
+
+    /* TURNO, TIEMPO Y COMBO */
+    .turno-estado {
+        font-size: 9px;
+        min-height: 10px;
+        margin-top: 1px;
+    }
+
+    .tiempo-jugador {
+        font-size: 13px;
+        margin-top: 0;
+    }
+
+    .combo-jugador,
+    .sustitucion-estado {
+        font-size: 9px;
+        min-height: 10px;
+    }
+
+    /* TABLERO CENTRAL */
+    #boardFrame {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        padding: 5px;
+        margin: 0 auto;
+        border-width: 3px;
+        border-radius: 8px;
+    }
+
+    #board {
+        width: 100%;
+        max-width: 100%;
+        padding: 3px;
+        gap: 4px;
+        justify-content: center;
+        align-content: center;
+    }
+
+    .card {
+        width: clamp(34px, 7.5vw, 58px);
+        height: auto;
+        aspect-ratio: 90 / 125;
+        flex: 0 0 auto;
+        border-radius: 5px;
+    }
+
+    .card img {
+        border-radius: 5px;
+    }
+
+    /* CARTAS ESPECIALES */
+    .special-panel {
+        width: 100%;
+        max-width: 500px;
+        margin: 3px auto 0;
+        padding: 4px 7px;
+        border-radius: 7px;
+    }
+
+    .panel-title {
+        margin-bottom: 2px;
+    }
+
+    .panel-title h2 {
+        font-size: 10px;
+        margin: 0;
+    }
+
+    .skills {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: center;
+        align-items: center;
+        gap: clamp(2px, 1vw, 8px);
+    }
+
+    .skill {
+        width: clamp(42px, 10vw, 62px);
+        min-width: 0;
+        padding: 0;
+    }
+
+    .skill img {
+        width: clamp(25px, 6vw, 40px);
+        height: clamp(28px, 7vh, 42px);
+    }
+
+    .name {
+        font-size: 7px;
+        line-height: 8px;
+        margin-top: 1px;
+    }
+
+    .uses {
+        width: 13px;
+        height: 13px;
+        font-size: 7px;
+    }
+
+    /* BOTÓN VOLVER */
+    .boton {
+        padding: 5px 12px;
+        font-size: 11px;
+        margin-top: 2px;
+    }
+
+    /* AVISOS Y EFECTOS */
+    .banner-poder-online {
+        top: 5px;
+        min-width: min(280px, 90vw);
+        padding: 6px 10px;
+        gap: 7px;
+    }
+
+    .banner-poder-icono {
+        width: 32px;
+        height: 32px;
+        flex-basis: 32px;
+    }
+}
+
+/* CELULARES HORIZONTALES PEQUEÑOS */
+@media screen and (max-width: 650px) and (orientation: landscape) {
+
+    .contenedor-principal-juego {
+        grid-template-columns:
+            minmax(76px, 18%)
+            minmax(0, 1fr)
+            minmax(76px, 18%);
+        gap: 4px;
+    }
+
+    .panel-personaje-lateral,
+    .panel-naruto-lateral {
+        padding: 3px;
+        gap: 3px;
+    }
+
+    .personaje-imagen {
+        height: 58px;
+    }
+
+    .personaje-imagen img {
+        width: 40px;
+        height: 40px;
+    }
+
+    .personaje-habilidad {
+        padding: 3px;
+    }
+
+    .habilidad-texto p {
+        font-size: 6px;
+        line-height: 7px;
+    }
+
+    #board {
+        gap: 3px;
+    }
+
+    .card {
+        width: clamp(29px, 7vw, 43px);
+    }
+
+    .special-panel {
+        padding: 3px;
+    }
+
+    .skill {
+        width: clamp(37px, 9vw, 50px);
+    }
+
+    .skill img {
+        width: 27px;
+        height: 29px;
+    }
+}
+
+/* TELÉFONO EN VERTICAL: AVISO PARA GIRAR */
+@media screen and (max-width: 600px) and (orientation: portrait) {
+
+    body {
+        overflow-x: hidden;
+    }
+
+    .contenedor-principal-juego {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .panel-personaje-lateral,
+    .panel-naruto-lateral {
+        display: none;
+    }
+
+    #boardFrame {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .special-panel {
+        width: 100%;
+    }
+}
+
+/* EVITA QUE LOS PODERES SE DESBORDEN */
+.skills,
+.special-panel {
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.skill {
+    touch-action: manipulation;
+}

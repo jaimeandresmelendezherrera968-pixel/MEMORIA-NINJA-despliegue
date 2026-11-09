@@ -1,0 +1,127 @@
+classDiagram
+
+    class ObjetoJuego {
+        <<abstract>>
+        -#string imagen
+        -#string categoria
+        +get imagen() string
+        +get categoria() string
+        +obtenerDescripcion() string
+    }
+
+    class ObjetoCienciaFiccion {
+        +obtenerDescripcion() string
+    }
+
+    class ObjetoMitologico {
+        +obtenerDescripcion() string
+    }
+
+    class RepositorioObjetos {
+        <<interface>>
+        +obtenerObjetos() array
+    }
+
+    class RepositorioObjetosJuego {
+        +obtenerObjetos() array
+    }
+
+    class RepositorioUsuarios {
+        +obtenerUsuarioActivo() object
+        +guardarUsuarioActivo(usuario) void
+    }
+
+    class JuegoAgrupacionService {
+        -#RepositorioObjetos repositorioObjetos
+        -#ResultadoService resultadoService
+        -#array objetosJuego
+        -#boolean juegoFinalizado
+        +cargarObjetos() array
+        +todosLosObjetosColocados(elementos) boolean
+        +evaluarResultado(elementos) boolean
+        +marcarJuegoFinalizado() void
+        +get juegoFinalizado() boolean
+    }
+
+    class ResultadoService {
+        +evaluarObjetos(elementos) boolean
+    }
+
+    class ResultadoJuego {
+        <<abstract>>
+        +ejecutar() void
+    }
+
+    class ResultadoGanador {
+        -Audio #sonido
+        -ServicioUsuarios #servicioUsuarios
+        +ejecutar(mensaje) void
+    }
+
+    class ResultadoPerdedor {
+        -Audio #sonido
+        +ejecutar(mensaje) void
+    }
+
+    class ServicioUsuarios {
+        -#RepositorioUsuarios repositorioUsuarios
+        +registrarVictoriaFacil() void
+    }
+
+    class TemporizadorService {
+        -#number tiempoActual
+        -#intervalo
+        -#boolean pausado
+        -HTMLElement #elementoVisual
+        -#alFinalizar
+        +iniciar() void
+        +pausar() void
+        +continuar() void
+        +detener() void
+        +get pausado() boolean
+        +get tiempoActual() number
+    }
+
+    class JuegoAgrupacionController {
+        -#JuegoAgrupacionService juegoService
+        -#TemporizadorService temporizadorService
+        -#ResultadoGanador resultadoGanador
+        -#ResultadoPerdedor resultadoPerdedor
+        +iniciar() void
+        +finalizarPorTiempo() void
+        -#crearObjetos() void
+        -#configurarCarpetas() void
+        -#configurarPausa() void
+    }
+
+    class main {
+        <<compositionRoot>>
+        +crearComposicionYIniciar() void
+    }
+
+    ObjetoJuego <|-- ObjetoCienciaFiccion : Herencia (Template Method)
+    ObjetoJuego <|-- ObjetoMitologico : Herencia (Template Method)
+
+    RepositorioObjetos <|.. RepositorioObjetosJuego : LSP
+    RepositorioObjetosJuego --> ObjetoMitologico : fabrica instancias
+    RepositorioObjetosJuego --> ObjetoCienciaFiccion : fabrica instancias
+
+    ResultadoJuego <|-- ResultadoGanador : Polimorfismo
+    ResultadoJuego <|-- ResultadoPerdedor : Polimorfismo
+
+    JuegoAgrupacionService --> RepositorioObjetos : DIP inyectado
+    JuegoAgrupacionService --> ResultadoService : DIP inyectado
+
+    ResultadoGanador --> ServicioUsuarios : inyectado
+    ServicioUsuarios --> RepositorioUsuarios : DIP inyectado
+
+    JuegoAgrupacionController --> JuegoAgrupacionService : inyectado
+    JuegoAgrupacionController --> TemporizadorService : inyectado
+    JuegoAgrupacionController --> ResultadoGanador : inyectado
+    JuegoAgrupacionController --> ResultadoPerdedor : inyectado
+
+    main --> JuegoAgrupacionController : instancia y arranca
+    main --> JuegoAgrupacionService
+    main --> TemporizadorService
+    main --> ResultadoService
+    main --> ServicioUsuarios

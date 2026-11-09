@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <!-- =========================================
+        CONFIGURACION GENERAL
+    ========================================== -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <title>Recuperar contraseña</title>
+
+    <!-- =========================================
+        FUENTES
+    ========================================== -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
+
+    <!-- =========================================
+        ESTILOS
+    ========================================== -->
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/Pasos.css">
+
+</head>
+
+<body>
+
+<!-- =========================================
+    VIDEO DE FONDO
+========================================== -->
+
+<video autoplay muted loop playsinline id="videofondo">
+    <source src="assets/memory_ninja_background_v2.mp4" type="video/mp4">
+</video>
+
+<!-- =========================================
+    CONTENEDOR PRINCIPAL
+========================================== -->
+
+<div class="login-contenedor">
+
+    <img src="assets/img/logo.png"
+         alt="Logo"
+         width="75%"
+         style="display:block;margin:auto;">
+
+    <h1>Recuperar contraseña</h1>
+
+    <!-- =========================================
+        INDICADOR DE PASOS
+    ========================================== -->
+
+    <div class="indicador-pasos" id="indicadorPasos">
+        <div class="paso-punto activo" id="punto-1">
+            <span class="paso-numero">1</span>
+            <span class="paso-texto">Correo</span>
+        </div>
+        <div class="paso-linea"></div>
+        <div class="paso-punto" id="punto-2">
+            <span class="paso-numero">2</span>
+            <span class="paso-texto">Codigo</span>
+        </div>
+        <div class="paso-linea"></div>
+        <div class="paso-punto" id="punto-3">
+            <span class="paso-numero">3</span>
+            <span class="paso-texto">Nueva clave</span>
+        </div>
+    </div>
+
+    <!-- =========================================
+        PASO 1
+        BUSCAR CORREO
+    ========================================== -->
+
+    <div id="paso1">
+
+        <p style="color:white;">
+            Ingresa el correo registrado.
+        </p>
+
+        <input
+            id="correo"
+            type="email"
+            placeholder="Correo electronico">
+
+        <button id="btnBuscarCorreo">
+
+            Continuar
+
+        </button>
+
+    </div>
+
+    <!-- =========================================
+        PASO 2
+        VERIFICAR CODIGO
+    ========================================== -->
+
+    <div id="paso2" style="display:none;">
+
+        <p style="color:white;">
+            Ingresa el codigo de recuperacion.
+        </p>
+
+        <input
+            id="codigo"
+            maxlength="6"
+            placeholder="Codigo">
+
+        <button id="btnVerificarCodigo">
+
+            Verificar codigo
+
+        </button>
+
+    </div>
+
+    <!-- =========================================
+        PASO 3
+        NUEVA CONTRASEÑA
+    ========================================== -->
+
+    <div id="paso3" style="display:none;">
+
+        <p style="color:white;">
+            Escribe tu nueva contraseña.
+        </p>
+
+        <input
+            id="nuevaPass"
+            type="password"
+            placeholder="Nueva contraseña">
+
+        <input
+            id="confirmarPass"
+            type="password"
+            placeholder="Confirmar contraseña">
+
+        <button id="btnGuardarPassword">
+
+            Guardar contraseña
+
+        </button>
+
+    </div>
+
+    <!-- =========================================
+        MENSAJES
+    ========================================== -->
+
+    <p id="msg"></p>
+
+    <!-- =========================================
+        VOLVER AL LOGIN
+    ========================================== -->
+
+    <p style="margin-top:15px;">
+
+        <a href="login.html"
+           style="color:white;text-decoration:underline;">
+
+            ← Volver al Login
+
+        </a>
+
+    </p>
+
+</div>
+
+<!-- =========================================
+    JAVASCRIPT
+========================================== -->
+
+  <script type="module" src="js/recuperar.js"></script>
+
+</body>
+</html>

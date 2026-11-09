@@ -1,0 +1,292 @@
+body {
+  font-family: "Fredoka", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+
+  background-size: cover;
+  background-position: center;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#imagenfondo{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  z-index: -1;
+}
+
+.login-contenedor {
+  margin: auto;
+  text-align: center;
+  padding: 80px;
+  border-radius: 10px;
+  width: 300px;
+  color: white;
+  box-shadow: 0 0 12px rgba(255,255,255,0.1);
+}
+
+h1 {
+  font-family: "Fredoka", sans-serif;
+  font-size: 40px;
+  text-shadow: 
+  -2px -2px 0 black,
+     2px -2px 0 black,
+    -2px  2px 0 black,
+     2px  2px 0 black,
+    -3px  0px 0 black,
+     3px  0px 0 black,
+     0px -3px 0 black,
+     0px  3px 0 black;
+
+}
+
+input {
+  width: 90%;
+  padding:15px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 10px;
+}
+
+button {
+  font-family: "Fredoka", sans-serif;
+  font-size: 15px;
+  width: 95%;
+  padding: 15px;
+  margin-top: 15px;
+  background: linear-gradient(#8D49FD, #7F56F3, #5691f3);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/*Dificultad*/
+
+.dificultad-contenedor {
+    color: white;
+    width: 300px;
+    margin: 30px auto;
+    text-align: center;
+}
+
+.btn-dif {
+    display: block;
+    width: 150px;
+    margin: 10px auto;
+    padding: 12px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-dif:hover {
+    background-color: #3e8e41;
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}
+
+/* Barra usuario de dificultad */
+
+.barra-usuario {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 40px;
+    width: max-content;
+    margin: 15px 0 0 15px; /* esquina izquierda con pequeño espacio */
+    border-radius: 30px;
+    cursor: pointer;
+    color: white;
+    font-size: 20px;
+
+    background: linear-gradient(#8D49FD, #5691f3);
+}
+
+.barra-usuario img {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    border: 2px solid white;
+    object-fit: cover;
+}
+
+.barra-copa {
+    font-size: 20px;
+}
+
+.barra-usuario:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}
+
+/* Botón JUGAR */
+.btn-jugar {
+    margin-top: 20px;
+    padding: 12px 30px;
+    font-size: 20px;
+    border: none;
+    border-radius: 10px;
+    background-color: #1e88e5;
+    color: white;
+    cursor: pointer;
+
+}
+
+.btn-jugar:hover {
+    background-color: #1565c0;
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}
+.mensaje-dif {
+    font-size: 18px;
+    margin-top: 15px;
+    font-weight: bold;
+    text-shadow: 
+  -2px -2px 0 black,
+     2px -2px 0 black,
+    -2px  2px 0 black,
+     2px  2px 0 black,
+    -3px  0px 0 black,
+     3px  0px 0 black,
+     0px -3px 0 black,
+     0px  3px 0 black;
+}
+
+/* Avatar */
+
+.avatar-contenedor {
+    width: 700px;
+    margin: 80px auto;
+    padding: 30px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 20px;
+    text-align: center;
+    color: white;
+}
+
+.avatar-principal {
+    width: 160px;
+    height: 160px;
+    margin: 20px auto;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid white;
+}
+
+.avatar-principal img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-lista {
+    display: grid;
+    grid-template-columns: repeat(3, 110px);
+    justify-content: center;
+    gap: 25px;
+    margin: 30px auto;
+}
+
+.avatar-lista img {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+}
+
+.avatar-lista img:hover {
+    border-color: #00ffcc;
+}
+
+#btnConfirmar {
+    padding: 10px 30px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/*Perfil*/
+.perfil-contenedor {
+    width: 520px;
+    margin: 50px auto;
+    padding: 30px;
+    text-align: center;
+    color: white;
+    background: rgba(0, 0, 0, 0.6);
+    border: 8px solid;
+    box-shadow: 0 0 15px #7F56F3, 0 0 30px #7F56F3, inset 0 0 15px #7F56F3;
+    border-image: linear-gradient(#8D49FD, #7F56F3, #5691f3) 1;
+}
+
+.perfil-header {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    justify-content: center;
+}
+
+.perfil-avatar {
+    position: relative;
+    width: 140px;
+    height: 140px;
+}
+
+.perfil-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 4px solid white;
+    object-fit: cover;
+}
+
+.editar-avatar {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: linear-gradient(#8D49FD, #5691f3);
+    border-radius: 50%;
+    padding: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.perfil-info h2 {
+    margin: 0;
+    font-size: 26px;
+}
+
+.perfil-estadisticas {
+    margin: 30px 0;
+    font-size: 18px;
+}
+
+.perfil-estadisticas p {
+    margin: 8px 0;
+}
+
+
+
+
+.avatar-principal img {
+    transition: transform 0.2s ease;
+}
+
+.avatar-principal img:active {
+    transform: scale(1.1);
+}

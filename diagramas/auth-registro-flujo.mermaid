@@ -1,0 +1,33 @@
+%%=========================================================
+%%  MEMORIA NINJA — DIAGRAMA DE FLUJO: REGISTRO
+%%  Proceso: registro.html -> validaciones -> guardar usuario.
+%%  Basado en js/registro.js + js/controladores/RegistroController.js
+%%  + js/servicios/RegistroService.js.
+%%  Capas: COMPOSITION ROOT / CONTROLADOR / SERVICIO /
+%%  NÚCLEO (contratos DIP + ISP) / INFRAESTRUCTURA (LSP).
+%%=========================================================
+flowchart TD
+
+    A["registro.html<br/>onclick='registrar()'<br/>lee usuario · nacimiento · correo · pass · confirmarPass<br/>+ aceptaTerminos · aceptaPolitica"] --> B
+
+    subgraph CR["CAPA 1 — COMPOSITION ROOT"]
+        B["registro.js<br/>construye con new: repositorioUsuarios,<br/>notificador, registroService, registroController"]
+    end
+
+    B --> C["RegistroController.manejarEnvio(datos)<br/>(CAPA 2 — CONTROLADOR · polimorfismo)<br/>recibe datosFormulario + aceptaTerminos + aceptaPolitica"]
+    C --> D{"¿aceptaTerminos?<br/>¿aceptaPolitica?"}
+    D -->|"No"| E["MensajeDomNotificador.mostrar('Debes aceptar...', 'error')<br/>(INFRAESTRUCTURA · INotificador)"]
+    D -->|"Sí"| F["RegistroService.registrar(datosFormulario)<br/>(CAPA 3 — SERVICIO · reglas de negocio)"]
+
+    F --> G{"¿todos los campos completos?"}
+    G -->|"No"| E
+    G -->|"Sí"| H{"¿pass === confirmarPass?"}
+    H -->|"No"| E
+    H -->|"Sí"| I["IUsuarioLector.buscarPorCorreo(correo)<br/>(ISP -> solo lectura)"]
+    I --> J{"¿correo ya registrado?"}
+    J -->|"Sí"| E2["'Este correo ya está registrado.'"]
+    J -->|"No"| K["fabrica entidad: new Usuario({usuario, nacimiento, correo, pass})<br/>(NÚCLEO — entidad Usuario)"]
+    K --> L["IUsuarioEscritor.guardar(nuevoUsuario)<br/>(ISP -> solo escritura)"]
+    L --> M["LocalStorageUsuarioRepositorio.guardar()<br/>(INFRAESTRUCTURA · LSP)"]
+    M --> N["MensajeDomNotificador.mostrar('Registro exitoso...', 'exito')"]
+    N --> O["registro.js limpia el formulario<br/>(retorno true del controlador)"]

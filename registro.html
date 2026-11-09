@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Registro</title>
+</head>
+<body>
+
+    <video autoplay muted loop playsinline id="videofondo">
+    <source src="assets/memory_ninja_background_v2.mp4" type="video/mp4">
+    </video>
+
+    <div class="login-contenedor registro">
+        <img src="assets/img/logo.png" alt="logo" style="display:block; margin:auto;" width="85%">
+        <h1>Registro</h1>
+
+        <input id="usuario" type="text" placeholder="Usuario">
+        <input id="nacimiento" type="date" placeholder="Fecha de nacimiento">
+        <input id="correo" type="email" placeholder="Correo">
+        <div class="input-pass">
+            <input id="pass" type="password" placeholder="Contraseña">
+            <img src="assets/img/Sharingan_triple.svg.png" class="ojo" id="ojoPass" alt="Mostrar contraseña" role="button" tabindex="0">
+        </div>
+        <div class="input-pass">
+            <input id="pass2" type="password" placeholder="Confirmar contraseña">
+            <img src="assets/img/Sharingan_triple.svg.png" class="ojo" id="ojoPass2" alt="Mostrar contraseña" role="button" tabindex="0">
+        </div>
+        <!-- ===== Aceptación de términos ===== -->
+<div class="aceptacion">
+
+    <label class="check-label">
+        <input type="checkbox" id="aceptaTerminos">
+        He leído y acepto los
+        <span class="link-modal" data-modal="modalTerminos" role="button" tabindex="0" aria-label="Ver términos y condiciones">
+            Términos y Condiciones
+        </span>
+    </label>
+
+    <label class="check-label">
+        <input type="checkbox" id="aceptaPolitica">
+        He leído y acepto la
+        <span class="link-modal" data-modal="modalPolitica" role="button" tabindex="0" aria-label="Ver política de privacidad">
+            Política de Privacidad
+        </span>
+    </label>
+
+</div>
+
+<button id="btnRegistrar">Crear Cuenta</button>
+        <p id="msg"></p>
+
+        <p style="margin-top: 15px;">
+            ¿Ya tienes una cuenta?
+            <a href="login.html" style="color: #fff; text-decoration: underline;">Iniciar Sesión</a>
+        </p>
+    </div>
+            <!-- ========================= -->
+<!-- Modal Términos -->
+<!-- ========================= -->
+
+<div id="modalTerminos" class="modal">
+
+    <div class="modal-contenido">
+
+        <span class="cerrar" data-cerrar="modalTerminos" role="button" tabindex="0" aria-label="Cerrar términos">&times;</span>
+
+        <h2>Términos y Condiciones</h2>
+
+        <p>
+
+            Bienvenido a <strong>Memoria Ninja</strong>.
+
+        </p>
+
+        <p>
+
+            Al crear una cuenta aceptas utilizar el juego de forma responsable,
+            respetar a los demás jugadores y no utilizar programas que alteren
+            el funcionamiento del juego.
+
+        </p>
+
+        <p>
+
+            El incumplimiento de estas normas puede ocasionar la suspensión
+            de la cuenta.
+
+        </p>
+
+    </div>
+
+</div>
+
+<!-- ========================= -->
+<!-- Modal Política -->
+<!-- ========================= -->
+
+<div id="modalPolitica" class="modal">
+
+    <div class="modal-contenido">
+
+        <span class="cerrar" data-cerrar="modalPolitica" role="button" tabindex="0" aria-label="Cerrar política">&times;</span>
+
+        <h2>Política de Privacidad</h2>
+
+        <p>
+
+            Memoria Ninja almacenará únicamente la información necesaria para
+            el funcionamiento del juego.
+
+        </p>
+
+        <p>
+
+            Tus datos no serán compartidos con terceros y serán utilizados
+            únicamente para administrar tu cuenta y guardar tu progreso.
+
+        </p>
+
+    </div>
+
+</div>
+    <script  type = "module"    src="js/registro.js"></script>
+
+</body>
+</html>

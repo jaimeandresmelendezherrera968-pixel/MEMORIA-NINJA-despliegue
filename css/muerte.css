@@ -1,0 +1,175 @@
+﻿/* Muerte: variante 1J — hereda layout/tamaños/posiciones uchiha vía nivel-base+tema-aldea.
+   Colores/ambiente propios; reglas/JS/IDs/modales (#statsModal, modo2Jugadores, progreso+historial) intactos. */
+:root{
+  --n-body-bg:#331e41; --n-text:#f0f6ff; --n-stats:#ffd7d7;
+  --n-frame-bg:linear-gradient(180deg,#1f1f1f,#0e0d0d); --n-frame-border:#640101; --n-board-bg:#1b1b1b;
+  --n-panel-a:#2b1818; --n-panel-b:#160404; --n-brillo:#ff4d4d; --n-btn-bg:linear-gradient(135deg,#a80000,#f00000);
+  --n-v-glow:rgba(255,0,0,.45);
+}
+body{
+  font-family:'Fredoka',Arial,sans-serif;
+  background-color:var(--n-body-bg);
+  background-image:url(../assets/img/sasuke.png),url(../assets/img/naruto.png);
+  background-size:45%; background-repeat:no-repeat; background-position:left top,right top;
+}
+/* PC como uchiha: sin scroll en el viewport base; móvil maneja altura vía d*vh del shell */
+html,body{ overflow:hidden; }
+#videofondo{ object-fit:cover; object-position:center; }
+.titulo-juego{ margin:2px 0 4px; position:relative; z-index:2; }
+.titulo-juego h1{ margin:0; font-size:clamp(1rem,2.2vw,1.9rem); color:#f4c542; text-shadow:0 0 5px #000,0 0 10px #8b5cf6; letter-spacing:2px; }
+.titulo-juego p{ margin:2px 0 0; color:#fff; font-size:clamp(.65rem,1.1vw,.95rem); opacity:.85; }
+.game-shell{ gap:4px; }
+/* Recuadro stats propio (rojo) encima del estilo base */
+#stats.stats{ background:rgba(20,5,5,.9); border:2px solid #a80000; border-radius:12px; box-shadow:0 0 12px rgba(255,0,0,.45); }
+#stats.stats span{ color:#fff; } #stats.stats span span{ color:#ffd700; text-shadow:0 0 5px red; }
+/* Vignette roja ambiente (no bloquea input) */
+body::before{ content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:radial-gradient(circle,transparent 45%,rgba(77,1,1,.55) 78%,rgba(207,1,1,.45) 100%);
+  animation:efectoRojo 3s ease-in-out infinite; }
+@keyframes efectoRojo{ 0%,100%{opacity:.55} 50%{opacity:.85} }
+.game-shell,.boton{ position:relative; z-index:1; }
+/* Flip: muerte usa .card.flip (su controller) + .card.flipped (tema-aldea) */
+.card.flip{ transform: rotateY(180deg); }
+.card.matched,.card.emparejada{ box-shadow:0 6px 20px rgba(17,15,15,.6) inset; opacity:.9; pointer-events:none; }
+/* Modales propios (colores) — layout/pos fixed los da nivel-base */
+#modal .panel h2{ color:#ff4d5e; }
+#modal button,.victory-buttons button{ border:none; border-radius:8px; font-weight:bold; cursor:pointer; }
+#modal button{ background:#f81515; color:#fff; }
+#modal button:hover,.victory-buttons button:hover{ transform:scale(1.05); }
+.victory-icon{ animation:trofeo 1s ease-in-out infinite alternate; }
+@keyframes trofeo{ from{transform:translateY(0)} to{transform:translateY(-8px)} }
+/* #statsModal (propio de muerte) */
+#statsModal{ position:fixed; inset:0; display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,.75); z-index:16000; }
+#statsModal.hidden{ display:none !important; }
+.stats-panel{ width:min(420px,92vw); max-height:calc(100dvh - 16px); overflow:auto; background:linear-gradient(145deg,#2b1818,#160404); color:#fff; border:2px solid #a80000; border-radius:16px; padding:18px; text-align:center; box-shadow:0 0 20px rgba(255,0,0,.35); }
+.stats-container{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:10px 0; }
+.stat-box{ background:rgba(0,0,0,.35); border:1px solid #640101; border-radius:10px; padding:8px 10px; min-width:90px; }
+.stats-close,.stats-button{ background:#f81515; color:#fff; border:none; border-radius:8px; padding:8px 12px; font-weight:bold; cursor:pointer; }
+/* Mobile: sin scroll, respeta PC — el shell/tema-aldea escala; título compacto */
+@media (max-width:900px),(max-height:520px){
+  .titulo-juego h1{ font-size:clamp(.85rem,3.2vw,1.2rem); letter-spacing:1px; }
+  .titulo-juego p{ display:none; }
+  .game-shell{ padding-top:calc(4px + env(safe-area-inset-top)); padding-bottom:calc(4px + env(safe-area-inset-bottom)); }
+}
+@supports (height: 1svh){ .stats-panel{ max-height:calc(100svh - 16px); } }
+/* Activar reglas responsive de tema-aldea (#board/#boardFrame) y neutralizar inline 100px del controller */
+body[data-tema-aldea] #board,
+body[data-tema-aldea] #boardFrame #board { grid-template-columns: repeat(4, var(--carta-ancho)) !important; gap: var(--gap-cartas, 18px) !important; padding: clamp(10px, 2vmin, 22px) !important; }
+body[data-tema-aldea] #boardFrame { border-color: var(--n-frame-border, #640101) !important; }
+/* Si el nivel genera distinto nº de cartas, el controller pisa columnas: forzamos tamaño carta responsive */
+#board .card { width: var(--carta-ancho, 100px) !important; height: calc(var(--carta-ancho, 100px) * 1.4) !important; }
+
+/* ============================================================
+   AMBIENTE ROJO SANGRE (tablero y cartas)
+   ============================================================ */
+
+body[data-tema-aldea]{
+  --tema-principal:#8f0000;
+  --tema-brillo:#ff2b2b;
+  --tema-fondo:#1a0202;
+  --tema-reverso:url("../assets/img/respaldomuerte.png");
+  --n-frame-border:#ff2b2b;
+  --n-brillo:#ff3b3b;
+  --n-v-glow:rgba(255,32,32,.6);
+  --n-frame-bg:radial-gradient(120% 90% at 50% 0%,#4a0505,#1a0202 70%,#0c0000);
+  --n-board-bg:radial-gradient(120% 90% at 50% 0%,#3a0505,#160101 65%,#0a0000);
+  --n-panel-a:#3a0808; --n-panel-b:#120000;
+  --n-btn-bg:linear-gradient(135deg,#a30000,#ff1a1a);
+}
+
+.titulo-juego h1{
+  color:#ffe1e1;
+  text-shadow:0 0 5px #000,0 0 14px #ff1a1a,0 0 30px rgba(255,0,0,.6);
+}
+
+body[data-tema-aldea] #boardFrame{
+  border-color:rgba(255,43,43,.85);
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255,40,40,.30), transparent 62%),
+    linear-gradient(160deg,#3d0505,#140000 70%);
+  box-shadow:
+    0 0 0 3px #0a0000,
+    0 0 0 4px rgba(255,43,43,.35),
+    0 22px 52px rgba(0,0,0,.7),
+    0 0 34px rgba(255,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.12);
+}
+
+body[data-tema-aldea] #boardFrame::before{
+  filter:blur(26px) saturate(1.5) brightness(.9);
+  opacity:.6;
+}
+
+body[data-tema-aldea] #board{
+  border-color:rgba(255,43,43,.35);
+  background-color:#1a0202;
+  background-image:
+    radial-gradient(120% 90% at 50% -10%, rgba(255,32,32,.28), transparent 64%),
+    linear-gradient(rgba(255,60,60,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,60,60,.06) 1px, transparent 1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 -26px 48px rgba(0,0,0,.6),
+    inset 0 0 46px rgba(255,20,20,.18);
+}
+
+body[data-tema-aldea] .card{
+  box-shadow:
+    0 6px 16px rgba(0,0,0,.55),
+    0 0 0 1px rgba(255,43,43,.75),
+    0 0 18px rgba(255,20,20,.55);
+}
+
+body[data-tema-aldea] .card:not(.flipped):not(.flip):not(.volteada):hover{
+  box-shadow:
+    0 12px 24px rgba(0,0,0,.6),
+    0 0 0 2px rgba(255,80,80,.95),
+    0 0 28px rgba(255,20,20,.85);
+}
+
+body[data-tema-aldea] .card .back{
+  filter:saturate(1.45) brightness(1.12) drop-shadow(0 0 10px rgba(255,0,0,.85));
+}
+
+body[data-tema-aldea] .card.emparejada,
+body[data-tema-aldea] .card.matched{
+  box-shadow:
+    0 0 22px rgba(255,20,20,.7) inset,
+    0 0 18px rgba(255,0,0,.6);
+}
+
+body[data-tema-aldea] #stats.stats{
+  background:linear-gradient(180deg, rgba(90,6,6,.92), rgba(24,2,2,.95));
+  border-color:rgba(255,43,43,.8);
+  color:#ffe3e3;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.55),
+    0 0 22px rgba(255,20,20,.6),
+    inset 0 1px 0 rgba(255,255,255,.14);
+}
+
+body[data-tema-aldea] #stats.stats #timer,
+body[data-tema-aldea] #stats.stats #moves,
+body[data-tema-aldea] #stats.stats #score{
+  color:#ff3b3b;
+  text-shadow:0 0 14px rgba(255,30,30,.9);
+}
+
+body[data-tema-aldea] .btn-pausa-nivel{
+  border-color:rgba(255,43,43,.7);
+  color:#ffe3e3;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.18), transparent 56%),
+    linear-gradient(145deg,#5a0707,#1a0202);
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.5),
+    0 0 20px rgba(255,20,20,.55),
+    inset 0 1px 0 rgba(255,255,255,.22);
+}
+
+body[data-tema-aldea] .btn-pausa-nivel:hover{
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.55),
+    0 0 28px rgba(255,43,43,.8),
+    inset 0 1px 0 rgba(255,255,255,.28);
+}

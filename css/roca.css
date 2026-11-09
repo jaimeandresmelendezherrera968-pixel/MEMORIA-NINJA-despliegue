@@ -1,0 +1,843 @@
+/* =====================================================
+   🪨⛰️ FONDO
+   TEMÁTICA ALDEA DE LA ROCA - IWAGAKURE
+===================================================== */
+
+body {
+  font-family: Arial, sans-serif;
+
+  background-color: #171411;
+
+  color: #eee5d5;
+
+  text-align: center;
+
+  padding: 20px;
+
+  margin: 0;
+}
+
+
+/* =====================================================
+   🪨 FONDO DE VIDEO
+===================================================== */
+
+video {
+  position: fixed;
+
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  z-index: -1;
+}
+
+
+/* =====================================================
+   ⛰️ ENCABEZADO
+===================================================== */
+
+.game-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  gap: 12px;
+
+  max-width: 980px;
+
+  margin: 0 auto 10px;
+}
+
+
+.player-info {
+  text-align: left;
+}
+
+
+.turn-info {
+  font-weight: 700;
+
+  color: #d6a85f;
+
+  text-shadow:
+    0 0 8px #8a5a2b,
+
+    0 0 15px #5c3a1c;
+}
+
+
+.stats span {
+  margin-left: 12px;
+
+  color: #c8b9a3;
+}
+
+
+/* =====================================================
+   🪨 MARCO DEL TABLERO
+===================================================== */
+
+#boardFrame {
+  display: flex;
+
+  justify-content: center;
+
+  margin: 24px auto;
+
+  padding: 18px;
+
+  width: max-content;
+
+  background:
+    linear-gradient(
+      180deg,
+      #514638,
+      #211c17
+    );
+
+  border-radius: 14px;
+
+  border:
+    8px solid #806b50;
+
+  box-shadow:
+    0 18px 60px rgba(0, 0, 0, 0.85),
+
+    0 0 25px rgba(170, 130, 75, 0.3),
+
+    inset 0 0 20px rgba(220, 190, 130, 0.08);
+}
+
+
+/* =====================================================
+   🪨 TABLERO
+===================================================== */
+
+#board {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 100px);
+
+  gap: 30px;
+
+  padding: 30px;
+
+  background:
+    #151311;
+
+  border-radius: 10px;
+
+  box-shadow:
+    inset 0 0 25px rgba(170, 130, 75, 0.08);
+}
+
+
+/* =====================================================
+   🃏 CARTA 3D
+===================================================== */
+
+.card {
+  width: 100px;
+
+  height: 140px;
+
+  position: relative;
+
+  transform-style: preserve-3d;
+
+  transition:
+    transform 0.45s ease;
+
+  cursor: pointer;
+
+  border-radius: 8px;
+
+  perspective: 900px;
+}
+
+
+/* =====================================================
+   🔄 CARTA VOLTEADA
+===================================================== */
+
+.card.flipped {
+  transform:
+    rotateY(180deg);
+}
+
+
+/* =====================================================
+   🖼️ IMÁGENES DE LAS CARTAS
+===================================================== */
+
+.card img {
+  width: 100%;
+
+  height: 100%;
+
+  position: absolute;
+
+  left: 0;
+
+  top: 0;
+
+  border-radius: 8px;
+
+  object-fit: fill;
+
+  backface-visibility: hidden;
+
+  -webkit-backface-visibility: hidden;
+}
+
+
+/* =====================================================
+   ⚫ PARTE TRASERA
+===================================================== */
+
+.back {
+  transform:
+    rotateY(0deg);
+}
+
+
+/* =====================================================
+   🪨 PARTE FRONTAL
+===================================================== */
+
+.front {
+  transform:
+    rotateY(180deg);
+}
+
+
+/* =====================================================
+   🪨 CARTA ENCONTRADA
+===================================================== */
+
+.card.found {
+  pointer-events: none;
+
+  animation:
+    desaparecerCarta
+    0.7s
+    ease
+    forwards;
+}
+
+
+/* =====================================================
+   ❌ MODAL DE DERROTA
+===================================================== */
+
+#modal {
+  position: fixed;
+
+  inset: 0;
+
+  background:
+    rgba(12, 9, 6, 0.87);
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  z-index: 10000;
+}
+
+
+/* =====================================================
+   🪨 PANEL DE DERROTA
+===================================================== */
+
+.panel {
+  background:
+    linear-gradient(
+      145deg,
+      #403529,
+      #1c1814
+    );
+
+  color: #eee5d5;
+
+  padding: 20px;
+
+  border-radius: 10px;
+
+  width: 320px;
+
+  text-align: center;
+
+  border:
+    2px solid #907650;
+
+  box-shadow:
+    0 0 25px rgba(160, 120, 65, 0.35);
+}
+
+
+/* =====================================================
+   👁️ OCULTAR
+===================================================== */
+
+.hidden {
+  display: none !important;
+}
+
+
+/* =====================================================
+   📜 HISTORIAL
+===================================================== */
+
+.history {
+  max-width: 980px;
+
+  margin: 10px auto;
+
+  color: #c8b9a3;
+
+  text-align: left;
+}
+
+
+#recordsList p {
+  background:
+    rgba(170, 130, 70, 0.05);
+
+  padding: 8px;
+
+  border-radius: 8px;
+
+  margin: 6px 0;
+
+  border-left:
+    3px solid #806344;
+}
+
+
+/* =====================================================
+   🪨 CARTA EMPAREJADA
+===================================================== */
+
+.card.emparejada {
+  position: relative;
+
+  overflow: hidden;
+
+  transform-style: preserve-3d;
+
+  perspective: 800px;
+
+  animation:
+    carta-fade-3d
+    2s
+    ease-in
+    forwards;
+}
+
+
+/* =====================================================
+   🔙 BOTÓN VOLVER
+===================================================== */
+
+.boton {
+  display: inline-block;
+
+  padding: 12px 25px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #49382a,
+      #806044
+    );
+
+  color: white;
+
+  text-decoration: none;
+
+  border-radius: 10px;
+
+  border:
+    2px solid #b99a69;
+
+  font-size: 18px;
+
+  font-weight: bold;
+
+  transition: 0.3s;
+
+  box-shadow:
+    0 0 10px rgba(180, 140, 80, 0.3);
+}
+
+
+.boton:hover {
+  background:
+    linear-gradient(
+      135deg,
+      #806044,
+      #b18a54
+    );
+
+  color: #ffffff;
+
+  transform:
+    scale(1.05);
+
+  box-shadow:
+    0 0 15px #d2ae6e,
+
+    0 0 30px rgba(170, 125, 60, 0.5);
+}
+
+
+/* =====================================================
+   🪨⛰️ MODAL DE VICTORIA
+   ALDEA DE LA ROCA
+===================================================== */
+
+#victoryModal {
+  position: fixed;
+
+  inset: 0;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(190, 150, 85, 0.3),
+      rgba(100, 75, 45, 0.45),
+      rgba(12, 9, 6, 0.97)
+    );
+
+  z-index: 15000;
+}
+
+
+/* =====================================================
+   🪨 OCULTAR MODAL DE VICTORIA
+===================================================== */
+
+#victoryModal.hidden {
+  display: none !important;
+}
+
+
+/* =====================================================
+   ⛰️ PANEL DE VICTORIA IWAGAKURE
+===================================================== */
+
+.victory-panel {
+  width: 420px;
+
+  max-width: 90%;
+
+  padding: 30px;
+
+  text-align: center;
+
+  background:
+    linear-gradient(
+      145deg,
+      #171411,
+      #352a20,
+      #59452e,
+      #30251b,
+      #110e0b
+    );
+
+  border:
+    3px solid #c49a5a;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 0 15px rgba(210, 170, 100, 0.8),
+
+    0 0 35px rgba(150, 110, 55, 0.65),
+
+    0 0 70px rgba(80, 55, 30, 0.5),
+
+    inset 0 0 25px rgba(230, 200, 140, 0.12);
+
+  animation:
+    victoriaRocaAparecer
+    0.5s
+    ease;
+}
+
+
+/* =====================================================
+   🪨 ICONO DE ROCA
+===================================================== */
+
+.victory-icon {
+  font-size: 65px;
+
+  margin-bottom: 5px;
+
+  text-shadow:
+    0 0 5px #ffffff,
+
+    0 0 12px #e1c38a,
+
+    0 0 25px #bd914d,
+
+    0 0 40px #73502b;
+
+  animation:
+    rocaMovimiento
+    2s
+    ease-in-out
+    infinite
+    alternate;
+}
+
+
+/* =====================================================
+   ⛰️ TÍTULO DE VICTORIA
+===================================================== */
+
+.victory-panel h2 {
+  margin: 5px 0;
+
+  color: #f4ead8;
+
+  font-size: 34px;
+
+  text-shadow:
+    0 0 5px #ffffff,
+
+    0 0 12px #e2c58d,
+
+    0 0 25px #b88b4c,
+
+    0 0 35px #6f4b27;
+}
+
+
+/* =====================================================
+   🪨 LÍNEA DE PIEDRA
+===================================================== */
+
+.victory-line {
+  width: 80%;
+
+  height: 4px;
+
+  margin: 15px auto;
+
+  background:
+    linear-gradient(
+      90deg,
+
+      transparent,
+
+      #6f4d2c,
+
+      #967044,
+
+      #c9a66b,
+
+      #eee0c3,
+
+      #c9a66b,
+
+      #967044,
+
+      #6f4d2c,
+
+      transparent
+    );
+
+  box-shadow:
+    0 0 8px #c5a16a,
+
+    0 0 18px #76522d;
+}
+
+
+/* =====================================================
+   🪨 MENSAJE DE VICTORIA
+===================================================== */
+
+.victory-message {
+  color: #ded0bb;
+
+  font-size: 16px;
+
+  margin: 8px 0;
+
+  text-shadow:
+    0 0 5px rgba(200, 160, 95, 0.5);
+}
+
+
+/* =====================================================
+   📊 ESTADÍSTICAS DE VICTORIA
+===================================================== */
+
+.victory-stats {
+  margin: 20px 0;
+
+  padding: 12px;
+
+  background:
+    rgba(15, 12, 9, 0.85);
+
+  border:
+    1px solid #a88550;
+
+  border-radius: 10px;
+
+  color: #e0c38f;
+
+  font-size: 17px;
+
+  font-weight: bold;
+
+  line-height: 1.7;
+
+  box-shadow:
+    inset 0 0 15px rgba(200, 160, 90, 0.12),
+
+    0 0 10px rgba(150, 110, 55, 0.4);
+}
+
+
+/* =====================================================
+   🪨 BOTONES DE VICTORIA
+===================================================== */
+
+.victory-buttons {
+  display: flex;
+
+  justify-content: center;
+
+  gap: 12px;
+
+  margin-top: 20px;
+}
+
+
+.victory-buttons button {
+  padding: 12px 18px;
+
+  border:
+    2px solid #c9a76b;
+
+  border-radius: 9px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #493421,
+      #765431,
+      #a97b43
+    );
+
+  color: #ffffff;
+
+  font-size: 15px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  transition: 0.25s;
+
+  box-shadow:
+    0 0 8px rgba(190, 145, 75, 0.45);
+}
+
+
+/* =====================================================
+   ⛰️ HOVER DE BOTONES
+===================================================== */
+
+.victory-buttons button:hover {
+
+  background:
+    linear-gradient(
+      135deg,
+      #806044,
+      #b18a54,
+      #dfc18a
+    );
+
+  color: #20160e;
+
+  transform:
+    scale(1.05);
+
+  box-shadow:
+    0 0 12px #e5c88f,
+
+    0 0 25px #b88b4c,
+
+    0 0 40px #76502a;
+}
+
+
+/* =====================================================
+   🪨 ANIMACIÓN MODAL ROCA
+===================================================== */
+
+@keyframes victoriaRocaAparecer {
+
+  from {
+    opacity: 0;
+
+    transform:
+      scale(0.7)
+      translateY(30px);
+
+    filter:
+      blur(6px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      scale(1)
+      translateY(0);
+
+    filter:
+      blur(0);
+  }
+}
+
+
+/* =====================================================
+   ⛰️ MOVIMIENTO DE LA ROCA
+===================================================== */
+
+@keyframes rocaMovimiento {
+
+  0% {
+    transform:
+      translateY(0)
+      rotate(-2deg);
+
+    filter:
+      brightness(1);
+  }
+
+  50% {
+    transform:
+      translateY(-4px)
+      rotate(2deg);
+
+    filter:
+      brightness(1.2);
+  }
+
+  100% {
+    transform:
+      translateY(-8px)
+      rotate(-2deg);
+
+    filter:
+      brightness(1.4);
+  }
+}
+
+
+/* =====================================================
+   🃏 ANIMACIÓN CARTA DESAPARECIENDO
+===================================================== */
+
+@keyframes desaparecerCarta {
+
+  0% {
+    opacity: 1;
+
+    transform:
+      rotateY(180deg)
+      scale(1);
+  }
+
+  40% {
+    opacity: 1;
+
+    transform:
+      rotateY(180deg)
+      scale(1.08);
+  }
+
+  100% {
+    opacity: 0;
+
+    transform:
+      rotateY(180deg)
+      scale(0.4);
+  }
+}
+
+
+/* =====================================================
+   📱 RESPONSIVE
+===================================================== */
+
+@media (max-width: 600px) {
+
+  #board {
+    grid-template-columns:
+      repeat(2, 120px);
+
+    gap: 20px;
+  }
+
+  .card {
+    width: 120px;
+
+    height: 160px;
+  }
+
+  .victory-buttons {
+    flex-direction: column;
+  }
+
+  .victory-panel {
+    width: 85%;
+
+    padding:
+      25px 15px;
+  }
+}
+
+
+/* =====================================================
+   📱 RESPONSIVE PEQUEÑO
+===================================================== */
+
+@media (max-width: 520px) {
+
+  #board {
+    grid-template-columns:
+      repeat(2, 120px);
+  }
+
+  .card {
+    width: 120px;
+
+    height: 160px;
+  }
+}

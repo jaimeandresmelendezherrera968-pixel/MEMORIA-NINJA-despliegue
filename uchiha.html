@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>uchiha - Memorice Duel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/nivel-base.css">
+    <link rel="stylesheet" href="css/tema-aldea.css">
+    <script src="js/sesion-guard.js"></script>
+</head>
+<body>
+    <audio id="gameMusic" loop><source src="assets/game music.mp3" type="audio/mpeg"></audio>
+    <video autoplay muted loop playsinline id="videofondo"><source src="assets/fondo.mp4" type="video/mp4"></video>
+    <div class="game-shell">
+        <div id="stats" class="stats">
+            <span>Tiempo: <span id="timer">00:00</span></span>
+            <span>Movimientos: <span id="moves">0</span></span>
+            <span>Puntaje: <span id="score">0</span></span>
+        </div>
+        <div id="boardFrame"><div id="board"></div></div>
+        <a href="menu.html" class="boton">volver</a>
+    </div>
+    <div id="modal" class="hidden">
+        <div class="panel">
+            <h2>💀 ¡DERROTA!</h2>
+            <h2 id="defeatMsg">No pudiste completar el desafío</h2>
+            <p id="finalStats"></p>
+            <div class="botones-modal">
+                <button id="restartGame">🔄 Intentar de nuevo</button>
+                <button id="closeModal">Volver al menú</button>
+            </div>
+        </div>
+    </div>
+    <div id="victoryModal" class="hidden">
+        <div class="victory-panel">
+            <div class="victory-icon">🏆</div>
+            <h2>¡VICTORIA!</h2>
+            <div class="victory-line"></div>
+            <p id="victoryMsg1" class="victory-message"></p>
+            <p id="victoryMsg2" class="victory-message"></p>
+            <p id="victoryStats" class="victory-stats"></p>
+            <div class="victory-buttons">
+                <button id="victoryRestart">🔄 Jugar de nuevo</button>
+                <button id="victoryClose">Volver al menú</button>
+            </div>
+        </div>
+    </div>
+    <script type="module">import { ControladorNivel } from "./js/niveles/ControladorNivel.js"; document.addEventListener("DOMContentLoaded",()=>new ControladorNivel("uchiha"));</script>
+</body>
+</html>

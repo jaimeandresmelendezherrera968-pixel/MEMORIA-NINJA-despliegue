@@ -1,0 +1,30 @@
+%%=========================================================
+%%  MEMORIA NINJA — DIAGRAMA DE FLUJO: LOGIN
+%%  Proceso: login.html -> autenticación -> redirección.
+%%  Basado en js/login.js + js/controladores/LoginController.js
+%%  + js/servicios/AutenticacionService.js.
+%%  Capas: COMPOSITION ROOT / CONTROLADOR / SERVICIO /
+%%  NÚCLEO (contrato DIP) / INFRAESTRUCTURA (LSP).
+%%=========================================================
+flowchart TD
+
+    A["login.html<br/>onclick='login()'<br/>lee usuario · password · recordarme"] --> B
+
+    subgraph CR["CAPA 1 — COMPOSITION ROOT"]
+        B["login.js<br/>construye con new: repositorioUsuarios,<br/>sesionRepositorio, notificador,<br/>autenticacionService, sesionService, loginController"]
+    end
+
+    B --> C["LoginController.manejarEnvio({usuario, password, recordar})<br/>(CAPA 2 — CONTROLADOR · polimorfismo)"]
+    C --> D["AutenticacionService.iniciarSesion(usuario, password)<br/>(CAPA 3 — SERVICIO · regla de negocio)"]
+    D -->|"DIP -> IUsuarioLector"| E["LocalStorageUsuarioRepositorio.buscarPorCredenciales()<br/>(INFRAESTRUCTURA · LSP)"]
+    E --> F{"¿credenciales válidas?"}
+
+    F -->|No| G["MensajeDomNotificador.mostrar('Datos incorrectos', 'error')<br/>(INFRAESTRUCTURA · INotificador)"]
+    F -->|Sí| H["MensajeDomNotificador.mostrar('Acceso concedido', 'exito')<br/>(INFRAESTRUCTURA · INotificador)"]
+
+    H --> I{"¿recordar = true?"}
+    I -->|Sí| J["SesionService.guardarSesion(usuario)<br/>(CAPA 3 — SERVICIO)"]
+    J -->|"DIP -> ISesionRepositorio"| K["LocalStorageSesionRepositorio.guardar()<br/>(INFRAESTRUCTURA)"]
+    I -->|No| L["setTimeout 800ms"]
+    K --> L
+    L --> M["Redirección: menu.html"]

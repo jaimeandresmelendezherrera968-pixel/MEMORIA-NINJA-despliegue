@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Memoria Ninja</title>
+
+    <link rel="stylesheet" href="css/orden.css">
+    <!-- GUARD DE SESIÓN (valida contra el servidor; nunca redirige) -->
+    <script src="js/sesion-guard.js"></script>
+</head>
+
+<body>
+
+
+<audio id="gameMusic" loop>
+    <source src="assets/game music.mp3" type="audio/mpeg">
+</audio>
+ <video autoplay muted loop playsinline id="videofondo">
+        <source src="assets/fondo.mp4" type="video/mp4">
+    </video>
+
+
+
+
+
+
+    <main class="juego">
+
+        <div id="contador" class="contador"></div>
+
+        <div id="victoriaTexto" class="victoria-texto">
+        ¡BUEN TRABAJO<br>NINJA!
+        </div>
+
+        <section class="panel-principal">
+
+            <!-- TABLERO IZQUIERDO -->
+            <section class="tablero tablero-izquierdo">
+
+                <div class="carta" data-id="0">
+                    <img src="assets/img/cards/aldeas/konoha/uchiha/7.png" alt="Itachi">
+                </div>
+
+                <div class="carta" data-id="1">
+                    <img src="assets/img/cards/aldeas/konoha/uchiha/1.png" alt="Obito">
+                </div>
+
+                <div class="carta" data-id="2">
+                    <img src="assets/img/cards/aldeas/akatsuki/2.png" alt="Pain">
+                </div>
+
+                <div class="carta" data-id="3">
+                    <img src="assets/img/cards/aldeas/akatsuki/4.png" alt="Sasori">
+                </div>
+
+                <div class="carta" data-id="4">
+                    <img src="assets/img/cards/aldeas/akatsuki/1.png" alt="Hidan">
+                </div>
+
+                <div class="carta" data-id="5">
+                    <img src="assets/img/cards/aldeas/akatsuki/6.png" alt="Kakuzo">
+                </div>
+
+                <div class="carta" data-id="6">
+                    <img src="assets/img/cards/aldeas/konoha/uchiha/3.png" alt="Kagami">
+                </div>
+
+                <div class="carta" data-id="7">
+                    <img src="assets/img/cards/aldeas/akatsuki/3.png" alt="Zetzu">
+                </div>
+
+            </section>
+
+            <!-- PANEL CENTRAL -->
+            <section class="panel-central">
+
+                <div class="panel-info">
+
+                    <div class="estadistica">
+                        <h2>PUNTOS</h2>
+
+                        <div class="valor" id="puntaje">
+                            0
+                        </div>
+                    </div>
+
+                    <button class="btn-ajustes" id="btnAjustes">
+                        <img src="assets/ajustes.png" alt="Ajustes">
+                    </button>
+
+                    <div class="estadistica">
+                        <h2>TIEMPO</h2>
+
+                        <div class="valor" id="tiempo">
+                        00:00
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="acciones">
+
+                    <h1 class="titulo">
+                        JUEGA
+                    </h1>
+
+                    <a href="menu.html" class="boton">volver</a>
+
+                </div>
+
+            </section>
+
+            <!-- TABLERO DERECHO -->
+            <section class="tablero tablero-derecho">
+
+                <div class="carta" data-id="8">
+                    <img src="assets/img/cards/aldeas/konoha/uchiha/6.png" alt="Shisui">
+                </div>
+
+                <div class="carta" data-id="9">
+                    <img src="assets/img/cards/aldeas/konoha/uchiha/2.png" alt="Fugaku">
+                </div>
+
+                <div class="carta" data-id="10">
+                    <img src="assets/img/cards/aldeas/konoha/uchiha/5.png" alt="Sasuke">
+                </div>
+
+                <div class="carta" data-id="11">
+                    <img src="assets/img/cards/aldeas/konoha/uzumaki/4.png" alt="Boruto">
+                </div>
+
+                <div class="carta" data-id="12">
+                    <img src="assets/img/cards/aldeas/konoha/uchiha/4.png" alt="Madara">
+                </div>
+
+                <div class="carta" data-id="13">
+                    <img src="assets/img/cards/aldeas/konoha/uzumaki/3.png" alt="Ashina">
+                </div>
+
+                <div class="carta" data-id="14">
+                    <img src="assets/img/cards/aldeas/akatsuki/7.png" alt="Nagato">
+                </div>
+
+                <div class="carta" data-id="15">
+                    <img src="assets/img/cards/aldeas/niebla/8.png" alt="Yagura">
+                </div>
+
+            </section>
+
+        </section>
+
+        
+        
+    </main>
+
+
+    <div id="modalPerder" class="modal">
+
+    <div class="modal-contenido">
+
+        <h2>¡Has perdido!</h2>
+
+        <p>Te equivocaste en la secuencia.</p>
+
+        <button id="reiniciar">
+            Reiniciar
+        </button>
+
+        <button id="menu">
+            Ir al menú
+        </button>
+
+    </div>
+
+    </div>
+
+    <div id="modalGanar" class="modal">
+
+    <div class="modal-contenido">
+
+        <h2>¡Felicidades!</h2>
+
+        <p>Has completado las 16 cartas.</p>
+
+        <button id="volverJugar">
+            Jugar otra vez
+        </button>
+
+        <button id="volverMenu">
+            Ir al menú
+        </button>
+
+    </div>
+
+</div>
+
+
+<div id="modalAjustes" class="modal">
+
+    <div class="modal-contenido">
+
+        <h2>⚙ AJUSTES</h2>
+
+        <button id="btnMusica">
+    Música: ON
+</button>
+
+        <button id="btnPausa">
+            Pausar partida
+        </button>
+
+        <button id="btnMenuAjustes">
+            Salir al menú
+        </button>
+
+        <button id="btnCerrarAjustes">
+            Cerrar
+        </button>
+
+    </div>
+
+</div>
+
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+<script type="module" src="js/orden/Orden.js"></script>
+</body>
+
+</html>

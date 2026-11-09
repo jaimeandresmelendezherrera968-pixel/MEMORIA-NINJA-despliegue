@@ -1,0 +1,490 @@
+
+body { 
+  font-family: Arial, sans-serif;
+  background-color: rgb(52, 33, 65); 
+    background-size: 100%;
+    background-repeat: no-repeat;
+    background-position: left top, right top;
+   color: #f0f6ff;
+    text-align:center; 
+    padding:20px; 
+    margin:0;
+   }
+
+.game-header { display:flex; justify-content:space-between; align-items:center; gap:12px; max-width:980px; margin:0 auto 10px; }
+.player-info { text-align:left; }
+.turn-info { font-weight:700; color:#ffd166; }
+.stats span { margin-left:12px; color:#bcd3ff; }
+
+/* Marco alrededor del tablero */
+#boardFrame {
+  display: flex;
+  justify-content: center;
+  margin: 24px auto;
+  padding: 18px;
+  width: max-content;
+  background: linear-gradient(180deg,#3b2f20,#2d2418);
+  border-radius: 14px;
+  border: 8px solid #b8843b;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.6);
+}
+
+/* Tablero */
+#board {
+  display: grid;
+  grid-template-columns: repeat(4, 100px);
+  gap: 30px;
+  padding: 30px;
+  background: #1b1b1b;
+  border-radius: 10px;
+}
+
+/* Carta */
+.card {
+  width: 100px;
+  height: 140px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform .45s;
+  cursor: pointer;
+  border-radius: 8px;
+  perspective: 900px;
+}
+
+.card.flip { 
+  transform: rotateY(180deg);
+ }
+
+
+.card img {
+    width: 100%;
+    height: 100%;
+
+    position: absolute;
+    left: 0;
+    top: 0;
+
+    border-radius: 8px;
+
+    backface-visibility: hidden;
+
+    object-fit: fill;
+
+    image-rendering: auto;
+}
+
+.front { 
+  transform: rotateY(180deg);
+ }
+
+.card.matched {
+   box-shadow: 0 6px 20px rgba(0,0,0,0.6) inset;
+    opacity: 0.9;
+     transform: scale(0.98);
+      pointer-events:none; 
+    }
+
+#modal { 
+  position: fixed;
+   inset: 0; 
+   background: rgba(0,0,0,0.5);
+    display:flex; 
+    justify-content:center; 
+    align-items:center;
+   }
+
+.panel {
+   background: white;
+    color: #111; padding: 20px; 
+    border-radius: 10px;
+     width: 320px;
+      text-align:center;
+     }
+.hidden {
+   display: none !important;
+ }
+
+.history {
+   max-width:980px; 
+   margin: 10px auto;
+    color:#cfe4ff; 
+    text-align:left;
+   }
+
+#recordsList p{ 
+  background: rgba(255,255,255,0.03); 
+  padding:8px; 
+  border-radius:8px; 
+  margin:6px 0; 
+}
+
+/* responsive */
+@media (max-width:520px) {
+  #board { grid-template-columns: repeat(2, 120px); }
+  .card { width: 120px; height: 160px; }
+}
+/* =====================================================
+   🖤 CANDELA NEGRA 3D — QUEMA Y DESAPARECE CARTA PAR
+   SOLO CSS — NO TOCA JS NI HTML
+   ===================================================== */
+
+.card.emparejada {
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  perspective: 800px;
+
+  animation: carta-fade-3d 2s ease-in forwards;
+}
+
+/* Oscurece la carta mientras se quema */
+.card.emparejada img {
+  filter: brightness(0.2) contrast(1.5);
+}
+
+/* 🔥 Capa base de candela negra (3D) */
+.card.emparejada::before {
+  content: "";
+  position: absolute;
+  inset: -45%;
+  pointer-events: none;
+  z-index: 6;
+
+  background:
+    radial-gradient(circle at 50% 100%, rgba(0,0,0,1), transparent 60%),
+    radial-gradient(circle at 30% 90%, rgba(30,30,30,0.9), transparent 55%),
+    radial-gradient(circle at 70% 85%, rgba(50,50,50,0.8), transparent 60%);
+
+  transform-origin: bottom center;
+  transform: rotateX(55deg) translateZ(30px);
+  animation: fuego-3d-base 0.9s infinite ease-in-out;
+  filter: blur(1px);
+}
+
+/* 🔥 Volumen superior (más profundidad) */
+.card.emparejada::after {
+  content: "";
+  position: absolute;
+  inset: -55%;
+  pointer-events: none;
+  z-index: 7;
+
+  background:
+    radial-gradient(circle at 50% 100%, rgba(20,20,20,0.9), transparent 55%),
+    radial-gradient(circle at 40% 95%, rgba(60,60,60,0.7), transparent 50%),
+    radial-gradient(circle at 60% 90%, rgba(90,90,90,0.6), transparent 55%);
+
+  transform-origin: bottom center;
+  transform: rotateX(65deg) translateZ(55px);
+  animation: fuego-3d-volumen 1.1s infinite ease-in-out;
+  filter: blur(2px);
+}
+
+/* 🔥 Movimiento de la candela */
+@keyframes fuego-3d-base {
+  0% {
+    transform: rotateX(55deg) translateZ(25px) scaleY(0.9);
+    opacity: 0.6;
+  }
+  50% {
+    transform: rotateX(60deg) translateZ(35px) scaleY(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: rotateX(55deg) translateZ(25px) scaleY(0.9);
+    opacity: 0.6;
+  }
+}
+
+@keyframes fuego-3d-volumen {
+  0% {
+    transform: rotateX(65deg) translateZ(45px) scaleY(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: rotateX(70deg) translateZ(65px) scaleY(1.4);
+    opacity: 1;
+  }
+  100% {
+    transform: rotateX(65deg) translateZ(45px) scaleY(0.8);
+    opacity: 0.5;
+  }
+}
+
+/* 🕳️ Desaparición progresiva de la carta */
+@keyframes carta-fade-3d {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  60% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+
+
+
+
+video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+}
+
+
+
+
+
+.boton{
+    display: inline-block;
+    padding: 12px 25px;
+    background-color: #7300f7;
+    color: white;
+    text-decoration: none; /* Quita el subrayado */
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.boton:hover{
+    background-color: #7300f7;
+    transform: scale(1.05);
+}
+
+
+/* =====================================================
+   MODAL DE VICTORIA AKATSUKI
+===================================================== */
+
+#victoryModal {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: rgba(0, 0, 0, 0.80);
+
+    z-index: 15000;
+}
+
+/* Ocultar modal */
+#victoryModal.hidden {
+    display: none !important;
+}
+
+
+/* =====================================================
+   PANEL
+===================================================== */
+
+.victory-panel {
+    width: 420px;
+    max-width: 90%;
+
+    padding: 30px;
+
+    text-align: center;
+
+    background: linear-gradient(
+        145deg,
+        #160404,
+        #4b0707,
+        #180202
+    );
+
+    border: 3px solid #ffd700;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 0 20px rgba(255, 215, 0, 0.8),
+        0 0 50px rgba(255, 0, 0, 0.5);
+
+    animation: victoriaAparecer 0.4s ease;
+}
+
+
+/* =====================================================
+   TROFEO
+===================================================== */
+
+.victory-icon {
+    font-size: 65px;
+
+    margin-bottom: 5px;
+
+    animation: trofeo 1s ease-in-out infinite alternate;
+}
+
+
+/* =====================================================
+   TITULO
+===================================================== */
+
+.victory-panel h2 {
+    margin: 5px 0;
+
+    color: #ffd700;
+
+    font-size: 34px;
+
+    text-shadow:
+        0 0 5px #ff0000,
+        0 0 15px #ff0000;
+}
+
+
+/* =====================================================
+   LINEA
+===================================================== */
+
+.victory-line {
+    width: 80%;
+
+    height: 3px;
+
+    margin: 15px auto;
+
+    background: #ffd700;
+
+    box-shadow: 0 0 10px #ffd700;
+}
+
+
+/* =====================================================
+   MENSAJE
+===================================================== */
+
+.victory-message {
+    color: white;
+
+    font-size: 16px;
+
+    margin: 8px 0;
+}
+
+
+/* =====================================================
+   ESTADISTICAS
+===================================================== */
+
+.victory-stats {
+    margin: 20px 0;
+
+    padding: 12px;
+
+    background: rgba(0, 0, 0, 0.4);
+
+    border-radius: 10px;
+
+    color: #ffd700;
+
+    font-size: 17px;
+
+    font-weight: bold;
+
+    line-height: 1.7;
+}
+
+
+/* =====================================================
+   BOTONES
+===================================================== */
+
+.victory-buttons {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 12px;
+
+    margin-top: 20px;
+}
+
+.victory-buttons button {
+    padding: 12px 18px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: #e00000;
+
+    color: white;
+
+    font-size: 15px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.victory-buttons button:hover {
+    background: #ff1a1a;
+
+    transform: scale(1.05);
+
+    box-shadow:
+        0 0 15px rgba(255, 0, 0, 0.7);
+}
+
+
+/* =====================================================
+   ANIMACIONES
+===================================================== */
+
+@keyframes victoriaAparecer {
+
+    from {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes trofeo {
+
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(-8px);
+    }
+}
+
+
+/* =====================================================
+   CELULAR
+===================================================== */
+
+@media (max-width: 600px) {
+
+    .victory-buttons {
+        flex-direction: column;
+    }
+
+    .victory-panel {
+        width: 85%;
+        padding: 25px 15px;
+    }
+}

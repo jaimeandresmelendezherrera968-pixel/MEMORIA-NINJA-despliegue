@@ -1,0 +1,47 @@
+%%=========================================================
+%%  MEMORIA NINJA — DIAGRAMA DE FLUJO: RECUPERACIÓN DE CONTRASEÑA
+%%  Proceso: recuperar.html -> 3 pasos -> nueva contraseña.
+%%  Basado en js/recuperar.js + js/controladores/RecuperacionController.js
+%%  + js/servicios/RecuperacionService.js.
+%%  Capas: COMPOSITION ROOT / CONTROLADOR / SERVICIO /
+%%  NÚCLEO (contratos DIP + ISP) / INFRAESTRUCTURA (LSP).
+%%=========================================================
+flowchart TD
+
+    A["recuperar.html<br/>DOMContentLoaded -> recuperacionController.marcarPaso(1)"] --> CR
+
+    subgraph CR["CAPA 1 — COMPOSITION ROOT"]
+        B["recuperar.js<br/>construye con new: repositorioUsuarios,<br/>CodigoNumericoGenerador, notificador,<br/>EnvioCodigoModoPrueba, recuperacionService,<br/>recuperacionController"]
+    end
+
+    B --> P1
+
+    P1["PASO 1 — Correo<br/>onclick='buscarCorreo()'"] --> P1C["RecuperacionController.manejarEnvio({paso:'correo', correo})<br/>(polimorfismo -> #manejarPasoCorreo)"]
+    P1C --> P1V{"¿correo vacío?"}
+    P1V -->|"Sí"| ERR1["MensajeDomNotificador.mostrar('Ingresa un correo.', 'error')"]
+    P1V -->|"No"| P1S["RecuperacionService.solicitarRecuperacion(correo)<br/>(CAPA 3 — SERVICIO)"]
+    P1S -->|"DIP -> IUsuarioLector"| P1R["LocalStorageUsuarioRepositorio.buscarPorCorreo(correo)<br/>(INFRAESTRUCTURA · LSP)"]
+    P1R --> P1E{"¿correo registrado?"}
+    P1E -->|"No"| ERR1B["'Ese correo no esta registrado.'"]
+    P1E -->|"Sí"| P1G["generador.generar()<br/>CodigoNumericoGenerador (DIP -> ICodigoGenerador · LSP)"]
+    P1G --> P1N["EnvioCodigoModoPrueba.enviar(correo, código)<br/>(OCP -> IEnviadorCodigo)"]
+    P1N --> P1U["marcarPaso(2) -> mostrar paso 2"]
+
+    P2["PASO 2 — Código<br/>onclick='verificarCodigo()'"] --> P2C["RecuperacionController.manejarEnvio({paso:'codigo', codigo})<br/>(polimorfismo -> #manejarPasoCodigo)"]
+    P2C --> P2V{"¿código vacío?"}
+    P2V -->|"Sí"| ERR2["'Ingresa el codigo.'"]
+    P2V -->|"No"| P2S["RecuperacionService.verificarCodigo(codigo)<br/>compara con codigoActual"]
+    P2S --> P2E{"¿código correcto?"}
+    P2E -->|"No"| ERR2B["'Codigo incorrecto.'"]
+    P2E -->|"Sí"| P2U["marcarPaso(3) -> mostrar paso 3"]
+
+    P3["PASO 3 — Nueva contraseña<br/>onclick='guardarPassword()'"] --> P3C["RecuperacionController.manejarEnvio({paso:'password', nuevaPassword, confirmarPassword})<br/>(polimorfismo -> #manejarPasoPassword)"]
+    P3C --> P3V{"¿campos vacíos?"}
+    P3V -->|"Sí"| ERR3["'Completa todos los campos.'"]
+    P3V -->|"No"| P3S["RecuperacionService.cambiarPassword(nuevaPassword, confirmarPassword)"]
+    P3S --> P3E{"¿contraseñas coinciden?"}
+    P3E -->|"No"| ERR3B["'Las contraseñas no coinciden.'"]
+    P3E -->|"Sí"| P3U["usuario.actualizarPassword(nuevaPassword)<br/>(NÚCLEO — entidad Usuario)"]
+    P3U -->|"DIP -> IUsuarioEscritor"| P3R["LocalStorageUsuarioRepositorio.actualizar(usuario)<br/>(INFRAESTRUCTURA · LSP)"]
+    P3R --> P3OK["MensajeDomNotificador 'Contraseña actualizada' + marcarPaso(4)"]
+    P3OK --> P3JUMP["setTimeout 1200ms -> login.html"]

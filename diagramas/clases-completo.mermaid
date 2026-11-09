@@ -1,0 +1,853 @@
+classDiagram
+
+    class Poder {
+        <<abstract>>
+        +string id
+        +string nombre
+        +number costoChakra
+        +number usosPermitidos
+        +activar(contexto) object
+        +puedeSerContrarrestadoPor(poderRival) boolean
+    }
+
+    class ByakuganPoder {
+        +activar(jugador, rival, tablero, registrarEvento) object
+        +puedeSerContrarrestadoPor(poderRival) boolean
+    }
+
+    class SustitucionPoder {
+        +activar(jugador, registrarEvento) object
+    }
+
+    class RoboChakraPoder {
+        +activar(jugador, rival, registrarEvento) object
+        +puedeSerContrarrestadoPor(poderRival) boolean
+    }
+
+    class GenjutsuPoder {
+        +activar(jugador, rival, tablero, registrarEvento) object
+        +puedeSerContrarrestadoPor(poderRival) boolean
+    }
+
+    class SelloPoder {
+        +activar(jugador, tablero, registrarEvento) object
+        +puedeSerContrarrestadoPor(poderRival) boolean
+    }
+
+    class BombaPoder {
+        +activar(jugador, rival, registrarEvento) object
+        +puedeSerContrarrestadoPor(poderRival) boolean
+    }
+
+    class Jugador {
+        -#number chakra
+        -#number vida
+        -#number chakraMaximo
+        -#number vidaMaxima
+        +string id
+        +string nombre
+        +get chakra() number
+        +get vida() number
+        +tieneChakraPara(costo) boolean
+        +gastarChakra(cantidad) void
+        +ganarChakra(cantidad) void
+        +recibirDanio(cantidad) void
+        +estaDerrotado() boolean
+    }
+
+    class Partida {
+        +string id
+        +object jugadores
+        +Tablero tablero
+        +array eventos
+        +object poderesActivos
+        +obtenerJugador(idJugador) Jugador
+        +obtenerRival(idJugador) Jugador
+        +registrarEvento(mensaje) void
+        +marcarPoderActivo(idJugador, poder) void
+        +poderActivoDe(idJugador) Poder
+    }
+
+    class Tablero {
+        +array cartasOcultas
+        +revelarCartasOcultas(cantidad, options) array
+        +desorientarVisualmente(idJugador, options) object
+        +bloquearCartaAleatoria(options) number
+    }
+
+    class PartidaRepository {
+        <<interface>>
+        +obtener(idPartida) Partida
+        +guardar(idPartida, partida) void
+    }
+
+    class PartidaRepositoryMemoria {
+        -Map partidas
+        +obtener(idPartida) Partida
+        +guardar(idPartida, partida) void
+    }
+
+    class PartidaRepositoryArchivo {
+        -string carpeta
+        -Map cacheEnMemoria
+        +obtener(idPartida) Partida
+        +guardar(idPartida, partida) void
+    }
+
+    class PoderFactory {
+        <<Factory Method>>
+        -Map constructoresPorId
+        +registrar(idPoder, ClaseConstructora) void
+        +crear(idPoder) Poder
+        +idsDisponibles() string[]
+    }
+
+    class PoderService {
+        -PartidaRepository partidaRepository
+        -PoderFactory poderFactory
+        +activarPoder(idPartida, idJugador, idPoder) object
+    }
+
+    class PoderController {
+        -PoderService poderService
+        +activarPoder(req, res) void
+    }
+
+    class IUsuarioLector {
+        <<interface>>
+        +obtenerTodos() array
+        +buscarPorCorreo(correo) Usuario
+        +buscarPorCredenciales(usuario, password) Usuario
+    }
+
+    class IUsuarioEscritor {
+        <<interface>>
+        +guardar(usuario) void
+        +actualizar(usuario) boolean
+    }
+
+    class ISesionRepositorio {
+        <<interface>>
+        +guardar(datosSesion) void
+        +obtener() object
+        +eliminar() void
+    }
+
+    class INotificador {
+        <<interface>>
+        +mostrar(mensaje, tipo) void
+    }
+
+    class ICodigoGenerador {
+        <<interface>>
+        +generar() string
+    }
+
+    class IEnviadorCodigo {
+        <<interface>>
+        +enviar(correo, codigo) void
+    }
+
+    class Usuario {
+        -#string usuario
+        -#Date nacimiento
+        -#string correo
+        -#string passwordHash
+        +get usuario() string
+        +get nacimiento() Date
+        +get correo() string
+        +verificarPassword(password) boolean
+        +actualizarPassword(nuevaPassword) void
+        +toJSON() object
+        +static desdeJSON(objeto) Usuario
+    }
+
+    class FormularioControllerBase {
+        <<abstract>>
+        #INotificador notificador
+        +camposVacios(...valores) boolean
+        +manejarEnvio() void
+    }
+
+    class LoginController {
+        -AutenticacionService autenticacionService
+        -SesionService sesionService
+        +manejarEnvio(usuario, password, recordar) void
+    }
+
+    class RegistroController {
+        -RegistroService registroService
+        +manejarEnvio(datosFormulario, aceptaTerminos, aceptaPolitica) boolean
+    }
+
+    class RecuperacionController {
+        -RecuperacionService recuperacionService
+        -IEnviadorCodigo enviadorCodigo
+        +manejarEnvio(paso, correo, codigo, ...) boolean
+        +marcarPaso(numeroActual) void
+    }
+
+    class VerificacionController {
+        -VerificacionService verificacionService
+        -IEnviadorCodigo enviadorCodigo
+        -object elementos
+        +manejarEnvio(codigo) boolean
+        +enviarCodigo(correo) void
+        +enmascararCorreo(correo) string
+    }
+
+    class AutenticacionService {
+        -IUsuarioLector repositorioUsuarios
+        +iniciarSesion(usuario, password) Usuario
+    }
+
+    class RegistroService {
+        -IUsuarioLector repositorioUsuarios
+        +registrar(usuario, nacimiento, correo, pass, confirmarPass) Usuario
+    }
+
+    class RecuperacionService {
+        -IUsuarioLector repositorioUsuarios
+        -ICodigoGenerador generadorCodigo
+        -string codigoActual
+        -string correoActual
+        +solicitarRecuperacion(correo) string
+        +verificarCodigo(codigo) boolean
+        +cambiarPassword(nueva, confirmar) void
+    }
+
+    class SesionService {
+        -ISesionRepositorio sesionRepositorio
+        +guardarSesion(usuario) void
+        +obtenerSesionActiva() object
+        +cerrarSesion() void
+    }
+
+    class VerificacionService {
+        -ICodigoGenerador generadorCodigo
+        -string codigoActual
+        -string correoActual
+        +generarNuevoCodigo(correo) string
+        +validarCodigo(codigo) boolean
+        +expirarCodigo() void
+    }
+
+    class LocalStorageUsuarioRepositorio {
+        -string CLAVE_STORAGE
+        +obtenerTodos() array
+        +buscarPorCorreo(correo) Usuario
+        +buscarPorCredenciales(usuario, password) Usuario
+        +guardar(usuario) void
+        +actualizar(usuario) boolean
+    }
+
+    class LocalStorageSesionRepositorio {
+        +guardar(datosSesion) void
+        +obtener() object
+        +eliminar() void
+    }
+
+    class MensajeDomNotificador {
+        -#string idElemento
+        +mostrar(mensaje, tipo) void
+    }
+
+    class AlertaNotificador {
+        +mostrar(mensaje) void
+    }
+
+    class CodigoNumericoGenerador {
+        +generar() string
+    }
+
+    class CodigoAlfanumericoGenerador {
+        -#string caracteres
+        -#number longitud
+        +generar() string
+    }
+
+    class EnvioCodigoModoPrueba {
+        -INotificador notificador
+        +enviar(correo, codigo) void
+    }
+
+    class IStorageRepository {
+        <<interface>>
+        +getItem(key) any
+        +setItem(key, value) void
+        +removeItem(key) void
+    }
+
+    class IProfileService {
+        <<interface>>
+        +obtenerPerfil() object
+    }
+
+    class IGameSessionService {
+        <<interface>>
+        +iniciarPartida(jugador1, jugador2, modo) void
+        +cerrarSesion() void
+    }
+
+    class LocalStorageRepository {
+        +getItem(key) any
+        +setItem(key, value) void
+        +removeItem(key) void
+    }
+
+    class ProfileService {
+        -IStorageRepository storage
+        +obtenerPerfil() object
+    }
+
+    class GameSessionService {
+        -IStorageRepository storage
+        +iniciarPartida(j1, j2, modo) void
+        +cerrarSesion() void
+    }
+
+    class BaseModal {
+        -HTMLElement modalElement
+        +abrir() void
+        +cerrar() void
+        +initBaseEvents() void
+    }
+
+    class ProfileModal {
+        -ProfileService profileService
+        +abrir() void
+    }
+
+    class RankingModal {
+        +cargarRanking() void
+    }
+
+    class HistoryModal {
+        +mostrarHistorial() void
+    }
+
+    class GameModeModal {
+        +inicializarOpciones() void
+    }
+
+    class MenuController {
+        -ProfileModal profileModal
+        -BaseModal gameModeModal
+        -BaseModal rankingModal
+        -BaseModal historyModal
+        -BaseModal dosJugadoresModal
+        -BaseModal multijugadorModal
+        +inicializarEventos() void
+    }
+
+    class VIJugadorRepository {
+        <<interface>>
+        +guardar(jugador) void
+        +obtener(nombre) Jugador
+    }
+
+    class VIPartidaRepository {
+        <<interface>>
+        +guardar(partida) void
+        +obtener() object
+    }
+
+    class VJugadorRepository {
+        +guardar(jugador) void
+        +obtener(nombre) Jugador
+    }
+
+    class VPartidaRepository {
+        +guardar(partida) void
+        +obtener() object
+    }
+
+    class VJugador {
+        +string nombre
+        +number puntaje
+        +sumarPuntos(puntos) void
+        +reiniciarPuntaje() void
+        +getNombre() string
+        +getPuntaje() number
+    }
+
+    class VPartida {
+        +VJugador jugador
+        +number movimientos
+        +number segundos
+        +array cartasVolteadas
+        +number cartasEncontradas
+        +aumentarMovimientos() void
+        +agregarCartaVolteada(carta) void
+        +limpiarCartasVolteadas() void
+        +obtenerJugador() VJugador
+        +reiniciar() void
+    }
+
+    class Carta {
+        +string id
+        +string imagen
+        +boolean volteada
+        +boolean encontrada
+        +voltear() void
+        +ocultar() void
+        +marcarEncontrada() void
+        +getId() string
+        +getImagen() string
+        +estaVolteada() boolean
+        +estaEncontrada() boolean
+    }
+
+    class JuegoService {
+        -VPartida partida
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        +iniciar() array
+        +voltearCarta(carta) boolean
+        +verificarPareja() boolean
+        +finalizarIntento() void
+        +aumentarMovimiento() void
+        +verificarVictoria(total) boolean
+    }
+
+    class CartaService {
+        -string rutaBack
+        -string rutaAldea
+        -array idsCartas
+        +obtenerCartas() array
+        +mezclar(cartas) array
+    }
+
+    class SecuenciaService {
+        +generarSecuencia(ids) array
+    }
+
+    class PuntajeService {
+        -number puntosPorPareja
+        +calcularPuntos() number
+        +agregarPuntos(jugador) void
+    }
+
+    class TiempoService {
+        -number segundos
+        -number temporizador
+        +iniciar(callback) void
+        +detener() void
+        +reiniciar(segundos) void
+        +obtenerTiempo() number
+    }
+
+    class UzumakiController {
+        -string rutaBack
+        -string rutaAldea
+        -VJugador jugador
+        -VPartida partida
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        -JuegoService juegoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+        +actualizarInterfaz() void
+        +mostrarDerrota() void
+        +mostrarVictoria() void
+    }
+
+    class MuerteController {
+        -string rutaBack
+        -VJugador jugador1
+        -VJugador jugador2
+        -VPartida partida
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        -JuegoService juegoService
+        +iniciar() void
+        +generarTablero() void
+        +voltearCarta(elemento, carta) void
+        +verificarCoincidencia() void
+        +tiempoAgotado() void
+        +mostrarVictoria() void
+    }
+
+    class ArenaController {
+        -string rutaBack
+        -string rutaAldea
+        -VJugador jugador
+        -VPartida partida
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        -JuegoService juegoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+    }
+
+    class AkatsukiController {
+        -string rutaBack
+        -string rutaAkatsuki
+        -VJugador jugador
+        -VPartida partida
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        -JuegoService juegoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+    }
+
+    class NieblaController {
+        -string rutaBack
+        -string rutaNiebla
+        -VJugador jugador
+        -VPartida partida
+        -CartaService cartaService
+        -PuntajeService puntajeService
+        -TiempoService tiempoService
+        -JuegoService juegoService
+        +iniciarJuego() void
+        +generarTablero(cartas) void
+        +seleccionarCarta(cartaDOM) void
+        +comprobarPareja() void
+    }
+
+    class ConfiguracionZonas {
+        <<config>>
+        +array ZONAS$ = un objeto por zona
+        +string DESTINO_COMUN$ = pre-partida.html
+    }
+
+    class ConfiguracionClanes {
+        <<config>>
+        +object CLANES$ = 9 clanes
+        +object DESTINOS_JUEGO$ = mapa HTML por clan
+    }
+
+    class RepositorioClanes {
+        +obtener(idClan) object
+        +obtenerDestinoJuego(idClan) string
+        +existe(idClan) boolean
+    }
+
+    class VistaClan {
+        +mostrar(clan) void
+        +mostrarBotonIniciar() void
+        +marcarConfirmado() void
+    }
+
+    class MapaInteractivo {
+        -HTMLElement overlay
+        -HTMLElement video
+        -array zonas
+        -number anchoVideo
+        -number altoVideo
+        +escalaActual() number
+    }
+
+    class ModoCoordenadas {
+        -HTMLElement overlay
+        -boolean activo
+        -#cablearToggle() void
+        -#cablearClickOverlay() void
+    }
+
+    class PoderGE {
+        <<abstract>>
+        +string id
+        +string nombre
+        +number costoChakra
+        -object _usos
+        -HTMLElement boton
+        -HTMLElement contador
+        -object contexto
+        +inyectarContexto(contexto) void
+        +activar() void
+        +efecto(contexto, esSasuke, jugador) void
+        +estaBloqueado(contexto) boolean
+        +validarCondicionesExtra(contexto) boolean
+        +usosRestantes(esSasuke) number
+        +mostrarMensaje(mensaje) void
+    }
+
+    class ByakuganPoderGE {
+        -boolean _activo
+        +estaBloqueado(contexto) boolean
+        +validarCondicionesExtra(contexto) boolean
+        +efecto(contexto, esSasuke) void
+    }
+
+    class SustitucionPoderGE {
+        -object _armada
+        -number _timeout
+        +estaBloqueado(contexto) boolean
+        +estaArmada(esSasuke) boolean
+        +desarmar(esSasuke) void
+        +efecto(contexto, esSasuke) void
+    }
+
+    class RoboPoderGE {
+        +efecto(contexto, esSasuke, atacante) void
+    }
+
+    class GenjutsuPoderGE {
+        -boolean _activo
+        -number _timeout
+        +estaBloqueado(contexto) boolean
+        +estaActivo() boolean
+        +cancelar(detectadoPorByakugan) void
+        +efecto(contexto) void
+    }
+
+    class SelloPoderGE {
+        -object _cartaSelladaActual
+        -number _timeout
+        +estaBloqueado(contexto) boolean
+        +validarCondicionesExtra(contexto) boolean
+        +efecto() void
+    }
+
+    class BombaPoderGE {
+        +efecto(contexto, esSasuke) void
+    }
+
+    class Personaje {
+        +number CHAKRA_MAXIMO$ = 100
+        +number VIDA_MAXIMA$ = 100
+        -#number chakra
+        -#number vida
+        -#number combo
+        -#number aciertos
+        -#number errores
+        +get chakra() number
+        +get vida() number
+        +get combo() number
+        +tieneChakraPara(costo) boolean
+        +gastarChakra(cantidad) void
+        +ganarChakra(cantidad) void
+        +recibirDanio(cantidad) void
+        +registrarAcierto() void
+        +registrarError() boolean
+        +estaDerrotado() boolean
+    }
+
+    class GestorPoderes {
+        +ByakuganPoderGE byakugan
+        +SustitucionPoderGE sustitucion
+        +RoboPoderGE robo
+        +GenjutsuPoderGE genjutsu
+        +SelloPoderGE sello
+        +BombaPoderGE bomba
+        +array poderes
+    }
+
+    class GestorTurno {
+        -boolean #esTurnoDeSasuke
+        -boolean #modoPruebaLocal
+        -boolean #miPersonajeEsSasuke
+        -array #oyentesDeCambio
+        +esTurnoDeSasuke() boolean
+        +esMiTurno() boolean
+        +alCambiarTurno(callback) void
+        +cambiar() void
+    }
+
+    class GestorTiempo {
+        -number #tiempoSasuke
+        -number #tiempoNaruto
+        -number #intervalo
+        +get tiempoSasuke() number
+        +get tiempoNaruto() number
+        +iniciar(onTick) void
+        +descontarSegundo(esTurnoDeSasuke) boolean
+        +detener() void
+        +static formatear(segundos) string
+    }
+
+    class GestorPartida {
+        -Personaje jugador
+        -Personaje rival
+        -GestorTurno gestorTurno
+        -GestorTiempo gestorTiempo
+        -GestorPoderes gestorPoderes
+        -VistaPartida vista
+        -number puntajeActual
+        -boolean partidaFinalizada
+        +iniciar() void
+        +procesarResultado(esAcierto, puntajeTotal) void
+        +mostrarModalFinal(movimientos, puntaje) void
+    }
+
+    class VistaPartida {
+        -HTMLElement timer
+        -HTMLElement moves
+        -HTMLElement score
+        -HTMLElement turnoActual
+        +cargarPanelJugador(jugador) void
+        +cargarPanelRival(rival) void
+        +renderTurno(esTurnoDeSasuke) void
+        +renderTiempos(tiempoS, tiempoN, ...) void
+        +renderPuntaje(puntaje) void
+        +renderChakra(jugador, rival) void
+        +renderVida(jugador, rival) void
+        +mostrarAvisoRapido(mensaje) void
+        +mostrarModalFinal(...) void
+    }
+
+    class ProveedorDatos {
+        <<abstract>>
+        +obtenerDatos() object
+    }
+
+    class ProveedorDatosSimulado {
+        +obtenerDatos() object
+    }
+
+    Poder <|-- ByakuganPoder : Herencia
+    Poder <|-- SustitucionPoder : Herencia
+    Poder <|-- RoboChakraPoder : Herencia
+    Poder <|-- GenjutsuPoder : Herencia
+    Poder <|-- SelloPoder : Herencia
+    Poder <|-- BombaPoder : Herencia
+
+    Partida *-- Jugador : 2 jugadores
+    Partida *-- Tablero : 1 tablero
+
+    PartidaRepository <|.. PartidaRepositoryMemoria : LSP verificado
+    PartidaRepository <|.. PartidaRepositoryArchivo : LSP verificado
+
+    PoderService --> PartidaRepository : DIP - depende de interfaz
+    PoderService --> PoderFactory : DIP - inyectado por constructor
+    PoderController --> PoderService : DIP - inyectado por constructor
+    PoderFactory --> Poder : crea instancias nuevas
+    PoderService --> Partida : manipula durante activacion
+    Partida --> Poder : almacena poderes activos
+
+    FormularioControllerBase <|-- LoginController : Herencia
+    FormularioControllerBase <|-- RegistroController : Herencia
+    FormularioControllerBase <|-- RecuperacionController : Herencia
+    FormularioControllerBase <|-- VerificacionController : Herencia
+
+    AutenticacionService --> IUsuarioLector : DIP - solo lectura
+    RegistroService --> IUsuarioLector : DIP
+    RegistroService --> IUsuarioEscritor : DIP
+    RecuperacionService --> IUsuarioLector : DIP
+    RecuperacionService --> IUsuarioEscritor : DIP
+    RecuperacionService --> ICodigoGenerador : DIP
+    SesionService --> ISesionRepositorio : DIP
+    VerificacionService --> ICodigoGenerador : DIP
+
+    LoginController --> AutenticacionService : inyectado
+    LoginController --> SesionService : inyectado
+    RegistroController --> RegistroService : inyectado
+    RecuperacionController --> RecuperacionService : inyectado
+    RecuperacionController --> IEnviadorCodigo : inyectado
+    VerificacionController --> VerificacionService : inyectado
+    VerificacionController --> IEnviadorCodigo : inyectado
+
+    FormularioControllerBase --> INotificador : DIP via super()
+
+    IUsuarioLector <|.. LocalStorageUsuarioRepositorio : LSP
+    IUsuarioEscritor <|.. LocalStorageUsuarioRepositorio : LSP
+    ISesionRepositorio <|.. LocalStorageSesionRepositorio : LSP
+    INotificador <|.. MensajeDomNotificador : LSP
+    INotificador <|.. AlertaNotificador : LSP
+    ICodigoGenerador <|.. CodigoNumericoGenerador : LSP
+    ICodigoGenerador <|.. CodigoAlfanumericoGenerador : LSP
+    IEnviadorCodigo <|.. EnvioCodigoModoPrueba : LSP
+
+    EnvioCodigoModoPrueba --> INotificador : usa para mostrar
+
+    BaseModal <|-- ProfileModal : Herencia
+    BaseModal <|-- RankingModal : Herencia
+    BaseModal <|-- HistoryModal : Herencia
+    BaseModal <|-- GameModeModal : Herencia
+
+    IStorageRepository <|.. LocalStorageRepository : LSP
+    IProfileService <|.. ProfileService : LSP
+    IGameSessionService <|.. GameSessionService : LSP
+    ProfileService --> IStorageRepository : DIP
+    GameSessionService --> IStorageRepository : DIP
+    ProfileModal --> ProfileService : inyectado
+    MenuController --> BaseModal : compone modales
+    MenuController --> ProfileModal : compone
+
+    VIJugadorRepository <|.. VJugadorRepository : LSP
+    VIPartidaRepository <|.. VPartidaRepository : LSP
+
+    VPartida *-- VJugador : 1 jugador
+    VPartida o-- Carta : cartasVolteadas
+    JuegoService --> VPartida : compone
+    JuegoService --> CartaService : inyectado
+    JuegoService --> PuntajeService : inyectado
+    CartaService --> Carta : crea instancias
+    PuntajeService --> VJugador : modifica puntaje
+    UzumakiController --> JuegoService : inyectado
+    UzumakiController --> CartaService : inyectado
+    UzumakiController --> PuntajeService : inyectado
+    UzumakiController --> TiempoService : inyectado
+    UzumakiController --> VJugador : crea
+    UzumakiController --> VPartida : crea
+
+    MuerteController --> JuegoService : inyectado
+    MuerteController --> CartaService : inyectado
+    MuerteController --> PuntajeService : inyectado
+    MuerteController --> TiempoService : inyectado
+    MuerteController --> VJugador : crea jugador1
+    MuerteController --> VJugador : crea jugador2
+    MuerteController --> VPartida : crea
+
+    ArenaController --> JuegoService : inyectado
+    ArenaController --> CartaService : inyectado
+    ArenaController --> PuntajeService : inyectado
+    ArenaController --> TiempoService : inyectado
+    ArenaController --> VJugador : crea
+    ArenaController --> VPartida : crea
+
+    AkatsukiController --> JuegoService : inyectado
+    AkatsukiController --> CartaService : inyectado
+    AkatsukiController --> PuntajeService : inyectado
+    AkatsukiController --> TiempoService : inyectado
+    AkatsukiController --> VJugador : crea
+    AkatsukiController --> VPartida : crea
+
+    NieblaController --> JuegoService : inyectado
+    NieblaController --> CartaService : inyectado
+    NieblaController --> PuntajeService : inyectado
+    NieblaController --> TiempoService : inyectado
+    NieblaController --> VJugador : crea
+    NieblaController --> VPartida : crea
+
+    RepositorioClanes --> ConfiguracionClanes : lee CLANES y DESTINOS_JUEGO
+    MapaInteractivo --> ConfiguracionZonas : consume ZONAS
+    ModoCoordenadas --> MapaInteractivo : usa escalaActual
+    ConfiguracionZonas --> MapaInteractivo : define zonas clickeables
+    ConfiguracionClanes --> RepositorioClanes : fuente de datos
+
+    PoderGE <|-- ByakuganPoderGE : Herencia
+    PoderGE <|-- SustitucionPoderGE : Herencia
+    PoderGE <|-- RoboPoderGE : Herencia
+    PoderGE <|-- GenjutsuPoderGE : Herencia
+    PoderGE <|-- SelloPoderGE : Herencia
+    PoderGE <|-- BombaPoderGE : Herencia
+
+    GestorPartida *-- Personaje : jugador
+    GestorPartida *-- Personaje : rival
+    GestorPartida *-- GestorTurno
+    GestorPartida *-- GestorTiempo
+    GestorPartida *-- GestorPoderes
+    GestorPartida *-- VistaPartida
+
+    GestorPoderes --> ByakuganPoderGE : instancia
+    GestorPoderes --> SustitucionPoderGE : instancia
+    GestorPoderes --> RoboPoderGE : instancia
+    GestorPoderes --> GenjutsuPoderGE : instancia
+    GestorPoderes --> SelloPoderGE : instancia
+    GestorPoderes --> BombaPoderGE : instancia
+    ProveedorDatos <|-- ProveedorDatosSimulado : Herencia
+    GestorPartida --> ProveedorDatosSimulado : usa datos simulados

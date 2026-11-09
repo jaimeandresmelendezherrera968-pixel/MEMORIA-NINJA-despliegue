@@ -1,0 +1,82 @@
+classDiagram
+    class Poder {
+        <<abstract>>
+        +id
+        +nombre
+        +costoChakra
+        +usosPermitidos
+        +activar(contexto) object
+        +puedeSerContrarrestadoPor(poderRival) bool
+    }
+    class ByakuganPoder
+    class SustitucionPoder
+    class RoboChakraPoder
+    class GenjutsuPoder
+    class SelloPoder
+    class BombaPoder
+
+    Poder <|-- ByakuganPoder
+    Poder <|-- SustitucionPoder
+    Poder <|-- RoboChakraPoder
+    Poder <|-- GenjutsuPoder
+    Poder <|-- SelloPoder
+    Poder <|-- BombaPoder
+
+    class Jugador {
+        -chakra
+        -vida
+        +gastarChakra(cantidad)
+        +ganarChakra(cantidad)
+        +recibirDanio(cantidad)
+        +tieneChakraPara(costo) bool
+    }
+
+    class Partida {
+        +tablero
+        +eventos
+        +obtenerJugador(id) Jugador
+        +obtenerRival(id) Jugador
+        +marcarPoderActivo(id, poder)
+        +poderActivoDe(id) Poder
+    }
+
+    class Tablero {
+        +revelarCartasOcultas()
+        +desorientarVisualmente()
+        +bloquearCartaAleatoria()
+    }
+
+    class PartidaRepository {
+        <<interface>>
+        +obtener(id) Partida
+        +guardar(id, partida)
+    }
+    class PartidaRepositoryMemoria
+    class PartidaRepositoryArchivo
+    PartidaRepository <|.. PartidaRepositoryMemoria : LSP verificado por tests
+    PartidaRepository <|.. PartidaRepositoryArchivo : LSP verificado por tests
+
+    class PoderFactory {
+        <<Factory Method>>
+        +crear(idPoder) Poder
+        +registrar(idPoder, Clase)
+        +idsDisponibles() string[]
+    }
+
+    class PoderService {
+        -partidaRepository PartidaRepository
+        -poderFactory PoderFactory
+        +activarPoder(datos) object
+    }
+    PoderService --> PartidaRepository : depende de la interfaz (DIP)
+    PoderService --> PoderFactory : inyectado por constructor (DIP)
+    PoderService --> Partida
+    Partida --> Jugador
+    Partida --> Tablero
+    PoderFactory --> Poder : construye instancias nuevas
+
+    class PoderController {
+        -poderService PoderService
+        +activarPoder(req, res)
+    }
+    PoderController --> PoderService : inyectado por constructor (DIP)

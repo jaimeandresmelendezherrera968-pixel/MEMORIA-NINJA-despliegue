@@ -1,0 +1,68 @@
+﻿/* nivel-base.css - BASE = estructura de uchiha (posiciones/tamaños). Colores por nivel via vars (--n-*).
+   NO sobreescribe stats/board/cards/.boton responsivos de tema-aldea: deja que tema-aldea (como en uchiha) los posicione/tamañe bien en PC/H/V. */
+body { font-family: 'Fredoka', Arial, sans-serif; background-color: var(--n-body-bg,#0b0808); color: var(--n-text,#f5eeee); text-align: center; padding: 20px; margin: 0; min-height: 100vh; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+#videofondo { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; object-fit: cover; z-index: -1; pointer-events: none; }
+.game-shell { position: relative; z-index: 1; width: 100%; max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+/* stats/board/boardFrame/cards: tema-aldea los estiliza (tamaño/posición responsive como uchiha); aquí solo colores de respaldo */
+.stats span { color: var(--n-stats,#d9baba); }
+#boardFrame { background: var(--n-frame-bg, linear-gradient(180deg,#210909,#0b0505)); border-color: var(--n-frame-border,#700d0d); }
+#board { background: var(--n-board-bg,#111); }
+.card.flipped { transform: rotateY(180deg); }
+.card img { width: 100%; height: 100%; position: absolute; left: 0; top: 0; border-radius: 8px; object-fit: fill; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.back { transform: rotateY(0deg); } .front { transform: rotateY(180deg); }
+.card.found { pointer-events: none; animation: desaparecerCarta .7s ease forwards; }
+#modal { position: fixed; inset: 0; background: rgba(5,0,0,.85); display:flex; justify-content:center; align-items:center; z-index: 10000; }
+.panel { background: linear-gradient(145deg,var(--n-panel-a,#240909),var(--n-panel-b,#100404)); color: var(--n-text,#f5eeee); padding: 20px; border-radius: 10px; width: 320px; text-align: center; border: 2px solid var(--n-frame-border,#8b1111); box-shadow: 0 0 25px rgba(0,0,0,.4); }
+.hidden { display: none !important; }
+.card.emparejada { position: relative; overflow: hidden; transform-style: preserve-3d; perspective: 800px; animation: carta-fade-3d 2s ease-in forwards; }
+#victoryModal { position: fixed; inset: 0; display:flex; justify-content:center; align-items:center; background: radial-gradient(circle at center, var(--n-v-glow, rgba(255,0,0,.28)), rgba(0,0,0,.96)); z-index: 15000; }
+#victoryModal.hidden { display: none !important; }
+.victory-panel { width: 420px; max-width: 90%; padding: 30px; text-align: center; background: linear-gradient(145deg,#050505,var(--n-panel-a,#160606),var(--n-panel-b,#420909),var(--n-panel-a,#160606),#050505); border: 3px solid var(--n-brillo,#b71c1c); border-radius: 18px; box-shadow: 0 0 15px var(--n-v-glow,rgba(255,0,0,.9)), inset 0 0 25px rgba(255,255,255,.06); animation: victoriaAparecer .5s ease; }
+.victory-icon { font-size: 65px; margin-bottom: 5px; }
+.victory-panel h2 { margin: 5px 0; color: #fff; font-size: 34px; }
+.victory-line { width: 80%; height: 4px; margin: 15px auto; background: linear-gradient(90deg, transparent, var(--n-brillo,#ff0000), transparent); }
+.victory-message { color: var(--n-text,#f3dada); font-size: 16px; margin: 8px 0; }
+.victory-stats { margin: 20px 0; padding: 12px; background: rgba(0,0,0,.82); border: 1px solid var(--n-frame-border,#a91b1b); border-radius: 10px; color: var(--n-brillo,#ff5555); font-size: 17px; font-weight: bold; line-height: 1.7; }
+.victory-buttons { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
+.victory-buttons button { padding: 12px 18px; border: 2px solid var(--n-brillo,#e53935); border-radius: 9px; background: var(--n-btn-bg, linear-gradient(135deg,#3b0707,#8b1111)); color:#fff; font-size:15px; font-weight:bold; cursor:pointer; transition:.25s; }
+.victory-buttons button:hover { filter: brightness(1.12); transform: scale(1.05); }
+@keyframes victoriaAparecer { from{opacity:0;transform:scale(.7) translateY(30px);filter:blur(6px)} to{opacity:1;transform:scale(1) translateY(0);filter:blur(0)} }
+@keyframes desaparecerCarta { 0%{opacity:1;transform:rotateY(180deg) scale(1)} 40%{opacity:1;transform:rotateY(180deg) scale(1.08)} 100%{opacity:0;transform:rotateY(180deg) scale(.4)} }
+@keyframes carta-fade-3d { 0%{opacity:1;transform:scale(1)} 60%{opacity:.5;transform:scale(.9)} 100%{opacity:0;transform:scale(.6)} }
+@media (max-width: 600px) { .victory-buttons{flex-direction:column} .victory-panel{width:85%;padding:25px 15px} }
+
+/* Pausa compacta: SIN scroll (overlay fuera del flujo). Refuerza sobre tema-aldea. */
+html body[data-tema-aldea] .pausa-overlay { padding: 6px; }
+html body[data-tema-aldea] .pausa-panel { width: min(420px, calc(100vw - 12px)); max-height: calc(100svh - 12px); max-height: calc(100dvh - 12px); overflow-y: visible; overflow-x: hidden; padding: 12px 14px; border-radius: 16px; }
+html body[data-tema-aldea] .pausa-brillo { display: none; }
+html body[data-tema-aldea] .pausa-header { margin-bottom: 8px; gap: 8px; }
+html body[data-tema-aldea] .pausa-simbolo { width: 38px; height: 38px; border-radius: 10px; }
+html body[data-tema-aldea] .pausa-simbolo i { width: 5px; height: 18px; }
+html body[data-tema-aldea] .pausa-header h2 { font-size: clamp(1.3rem, 4vw, 1.8rem); letter-spacing: .04em; }
+html body[data-tema-aldea] .pausa-header p { font-size: .72rem; margin-top: .1em; }
+html body[data-tema-aldea] .pausa-opciones { gap: 5px; }
+html body[data-tema-aldea] .pausa-fila { padding: 6px 9px; gap: 8px; border-radius: 12px; }
+html body[data-tema-aldea] .pausa-emoji { width: 26px; height: 26px; font-size: .85rem; border-radius: 8px; }
+html body[data-tema-aldea] .pausa-etiqueta { gap: 8px; }
+html body[data-tema-aldea] .pausa-etiqueta strong { font-size: .68rem; letter-spacing: .04em; }
+html body[data-tema-aldea] .pausa-etiqueta small { font-size: .58rem; margin-top: 0; }
+html body[data-tema-aldea] .pausa-switch { width: 46px; height: 24px; }
+html body[data-tema-aldea] .pausa-slider::after { width: 16px; height: 16px; }
+html body[data-tema-aldea] .pausa-switch input:checked + .pausa-slider::after { transform: translateX(22px); }
+html body[data-tema-aldea] .pausa-rango { height: 5px; }
+html body[data-tema-aldea] .pausa-rango::-webkit-slider-thumb { width: 15px; height: 15px; }
+html body[data-tema-aldea] .pausa-valor { font-size: .68rem; min-width: 2.8em; }
+html body[data-tema-aldea] .pausa-acciones { gap: 5px; margin-top: 8px; }
+html body[data-tema-aldea] .pausa-btn { padding: 8px 10px; font-size: .68rem; letter-spacing: .02em; }
+html body[data-tema-aldea] .pausa-ayuda { margin-top: 6px; font-size: .58rem; }
+@media (max-width: 420px), (max-height: 620px) {
+  html body[data-tema-aldea] .pausa-panel { padding: 8px 10px; }
+  html body[data-tema-aldea] .pausa-header { margin-bottom: 5px; }
+  html body[data-tema-aldea] .pausa-simbolo { width: 32px; height: 32px; }
+  html body[data-tema-aldea] .pausa-header h2 { font-size: 1.2rem; }
+  html body[data-tema-aldea] .pausa-fila { padding: 5px 7px; }
+  html body[data-tema-aldea] .pausa-etiqueta small { display: none; }
+  html body[data-tema-aldea] .pausa-ayuda { display: none; }
+  html body[data-tema-aldea] .pausa-btn { padding: 7px 8px; font-size: .64rem; }
+}

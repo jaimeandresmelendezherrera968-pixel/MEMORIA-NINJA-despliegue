@@ -1,0 +1,20 @@
+flowchart TD
+    Cliente["Frontend del juego<br/>(game-online.js)"] -->|POST /api/poder/activar| Controller
+
+    subgraph Backend["Backend - Patrón en Capas"]
+        Controller["PoderController<br/>(recibe HTTP, llama al Service)"]
+        Service["PoderService<br/>(lógica de negocio: chakra, contraataques)"]
+        Registro["RegistroPoderes<br/>(mapa id → instancia de Poder)"]
+        Repo["PartidaRepository<br/>(interfaz)"]
+        RepoMem["PartidaRepositoryMemoria<br/>(implementación en memoria)"]
+        Entidades["Entidades<br/>Jugador · Partida · Tablero · Poder"]
+
+        Controller --> Service
+        Service --> Registro
+        Service --> Repo
+        Repo -.->|implementa| RepoMem
+        Service --> Entidades
+        Registro --> Entidades
+    end
+
+    Controller -->|JSON response| Cliente

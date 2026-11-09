@@ -1,0 +1,552 @@
+/* =====================================================
+   VARIABLES GLOBALES
+   Inspiradas en la paleta de Figma
+===================================================== */
+
+:root {
+
+    /* Paneles */
+    --bg-panel: rgba(22, 28, 43, 0.92);
+    --border-panel: rgba(255, 255, 255, 0.12);
+
+    /* Naranja principal */
+    --orange-primary: #FF8400;
+    --orange-dark: #A53C00;
+    --orange-light: #FFB347;
+
+    /* Textos */
+    --text-main: #FFFFFF;
+    --text-secondary: #A7B4D0;
+    --text-description: #DCE6FF;
+
+    /* XP */
+    --green-xp: #49FF7A;
+
+    /* Estrellas */
+    --star-yellow: #FFC533;
+
+    /* Dorado */
+    --gold: #C8A47B;
+
+    /* Botones */
+    --btn-dark: #111827;
+}
+
+/* =====================================================
+   RESET
+===================================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Fredoka", sans-serif;
+}
+
+/* =====================================================
+   BODY Y FONDO GENERAL
+===================================================== */
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    color: var(--text-main);
+    font-family: "Fredoka", sans-serif;
+}
+
+/* Agrega esto justo debajo de los estilos de body */
+.video-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: -1;
+}
+/* =====================================================
+   CONTENEDOR PRINCIPAL
+===================================================== */
+
+.game-container {
+
+    width: 1100px;
+    min-height: 720px;
+    height: 720px;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 14px;
+
+    padding: 18px 24px 76px;
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center center;
+    z-index: 1;
+    overflow: visible;
+}
+
+/* =====================================================
+   CABECERA
+===================================================== */
+
+.header-container {
+    text-align: center;
+}
+
+/* Título principal */
+
+.main-page-title {
+
+    font-size: 4rem;
+    font-weight: bold;
+
+    color: white;
+
+    text-shadow:
+        0 0 15px #ff6a00,
+        0 0 30px #ff6a00;
+}
+
+/* Subtítulo */
+
+.subtitle {
+
+    color: #FFD6A1;
+
+    font-size: 1rem;
+
+    letter-spacing: 2px;
+
+    text-transform: uppercase;
+
+    text-shadow:
+        0 0 4px #FF7F00;
+}
+
+/* =====================================================
+   PANEL PRINCIPAL
+===================================================== */
+
+.panel-selection {
+
+    width: 100%;
+    max-width: 750px;
+
+    background:
+        linear-gradient(180deg,
+            rgba(24, 31, 48, .95),
+            rgba(18, 24, 39, .95));
+
+    border: 1px solid var(--border-panel);
+
+    border-radius: 20px;
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, .5);
+
+    text-align: center;
+
+    padding: 30px;
+}
+
+/* Pregunta superior */
+
+.pre-title {
+
+    font-size: 1.1rem;
+
+    margin-bottom: 10px;
+}
+
+/* Nombre del clan */
+
+.clan-name {
+
+    color: var(--orange-primary);
+
+    font-size: 3rem;
+
+    font-weight: bold;
+
+    text-shadow:
+        0 0 10px rgba(255, 132, 0, .5);
+
+    margin-bottom: 20px;
+}
+
+/* =====================================================
+   ESTADÍSTICAS
+===================================================== */
+
+.stats-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    padding: 20px 0;
+
+    margin: 20px 0;
+
+    border-top: 1px solid var(--border-panel);
+
+    border-bottom: 1px solid var(--border-panel);
+}
+
+.stats-grid span {
+
+    display: block;
+
+    color: var(--text-secondary);
+
+    font-size: .9rem;
+
+    margin-bottom: 8px;
+}
+
+.stats-grid p {
+
+    font-size: 1.2rem;
+}
+
+/* Estrellas de dificultad */
+
+#dificultad {
+
+    color: var(--star-yellow);
+}
+
+/* =====================================================
+   DESCRIPCIÓN
+===================================================== */
+
+.desc-text {
+
+    color: var(--text-description);
+
+    line-height: 1.6;
+
+    margin-top: 15px;
+}
+
+/* =====================================================
+   BOTONES DEL PANEL PRINCIPAL
+===================================================== */
+
+.action-buttons {
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 20px;
+
+    margin-top: 25px;
+}
+
+/* Botón Confirmar */
+
+.btn-primary {
+
+    background:
+        linear-gradient(180deg,
+            var(--orange-light),
+            var(--orange-primary));
+
+    border: none;
+
+    color: white;
+
+    padding: 12px 40px;
+
+    border-radius: 10px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 0 20px rgba(255, 132, 0, .45);
+
+    transition: .3s;
+}
+
+.btn-primary:hover {
+
+    transform: translateY(-2px);
+}
+
+.btn-primary.confirmado {
+
+    transform: translateY(4px);
+
+    background: linear-gradient(180deg, #d97100, #8f3200);
+
+    box-shadow:
+        inset 0 4px 8px rgba(0, 0, 0, .45),
+        0 1px 4px rgba(255, 132, 0, .35);
+
+    cursor: default;
+
+    animation: confirmar-nivel .45s ease-out;
+}
+
+.btn-primary:disabled {
+
+    opacity: 1;
+}
+
+@keyframes confirmar-nivel {
+
+    0% {
+        transform: translateY(0);
+        box-shadow: 0 0 20px rgba(255, 132, 0, .45);
+    }
+
+    55% {
+        transform: translateY(6px) scale(.98);
+    }
+
+    100% {
+        transform: translateY(4px) scale(1);
+    }
+}
+
+/* Botón Cambiar Nivel */
+
+.btn-secondary {
+
+    background: rgba(17, 24, 39, .9);
+
+    border: 1px solid #4B5563;
+
+    color: white;
+
+    padding: 12px 40px;
+
+    border-radius: 10px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: .3s;
+}
+
+.btn-secondary:hover {
+
+    background: rgba(25, 35, 50, .95);
+}
+
+/* =====================================================
+   PANEL INFERIOR
+===================================================== */
+
+.panel-details {
+
+    width: 100%;
+
+    max-width: 900px;
+
+    background:
+        linear-gradient(180deg,
+            rgba(22, 28, 43, .95),
+            rgba(17, 22, 35, .95));
+
+    border: 1px solid var(--border-panel);
+
+    border-radius: 20px;
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, .4);
+
+    padding: 20px 30px;
+}
+
+/* =====================================================
+   CONTENIDO INTERNO DEL PANEL INFERIOR
+===================================================== */
+
+.bar-content {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 30px;
+}
+
+/* Logo del clan */
+
+/* =====================================================
+   LOGO DEL CLAN
+===================================================== */
+
+.bar-logo-img {
+
+    width: 150px;
+
+    height: 150px;
+
+    object-fit: contain;
+
+    border: none;
+
+    border-radius: 0;
+
+    background: transparent;
+
+    box-shadow: none;
+
+    flex-shrink: 0;
+}
+
+/* Información del clan */
+
+.bar-info-wrapper {
+
+    flex: 1;
+}
+
+.bar-info-wrapper h3 {
+
+    color: var(--orange-primary);
+
+    margin-bottom: 5px;
+}
+
+.bar-subtitle {
+
+    color: var(--text-description);
+
+    margin-bottom: 5px;
+}
+
+.desc-larga {
+
+    color: var(--text-secondary);
+
+    font-size: .9rem;
+}
+
+/* =====================================================
+   ESTADÍSTICAS PANEL INFERIOR
+===================================================== */
+
+.bar-stats-group {
+
+    display: flex;
+
+    gap: 40px;
+}
+
+.stat-item {
+
+    text-align: center;
+}
+
+.stat-label {
+
+    display: block;
+
+    color: var(--gold);
+
+    font-size: .7rem;
+
+    margin-bottom: 5px;
+}
+
+/* XP */
+
+.xp {
+
+    color: var(--green-xp);
+
+    font-weight: bold;
+}
+
+/* =====================================================
+   BOTONES INFERIORES
+===================================================== */
+
+.bottom-nav {
+
+    position: absolute;
+
+    bottom: 14px;
+
+    left: 24px;
+
+    right: 24px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+    z-index: 1000;
+}
+
+.btn-back,
+.btn-start {
+
+    background: var(--btn-dark);
+
+    border: 1px solid #4B5563;
+
+    color: white;
+
+    padding: 15px 40px;
+
+    border-radius: 10px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: .3s;
+}
+
+.btn-back:hover,
+.btn-start:hover {
+
+    background: #1f2937;
+}
+
+.btn-start:not([hidden]) {
+
+    display: block;
+
+    animation: aparecer-iniciar .35s ease-out both;
+}
+
+@keyframes aparecer-iniciar {
+
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+/* Mobile: misma composición que PC, sin reflow; el escalado lo aplica JS */

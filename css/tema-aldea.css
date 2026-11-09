@@ -1,0 +1,1327 @@
+/* ============================================================
+   Tema compartido por los reversos personalizados de cada aldea.
+
+   TemaAldea.js escribe sobre <html>:
+     --tema-principal  color dominante de la carta
+     --tema-brillo     color de brillo / borde
+     --tema-fondo      color base oscuro
+     --tema-reverso    url() del reverso personalizado
+============================================================ */
+
+/* ============================================================
+   FUENTE GLOBAL DEL TEMA
+   ============================================================ */
+
+body[data-tema-aldea] {
+    --fuente-fredoka: 'Fredoka', 'Fredoka One', sans-serif;
+    font-family: var(--fuente-fredoka);
+}
+
+body[data-tema-aldea] *,
+body[data-tema-aldea] *::before,
+body[data-tema-aldea] *::after {
+    font-family: var(--fuente-fredoka);
+}
+
+body[data-tema-aldea] button,
+body[data-tema-aldea] input,
+body[data-tema-aldea] select,
+body[data-tema-aldea] textarea {
+    font-family: var(--fuente-fredoka);
+}
+
+
+body[data-tema-aldea]:not(.pantalla-online) {
+    box-sizing: border-box;
+    min-height: 100dvh;
+    height: 100dvh;
+    margin: 0;
+    overflow: hidden;
+    padding: clamp(8px, 1.5vh, 20px);
+}
+
+
+/* ============================================================
+   BARRA DE ESTADÍSTICAS
+============================================================ */
+
+body[data-tema-aldea] .stats {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: clamp(6px, 1.4vw, 24px);
+    width: max-content;
+    max-width: calc(100vw - 20px);
+    margin: 0 auto clamp(6px, 1.2vh, 14px);
+    padding: clamp(6px, 1vh, 11px) clamp(14px, 2vw, 28px);
+    font-size: clamp(.7rem, 1.25vw, .95rem);
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 78%, #fff);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(0, 0, 0, .28)),
+        color-mix(in srgb, var(--tema-fondo, #140d06) 82%, #000);
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 42%, transparent);
+    border-radius: 999px;
+    box-shadow:
+        0 10px 24px rgba(0, 0, 0, .45),
+        0 0 18px color-mix(in srgb, var(--tema-principal, #bb7621) 24%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, .14);
+    backdrop-filter: blur(7px);
+}
+
+body[data-tema-aldea] .stats span {
+    margin: 0;
+    color: inherit;
+}
+
+body[data-tema-aldea] .stats #timer,
+body[data-tema-aldea] .stats #moves,
+body[data-tema-aldea] .stats #score {
+    color: var(--tema-brillo, #ffd35b);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 12px color-mix(in srgb, var(--tema-brillo, #ffd35b) 45%, transparent);
+}
+
+
+/* ============================================================
+   MARCO DEL TABLERO
+============================================================ */
+
+body[data-tema-aldea] #boardFrame {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    width: fit-content;
+    max-width: calc(100vw - clamp(12px, 2vw, 30px));
+    margin: clamp(4px, .8vh, 10px) auto;
+    padding: clamp(8px, 1.5vmin, 18px);
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 58%, transparent);
+    border-radius: clamp(14px, 2.4vmin, 26px);
+    background:
+        linear-gradient(145deg,
+            color-mix(in srgb, var(--tema-principal, #bb7621) 32%, #0a0b10),
+            color-mix(in srgb, var(--tema-fondo, #140d06) 86%, #000) 72%);
+    box-shadow:
+        0 0 0 3px color-mix(in srgb, var(--tema-fondo, #140d06) 70%, #000),
+        0 0 0 4px color-mix(in srgb, var(--tema-brillo, #ffd35b) 20%, transparent),
+        0 22px 52px rgba(0, 0, 0, .62),
+        0 0 30px color-mix(in srgb, var(--tema-principal, #bb7621) 42%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, .14);
+    isolation: isolate;
+}
+
+/* Halo con los colores reales del reverso personalizado. */
+body[data-tema-aldea] #boardFrame::before {
+    content: "";
+    position: absolute;
+    inset: -18%;
+    pointer-events: none;
+    background-image: var(--tema-reverso, none);
+    background-position: center;
+    background-size: cover;
+    filter: blur(26px) saturate(1.25);
+    opacity: .5;
+    transform: scale(1.05);
+}
+
+/* Filo interior brillante + viñeta suave. */
+body[data-tema-aldea] #boardFrame::after {
+    content: "";
+    position: absolute;
+    inset: clamp(4px, .7vmin, 8px);
+    pointer-events: none;
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 22%, transparent);
+    border-radius: calc(clamp(14px, 2.4vmin, 26px) - 4px);
+    box-shadow: inset 0 0 26px rgba(0, 0, 0, .45);
+}
+
+
+/* ============================================================
+   TABLERO
+============================================================ */
+
+body[data-tema-aldea] #board {
+    --carta-ancho: min(112px, calc((100vw - 110px) / 4), calc((100dvh - 190px) / 5.65));
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, var(--carta-ancho));
+    gap: clamp(10px, 2vmin, 20px);
+    padding: clamp(10px, 1.7vmin, 20px);
+    max-width: 100%;
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 26%, transparent);
+    border-radius: clamp(10px, 1.8vmin, 18px);
+    background-color: color-mix(in srgb, var(--tema-fondo, #140d06) 78%, #0a0c11);
+    background-image:
+        radial-gradient(120% 90% at 50% -10%,
+            color-mix(in srgb, var(--tema-principal, #bb7621) 30%, #11141b),
+            transparent 64%),
+        linear-gradient(color-mix(in srgb, var(--tema-brillo, #ffd35b) 5%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--tema-brillo, #ffd35b) 5%, transparent) 1px, transparent 1px);
+    background-size: auto, 30px 30px, 30px 30px;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .08),
+        inset 0 -26px 48px rgba(0, 0, 0, .55),
+        inset 0 0 40px color-mix(in srgb, var(--tema-principal, #bb7621) 12%, transparent);
+    perspective: 1200px;
+}
+
+
+/* ============================================================
+   CARTAS 3D
+============================================================ */
+
+body[data-tema-aldea] .card {
+    position: relative;
+    width: var(--carta-ancho);
+    height: calc(var(--carta-ancho) * 1.4);
+    transform-style: preserve-3d;
+    border-radius: clamp(6px, .9vmin, 11px);
+    cursor: pointer;
+    transition:
+        transform .45s ease,
+        box-shadow .22s ease,
+        filter .22s ease;
+    box-shadow:
+        0 6px 14px rgba(0, 0, 0, .45),
+        0 0 0 1px color-mix(in srgb, var(--tema-brillo, #ffd35b) 34%, transparent),
+        0 0 14px color-mix(in srgb, var(--tema-principal, #bb7621) 20%, transparent);
+}
+
+body[data-tema-aldea] .card:not(.flipped):not(.flip):not(.volteada):hover {
+    box-shadow:
+        0 10px 20px rgba(0, 0, 0, .5),
+        0 0 0 1px color-mix(in srgb, var(--tema-brillo, #ffd35b) 58%, transparent),
+        0 0 20px color-mix(in srgb, var(--tema-principal, #bb7621) 40%, transparent);
+}
+
+body[data-tema-aldea] .card.flipped,
+body[data-tema-aldea] .card.flip,
+body[data-tema-aldea] .card.volteada {
+    transform: rotateY(180deg);
+}
+
+body[data-tema-aldea] .card img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+    object-position: center;
+    image-rendering: auto;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    pointer-events: none;
+    user-select: none;
+}
+
+body[data-tema-aldea] .card .back {
+    transform: rotateY(0deg);
+}
+
+body[data-tema-aldea] .card .front {
+    transform: rotateY(180deg);
+}
+
+/* Mantiene el frente visible mientras la pareja se desvanece. */
+@keyframes tema-carta-emparejada {
+    0% {
+        opacity: 1;
+        transform: rotateY(180deg) scale(1);
+    }
+
+    60% {
+        opacity: .5;
+        transform: rotateY(180deg) scale(.9);
+    }
+
+    100% {
+        opacity: 0;
+        transform: rotateY(180deg) scale(.6);
+    }
+}
+
+body[data-tema-aldea] .card.emparejada {
+    animation: tema-carta-emparejada 2s ease-in forwards;
+}
+
+
+/* ============================================================
+   CARTAS DEL MODO ONLINE (.carta)
+============================================================ */
+
+body[data-tema-aldea] .carta {
+    width: min(135px, calc((100vw - 100px) / 4), calc((100dvh - 170px) / 5.7));
+    border-color: var(--tema-brillo, #ffd35b);
+    background:
+        linear-gradient(rgba(0, 0, 0, .08), rgba(0, 0, 0, .08)),
+        var(--tema-reverso, none) center / cover no-repeat;
+}
+
+body[data-tema-aldea] .panel-principal,
+body[data-tema-aldea] .panel-info {
+    background:
+        linear-gradient(145deg,
+            color-mix(in srgb, var(--tema-principal, #bb7621) 45%, #101116),
+            var(--tema-fondo, #140d06));
+    border-color: var(--tema-brillo, #ffd35b);
+}
+
+
+/* ============================================================
+   LAYOUT DEL MODO ONLINE
+============================================================ */
+
+body[data-tema-aldea] .juego {
+    height: 100%;
+}
+
+body[data-tema-aldea] .panel-principal {
+    width: min(1200px, 98vw);
+    min-height: 0;
+    height: calc(100dvh - 16px);
+    grid-template-columns: minmax(0, 1fr) minmax(150px, .55fr) minmax(0, 1fr);
+    gap: clamp(10px, 2vw, 28px);
+    padding: clamp(10px, 2vw, 28px);
+}
+
+body[data-tema-aldea] .tablero {
+    gap: clamp(5px, 1vw, 16px);
+}
+
+body[data-tema-aldea] .tablero .carta {
+    width: min(135px, calc((100vw - 460px) / 4), calc((100dvh - 105px) / 5.45));
+    aspect-ratio: 3 / 4;
+}
+
+body[data-tema-aldea] .panel-central {
+    gap: clamp(12px, 3vh, 36px);
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 760px) {
+    body[data-tema-aldea] .panel-principal {
+        grid-template-columns: minmax(0, 1fr) minmax(92px, .48fr) minmax(0, 1fr);
+        gap: 8px;
+        padding: 8px;
+    }
+
+    body[data-tema-aldea] .tablero .carta {
+        width: min(calc((100vw - 150px) / 4), calc((100dvh - 80px) / 5.45));
+        border-width: 2px;
+        border-radius: 7px;
+    }
+
+    body[data-tema-aldea] .panel-info {
+        padding: 10px 5px;
+        gap: 10px;
+    }
+
+    body[data-tema-aldea] .valor {
+        font-size: 1.1rem;
+        padding: 6px;
+    }
+
+    body[data-tema-aldea] .estadistica h2 {
+        font-size: .65rem;
+        letter-spacing: 1px;
+    }
+}
+
+@media (max-width: 600px) {
+    body[data-tema-aldea] .stats {
+        gap: 8px;
+        padding: 6px 12px;
+        font-size: .66rem;
+    }
+
+    body[data-tema-aldea] #boardFrame {
+        padding: 6px;
+        border-radius: 16px;
+    }
+
+    body[data-tema-aldea] #board {
+        --carta-gap: clamp(7px, 1.6vmin, 10px);
+        --carta-pad: 6px;
+        --carta-ancho: min(
+            88px,
+            calc((100vw - 2 * clamp(8px, 1.5vh, 20px) - 2 * var(--carta-pad) - 16px - 3 * var(--carta-gap)) / 4),
+            calc((100dvh - 150px) / 5.85)
+        );
+        grid-template-columns: repeat(4, var(--carta-ancho));
+        gap: var(--carta-gap);
+        padding: var(--carta-pad);
+        background-size: auto, 18px 18px, 18px 18px;
+    }
+}
+
+/* ============================================================
+   MODALES DE FIN DE PARTIDA
+   ============================================================ */
+
+body[data-tema-aldea] #modal,
+body[data-tema-aldea] #victoryModal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(12px, 3vw, 28px);
+    background:
+        radial-gradient(circle at 50% 16%,
+            color-mix(in srgb, var(--tema-principal, #bb7621) 30%, transparent),
+            transparent 62%),
+        rgba(4, 6, 12, .82);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+    z-index: 20000;
+}
+
+body[data-tema-aldea] #modal.hidden,
+body[data-tema-aldea] #victoryModal.hidden {
+    display: none !important;
+}
+
+body[data-tema-aldea] #modal .panel,
+body[data-tema-aldea] #victoryModal .victory-panel {
+    position: relative;
+    isolation: isolate;
+    width: min(430px, calc(100vw - 28px));
+    max-width: 100%;
+    max-height: calc(100dvh - 28px);
+    overflow-y: auto;
+    padding: clamp(24px, 4vw, 36px);
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 58%, transparent);
+    border-radius: clamp(20px, 2.6vmin, 28px);
+    color: #fff6e8;
+    text-align: center;
+    background:
+        radial-gradient(120% 90% at 50% 0%,
+            color-mix(in srgb, var(--tema-brillo, #ffd35b) 22%, transparent),
+            transparent 58%),
+        linear-gradient(160deg,
+            color-mix(in srgb, var(--tema-principal, #bb7621) 32%, #0b0d13),
+            color-mix(in srgb, var(--tema-fondo, #140d06) 92%, #000));
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, .65),
+        0 26px 70px rgba(0, 0, 0, .72),
+        0 0 46px color-mix(in srgb, var(--tema-principal, #bb7621) 36%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, .16);
+    animation: tema-modal-entrar .42s cubic-bezier(.2, .8, .2, 1);
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 55%, transparent) transparent;
+}
+
+body[data-tema-aldea] #modal .panel {
+    width: min(380px, calc(100vw - 28px));
+    background:
+        radial-gradient(120% 90% at 50% 0%,
+            color-mix(in srgb, #ff4d5e 22%, transparent),
+            transparent 58%),
+        linear-gradient(160deg,
+            color-mix(in srgb, var(--tema-fondo, #140d06) 78%, #2a070d),
+            #0a0b10);
+    border-color: color-mix(in srgb, #ff6470 42%, var(--tema-brillo, #ffd35b));
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, .65),
+        0 26px 70px rgba(0, 0, 0, .72),
+        0 0 40px rgba(255, 60, 80, .22),
+        inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+
+body[data-tema-aldea] #modal .panel::before,
+body[data-tema-aldea] #victoryModal .victory-panel::before {
+    content: "";
+    position: absolute;
+    inset: 9px;
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 24%, transparent);
+    border-radius: clamp(14px, 2vmin, 21px);
+    pointer-events: none;
+    opacity: .8;
+}
+
+body[data-tema-aldea] #modal .panel::after,
+body[data-tema-aldea] #victoryModal .victory-panel::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 18%;
+    right: 18%;
+    height: 3px;
+    border-radius: 0 0 999px 999px;
+    background: linear-gradient(90deg,
+        transparent,
+        var(--tema-brillo, #ffd35b),
+        transparent);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--tema-brillo, #ffd35b) 65%, transparent);
+    pointer-events: none;
+}
+
+body[data-tema-aldea] #victoryModal .victory-icon {
+    display: inline-block;
+    margin: 0 auto .15em;
+    font-size: clamp(3.2rem, 8vw, 4.6rem);
+    line-height: 1;
+    filter:
+        drop-shadow(0 6px 14px rgba(0, 0, 0, .5))
+        drop-shadow(0 0 18px color-mix(in srgb, var(--tema-brillo, #ffd35b) 45%, transparent));
+    animation: tema-icono-flotar 2.6s ease-in-out infinite alternate;
+}
+
+body[data-tema-aldea] #victoryModal .victory-panel h2,
+body[data-tema-aldea] #modal .panel h2:first-of-type {
+    margin: .2em 0 .1em;
+    color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 72%, #fff);
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    text-shadow:
+        0 2px 0 rgba(0, 0, 0, .35),
+        0 0 18px color-mix(in srgb, var(--tema-brillo, #ffd35b) 55%, transparent);
+}
+
+body[data-tema-aldea] #modal .panel h2:not(:first-of-type) {
+    margin: .2em 0 .6em;
+    color: #ffe9d2;
+    font-size: clamp(.98rem, 2.4vw, 1.15rem);
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: .01em;
+    text-transform: none;
+    text-shadow: none;
+}
+
+body[data-tema-aldea] #victoryModal .victory-line {
+    width: min(78%, 280px);
+    height: 3px;
+    margin: clamp(12px, 2vh, 18px) auto;
+    border-radius: 999px;
+    background: linear-gradient(90deg,
+        transparent,
+        var(--tema-principal, #bb7621),
+        var(--tema-brillo, #ffd35b),
+        var(--tema-principal, #bb7621),
+        transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--tema-brillo, #ffd35b) 55%, transparent);
+}
+
+body[data-tema-aldea] #victoryModal .victory-message {
+    margin: .45em 0;
+    color: #ffe9d2;
+    font-size: clamp(.92rem, 2.2vw, 1.02rem);
+    line-height: 1.5;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .45);
+}
+
+body[data-tema-aldea] #victoryModal .victory-stats,
+body[data-tema-aldea] #modal #finalStats {
+    margin: clamp(14px, 2.4vh, 22px) 0;
+    padding: clamp(10px, 1.6vh, 14px) clamp(12px, 2vw, 18px);
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 38%, transparent);
+    border-radius: 14px;
+    color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 80%, #fff);
+    background: rgba(4, 6, 12, .42);
+    font-size: clamp(.9rem, 2.2vw, 1rem);
+    font-weight: 500;
+    line-height: 1.75;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+
+body[data-tema-aldea] #modal .botones-modal,
+body[data-tema-aldea] #victoryModal .victory-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: clamp(16px, 2.4vh, 24px);
+}
+
+body[data-tema-aldea] #modal button,
+body[data-tema-aldea] #victoryModal button {
+    appearance: none;
+    min-width: 0;
+    padding: 11px 20px;
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 58%, transparent);
+    border-radius: 999px;
+    color: #fffdf7;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .16), transparent 52%),
+        linear-gradient(135deg,
+            color-mix(in srgb, var(--tema-principal, #bb7621) 88%, #000),
+            color-mix(in srgb, var(--tema-brillo, #ffd35b) 54%, #000));
+    font-size: clamp(.88rem, 2vw, .98rem);
+    font-weight: 600;
+    letter-spacing: .02em;
+    cursor: pointer;
+    box-shadow:
+        0 10px 22px rgba(0, 0, 0, .35),
+        inset 0 1px 0 rgba(255, 255, 255, .22),
+        0 0 16px color-mix(in srgb, var(--tema-principal, #bb7621) 26%, transparent);
+    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+body[data-tema-aldea] #modal button:hover,
+body[data-tema-aldea] #victoryModal button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.08);
+    box-shadow:
+        0 14px 28px rgba(0, 0, 0, .42),
+        inset 0 1px 0 rgba(255, 255, 255, .26),
+        0 0 26px color-mix(in srgb, var(--tema-brillo, #ffd35b) 45%, transparent);
+}
+
+body[data-tema-aldea] #modal button:active,
+body[data-tema-aldea] #victoryModal button:active {
+    transform: translateY(0) scale(.98);
+}
+
+body[data-tema-aldea] #modal #closeModal,
+body[data-tema-aldea] #victoryModal #victoryClose {
+    color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 70%, #fff);
+    border-color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 34%, transparent);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .08), transparent 52%),
+        rgba(8, 10, 16, .62);
+    box-shadow:
+        0 8px 18px rgba(0, 0, 0, .3),
+        inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+
+body[data-tema-aldea] #modal #closeModal:hover,
+body[data-tema-aldea] #victoryModal #victoryClose:hover {
+    filter: brightness(1.12);
+    box-shadow:
+        0 10px 22px rgba(0, 0, 0, .36),
+        0 0 22px color-mix(in srgb, var(--tema-brillo, #ffd35b) 26%, transparent);
+}
+
+body[data-tema-aldea] #modal button:focus-visible,
+body[data-tema-aldea] #victoryModal button:focus-visible,
+body[data-tema-aldea] .boton:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+}
+
+
+/* ============================================================
+   BOTÓN VOLVER
+   ============================================================ */
+
+body[data-tema-aldea]:not(.pantalla-online) .boton {
+    position: fixed;
+    left: clamp(10px, 1.6vw, 24px);
+    bottom: clamp(10px, 1.8vh, 22px);
+    z-index: 9000;
+    display: inline-flex;
+    align-items: center;
+    gap: .55em;
+    padding: clamp(9px, 1.2vh, 12px) clamp(16px, 2vw, 24px);
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 52%, transparent);
+    border-radius: 999px;
+    color: #fff8ea;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .14), transparent 52%),
+        linear-gradient(135deg,
+            color-mix(in srgb, var(--tema-principal, #bb7621) 82%, #000),
+            color-mix(in srgb, var(--tema-fondo, #140d06) 82%, #000));
+    font-size: clamp(.82rem, 1.3vw, .98rem);
+    font-weight: 600;
+    letter-spacing: .05em;
+    line-height: 1;
+    text-transform: uppercase;
+    text-decoration: none;
+    box-shadow:
+        0 10px 24px rgba(0, 0, 0, .42),
+        inset 0 1px 0 rgba(255, 255, 255, .18),
+        0 0 18px color-mix(in srgb, var(--tema-principal, #bb7621) 28%, transparent);
+    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+body[data-tema-aldea]:not(.pantalla-online) .boton::before {
+    content: "←";
+    font-size: 1.15em;
+    line-height: 1;
+    transform: translateY(-.02em);
+}
+
+body[data-tema-aldea]:not(.pantalla-online) .boton:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+    box-shadow:
+        0 14px 30px rgba(0, 0, 0, .48),
+        inset 0 1px 0 rgba(255, 255, 255, .22),
+        0 0 26px color-mix(in srgb, var(--tema-brillo, #ffd35b) 38%, transparent);
+}
+
+body[data-tema-aldea]:not(.pantalla-online) .boton:active {
+    transform: translateY(0) scale(.98);
+}
+
+@keyframes tema-modal-entrar {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(.96);
+        filter: blur(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes tema-icono-flotar {
+    from {
+        transform: translateY(0) rotate(-2deg);
+    }
+
+    to {
+        transform: translateY(-7px) rotate(2deg);
+    }
+}
+
+@media (max-width: 480px) {
+    body[data-tema-aldea] #modal .botones-modal,
+    body[data-tema-aldea] #victoryModal .victory-buttons {
+        flex-direction: column;
+    }
+
+    body[data-tema-aldea] #modal button,
+    body[data-tema-aldea] #victoryModal button {
+        width: 100%;
+    }
+
+    body[data-tema-aldea]:not(.pantalla-online) .boton {
+        left: 8px;
+        bottom: 8px;
+        padding: 8px 14px;
+        font-size: .78rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-tema-aldea] .card {
+        transition-duration: .01ms;
+    }
+
+    body[data-tema-aldea] #modal .panel,
+    body[data-tema-aldea] #victoryModal .victory-panel,
+    body[data-tema-aldea] #victoryModal .victory-icon {
+        animation: none;
+    }
+
+    body[data-tema-aldea] .boton,
+    body[data-tema-aldea] #modal button,
+    body[data-tema-aldea] #victoryModal button {
+        transition-duration: .01ms;
+    }
+}
+
+
+/* ============================================================
+   BOTÓN Y MODAL DE PAUSA
+============================================================ */
+
+body[data-tema-aldea] .btn-pausa-nivel {
+    position: fixed;
+    top: clamp(10px, 1.8vh, 20px);
+    right: clamp(10px, 1.6vw, 24px);
+    z-index: 9600;
+    display: grid;
+    place-items: center;
+    width: clamp(42px, 4.8vmin, 52px);
+    height: clamp(42px, 4.8vmin, 52px);
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 62%, transparent);
+    border-radius: 16px;
+    color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 74%, #fff);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .18), transparent 56%),
+        linear-gradient(145deg,
+            color-mix(in srgb, var(--tema-principal, #bb7621) 70%, #05060a),
+            color-mix(in srgb, var(--tema-fondo, #140d06) 88%, #000));
+    box-shadow:
+        0 10px 24px rgba(0, 0, 0, .46),
+        0 0 20px color-mix(in srgb, var(--tema-principal, #bb7621) 32%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, .22);
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease, opacity .18s ease;
+}
+
+body[data-tema-aldea] .btn-pausa-nivel::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 24%, transparent);
+    border-radius: 11px;
+    pointer-events: none;
+}
+
+body[data-tema-aldea] .btn-pausa-nivel:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.12);
+    box-shadow:
+        0 14px 30px rgba(0, 0, 0, .5),
+        0 0 28px color-mix(in srgb, var(--tema-brillo, #ffd35b) 42%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, .28);
+}
+
+body[data-tema-aldea] .btn-pausa-nivel:active {
+    transform: translateY(0) scale(.96);
+}
+
+body[data-tema-aldea] .btn-pausa-nivel:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+}
+
+body[data-tema-aldea] .btn-pausa-nivel.pausa-boton-oculto {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-6px) scale(.9);
+}
+
+body[data-tema-aldea] .pausa-icono,
+body[data-tema-aldea] .pausa-simbolo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+body[data-tema-aldea] .pausa-icono i,
+body[data-tema-aldea] .pausa-simbolo i {
+    display: block;
+    width: 5px;
+    height: 20px;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--tema-brillo, #ffd35b) 75%, transparent);
+}
+
+body[data-tema-aldea] .pausa-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 21000;
+    display: grid;
+    place-items: center;
+    padding: clamp(12px, 3vw, 28px);
+    background:
+        radial-gradient(circle at 50% 14%,
+            color-mix(in srgb, var(--tema-principal, #bb7621) 28%, transparent),
+            transparent 62%),
+        rgba(3, 5, 10, .84);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s ease, visibility .2s ease;
+}
+
+body[data-tema-aldea] .pausa-overlay[hidden] {
+    display: none !important;
+}
+
+body[data-tema-aldea] .pausa-overlay.pausa-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+body[data-tema-aldea] .pausa-panel {
+    position: relative;
+    isolation: isolate;
+    box-sizing: border-box;
+    width: min(470px, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: clamp(20px, 3.6vw, 32px);
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 58%, transparent);
+    border-radius: clamp(20px, 3vmin, 28px);
+    color: #fff8ec;
+    background:
+        radial-gradient(120% 90% at 50% 0%,
+            color-mix(in srgb, var(--tema-brillo, #ffd35b) 22%, transparent),
+            transparent 58%),
+        linear-gradient(160deg,
+            color-mix(in srgb, var(--tema-principal, #bb7621) 34%, #0a0c12),
+            color-mix(in srgb, var(--tema-fondo, #140d06) 92%, #000));
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, .65),
+        0 28px 80px rgba(0, 0, 0, .78),
+        0 0 54px color-mix(in srgb, var(--tema-principal, #bb7621) 42%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, .18);
+    outline: none;
+    animation: pausa-panel-entrar .38s cubic-bezier(.2, .8, .2, 1);
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 55%, transparent) transparent;
+}
+
+@property --pausa-angulo {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+
+body[data-tema-aldea] .pausa-panel::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    z-index: 2;
+    padding: 2px;
+    border-radius: inherit;
+    --pausa-angulo: 0deg;
+    background: conic-gradient(from var(--pausa-angulo),
+        transparent 0deg,
+        color-mix(in srgb, var(--tema-brillo, #ffd35b) 90%, #fff) 48deg,
+        transparent 110deg,
+        transparent 180deg,
+        color-mix(in srgb, var(--tema-principal, #bb7621) 90%, #fff) 230deg,
+        transparent 300deg,
+        transparent 360deg);
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: .9;
+    pointer-events: none;
+    animation: pausa-borde-girar 7s linear infinite;
+}
+
+body[data-tema-aldea] .pausa-panel::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 18%;
+    right: 18%;
+    height: 3px;
+    border-radius: 0 0 999px 999px;
+    background: linear-gradient(90deg,
+        transparent,
+        var(--tema-brillo, #ffd35b),
+        transparent);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--tema-brillo, #ffd35b) 72%, transparent);
+    pointer-events: none;
+}
+
+body[data-tema-aldea] .pausa-brillo {
+    position: absolute;
+    inset: -30% 0 auto;
+    height: 55%;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        color-mix(in srgb, var(--tema-brillo, #ffd35b) 26%, transparent),
+        transparent 66%);
+    filter: blur(18px);
+    pointer-events: none;
+}
+
+body[data-tema-aldea] .pausa-header {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 2.4vw, 18px);
+    margin-bottom: clamp(16px, 2.8vh, 24px);
+    text-align: left;
+}
+
+body[data-tema-aldea] .pausa-simbolo {
+    flex: 0 0 auto;
+    width: clamp(52px, 8vmin, 64px);
+    height: clamp(52px, 8vmin, 64px);
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 52%, transparent);
+    border-radius: 18px;
+    color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 78%, #fff);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .16), transparent 56%),
+        rgba(4, 6, 12, .4);
+    box-shadow:
+        0 0 26px color-mix(in srgb, var(--tema-brillo, #ffd35b) 28%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, .16);
+}
+
+body[data-tema-aldea] .pausa-simbolo i {
+    width: 6px;
+    height: 24px;
+}
+
+body[data-tema-aldea] .pausa-header h2 {
+    margin: 0;
+    color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 74%, #fff);
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    text-shadow:
+        0 2px 0 rgba(0, 0, 0, .35),
+        0 0 20px color-mix(in srgb, var(--tema-brillo, #ffd35b) 58%, transparent);
+}
+
+body[data-tema-aldea] .pausa-header p {
+    margin: .35em 0 0;
+    color: #ffe9d2;
+    font-size: clamp(.8rem, 2vw, .92rem);
+    line-height: 1.35;
+}
+
+body[data-tema-aldea] .pausa-opciones {
+    display: grid;
+    gap: 9px;
+}
+
+body[data-tema-aldea] .pausa-fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 13px;
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 22%, transparent);
+    border-radius: 16px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .06), transparent 60%),
+        rgba(3, 5, 10, .34);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+body[data-tema-aldea] .pausa-fila-volumen {
+    flex-wrap: wrap;
+}
+
+body[data-tema-aldea] .pausa-etiqueta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    text-align: left;
+}
+
+body[data-tema-aldea] .pausa-emoji {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 26%, transparent);
+    border-radius: 10px;
+    color: var(--tema-brillo, #ffd35b);
+    background: color-mix(in srgb, var(--tema-principal, #bb7621) 24%, transparent);
+    font-size: 1rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+
+body[data-tema-aldea] .pausa-etiqueta strong {
+    display: block;
+    color: #fff5e6;
+    font-size: clamp(.72rem, 1.8vw, .82rem);
+    font-weight: 600;
+    letter-spacing: .06em;
+}
+
+body[data-tema-aldea] .pausa-etiqueta small {
+    display: block;
+    margin-top: .15em;
+    color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 46%, #cbd5e1);
+    font-size: clamp(.62rem, 1.6vw, .72rem);
+    line-height: 1.3;
+}
+
+body[data-tema-aldea] .pausa-switch {
+    position: relative;
+    flex: 0 0 auto;
+    width: 52px;
+    height: 28px;
+    cursor: pointer;
+}
+
+body[data-tema-aldea] .pausa-switch input {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+body[data-tema-aldea] .pausa-slider {
+    position: absolute;
+    inset: 0;
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 26%, transparent);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .12);
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, .35);
+    transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+body[data-tema-aldea] .pausa-slider::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #d7dee8;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+    transition: transform .2s ease, background .2s ease;
+}
+
+body[data-tema-aldea] .pausa-switch input:checked + .pausa-slider {
+    border-color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 68%, transparent);
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--tema-principal, #bb7621) 82%, #000),
+        color-mix(in srgb, var(--tema-brillo, #ffd35b) 62%, #000));
+    box-shadow:
+        inset 0 2px 5px rgba(0, 0, 0, .28),
+        0 0 14px color-mix(in srgb, var(--tema-brillo, #ffd35b) 30%, transparent);
+}
+
+body[data-tema-aldea] .pausa-switch input:checked + .pausa-slider::after {
+    transform: translateX(24px);
+    background: #fff;
+}
+
+body[data-tema-aldea] .pausa-switch input:focus-visible + .pausa-slider {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+}
+
+body[data-tema-aldea] .pausa-volumen-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 170px;
+    min-width: 0;
+}
+
+body[data-tema-aldea] .pausa-rango {
+    flex: 1;
+    min-width: 90px;
+    height: 6px;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .16);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, .4);
+    cursor: pointer;
+    accent-color: var(--tema-brillo, #ffd35b);
+}
+
+body[data-tema-aldea] .pausa-rango::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--tema-brillo, #ffd35b);
+    box-shadow:
+        0 2px 7px rgba(0, 0, 0, .5),
+        0 0 12px color-mix(in srgb, var(--tema-brillo, #ffd35b) 55%, transparent);
+    cursor: pointer;
+}
+
+body[data-tema-aldea] .pausa-rango::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--tema-brillo, #ffd35b);
+    box-shadow: 0 2px 7px rgba(0, 0, 0, .5);
+    cursor: pointer;
+}
+
+body[data-tema-aldea] .pausa-rango:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 4px;
+}
+
+body[data-tema-aldea] .pausa-valor {
+    flex: 0 0 auto;
+    min-width: 3.2em;
+    color: var(--tema-brillo, #ffd35b);
+    font-size: clamp(.72rem, 1.8vw, .82rem);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    text-shadow: 0 0 12px color-mix(in srgb, var(--tema-brillo, #ffd35b) 42%, transparent);
+}
+
+body[data-tema-aldea] .pausa-acciones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    margin-top: clamp(16px, 2.6vh, 22px);
+}
+
+body[data-tema-aldea] .pausa-btn {
+    appearance: none;
+    min-width: 0;
+    padding: 12px 16px;
+    border: 1px solid color-mix(in srgb, var(--tema-brillo, #ffd35b) 52%, transparent);
+    border-radius: 999px;
+    color: #fffdf7;
+    font-size: clamp(.76rem, 1.9vw, .9rem);
+    font-weight: 600;
+    letter-spacing: .035em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+body[data-tema-aldea] .pausa-btn-principal {
+    grid-column: 1 / -1;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .18), transparent 52%),
+        linear-gradient(135deg,
+            color-mix(in srgb, var(--tema-principal, #bb7621) 90%, #000),
+            color-mix(in srgb, var(--tema-brillo, #ffd35b) 58%, #000));
+    box-shadow:
+        0 12px 26px rgba(0, 0, 0, .4),
+        inset 0 1px 0 rgba(255, 255, 255, .24),
+        0 0 20px color-mix(in srgb, var(--tema-principal, #bb7621) 30%, transparent);
+}
+
+body[data-tema-aldea] .pausa-btn-secundario {
+    color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 72%, #fff);
+    border-color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 34%, transparent);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .08), transparent 52%),
+        rgba(8, 10, 16, .62);
+    box-shadow:
+        0 8px 18px rgba(0, 0, 0, .3),
+        inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+
+body[data-tema-aldea] .pausa-btn-fantasma {
+    color: #dfe7f1;
+    border-color: rgba(255, 255, 255, .16);
+    background: rgba(4, 6, 12, .35);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+body[data-tema-aldea] .pausa-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+}
+
+body[data-tema-aldea] .pausa-btn:active {
+    transform: translateY(0) scale(.98);
+}
+
+body[data-tema-aldea] .pausa-btn:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+}
+
+body[data-tema-aldea] .pausa-ayuda {
+    margin: clamp(12px, 2vh, 16px) 0 0;
+    color: color-mix(in srgb, var(--tema-brillo, #ffd35b) 36%, #9aa7b8);
+    font-size: clamp(.64rem, 1.7vw, .74rem);
+    text-align: center;
+}
+
+body[data-tema-aldea] .pausa-ayuda kbd {
+    display: inline-block;
+    padding: .1em .42em;
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: 6px;
+    color: #fff4e4;
+    background: rgba(255, 255, 255, .08);
+    font-family: inherit;
+    font-size: .95em;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+
+body[data-tema-aldea].juego-pausado #board,
+body[data-tema-aldea].juego-pausado .boton {
+    pointer-events: none;
+}
+
+@keyframes pausa-borde-girar {
+    to {
+        --pausa-angulo: 360deg;
+    }
+}
+
+@keyframes pausa-panel-entrar {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(.97);
+        filter: blur(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@media (max-width: 600px) {
+    body[data-tema-aldea] .stats {
+        max-width: calc(100vw - 78px);
+    }
+
+    body[data-tema-aldea] .btn-pausa-nivel {
+        width: 42px;
+        height: 42px;
+        border-radius: 13px;
+    }
+
+    body[data-tema-aldea] .pausa-icono i {
+        width: 4px;
+        height: 17px;
+    }
+
+    body[data-tema-aldea] .pausa-panel {
+        padding: 20px 16px;
+    }
+}
+
+@media (max-width: 420px) {
+    body[data-tema-aldea] .pausa-acciones {
+        grid-template-columns: 1fr;
+    }
+
+    body[data-tema-aldea] .pausa-btn-principal {
+        grid-column: auto;
+    }
+
+    body[data-tema-aldea] .pausa-fila {
+        padding: 10px 11px;
+    }
+
+    body[data-tema-aldea] .pausa-emoji {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body[data-tema-aldea] .btn-pausa-nivel,
+    body[data-tema-aldea] .pausa-overlay,
+    body[data-tema-aldea] .pausa-panel,
+    body[data-tema-aldea] .pausa-panel::before,
+    body[data-tema-aldea] .pausa-btn,
+    body[data-tema-aldea] .pausa-slider,
+    body[data-tema-aldea] .pausa-slider::after {
+        animation: none;
+        transition-duration: .01ms;
+    }
+}

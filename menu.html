@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <!-- CONFIGURACIÓN -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Ninja Memory - Juego de cartas de memoria temático de Naruto">
+
+    <title>Ninja Memory</title>
+
+    <!-- FUENTE -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/menu.css">
+
+    <!-- GUARD DE SESIÓN (valida contra el servidor; nunca redirige) -->
+    <script src="js/sesion-guard.js"></script>
+    <script src="js/config.js"></script>
+</head>
+
+<body>
+    <a class="skip-link" href="#contenido-principal">Saltar al contenido principal</a>
+
+    <!-- CARTEL DE INVITADO (lo muestra/oculta js/sesion-guard.js) -->
+    <div id="avisoInvitado" class="aviso-invitado" role="status" aria-live="polite" hidden>
+        <span id="avisoInvitadoTexto">Estás como invitado. Inicia sesión para guardar tu progreso y aparecer en el ranking.</span>
+        <a class="aviso-invitado-btn" href="login.html">Iniciar sesión</a>
+    </div>
+
+    <!-- VIDEO DE FONDO -->
+    <video autoplay muted loop class="video-bg">
+        <source src="assets/naruto vs sasuke.mp4" type="video/mp4">
+    </video>
+
+ <div class="modal-overlay" id="gameModeModal">
+    <div class="modal-content-juego">
+        <div class="avatar-modal-juego">👤</div>
+        <h2 class="modal-juego-titulo">ELIGE EL MODO DE JUEGO</h2>
+        
+        <div class="opciones-juego-container">
+            <div class="opcion-card verde-card" id="btnEncontrarPares">
+                <h3>ENCONTRAR PARES</h3>
+                <div class="opcion-centro-box">
+                    <div class="cartas-icon">🎴👤🎴</div>
+                </div>
+                <p class="opcion-desc">Encuentra los pares</p>
+            </div>
+
+            <div class="opcion-card morada-card" id="btnMemoria">
+                <h3>MEMORIA</h3>
+                <div class="opcion-centro-box">
+                    <div class="cerebro-icon">🧠</div>
+                </div>
+                <p class="opcion-desc">¿Eres capaz de memorizar todo?</p>
+            </div>
+
+            <div class="opcion-card azul-card" id="btnCarpetas">
+                <h3>CARPETAS</h3>
+                <div class="opcion-centro-box">
+                    <div class="carpetas-icon">🗂️👤🗂️</div>
+                </div>
+                <p class="opcion-desc">Organízalo todo</p>
+            </div>
+
+            <div class="opcion-card roja-card" id="btnMuerte">
+                <h3>Muerte</h3>
+                <div class="opcion-centro-box">
+                    <div class="tumba-icon">🪦</div>
+                </div>
+                <p class="opcion-desc">EL tiempo es limitado</p>
+            </div>
+        </div>
+
+        <div class="modo-volver-caja">
+            <button class="btn-volver-modal" id="closeGameModeBtn" type="button">
+                <span aria-hidden="true">←</span> VOLVER
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal-overlay" id="twoPlayersModal">
+    <div class="modal-content-multijugador">
+        <div class="multijugador-header-box">
+            <div class="globo-icon">👥</div>
+                        <div class="multijugador-titulo-texto">
+                <h2>DOS JUGADORES / SALAS</h2>
+                <p class="sub-verde">UNIRSE A SALAS · PARTIDA RÁPIDA</p>
+            </div>
+        </div>
+        <div class="barra-acciones-lobby" id="barraAccionesLobby">
+            <button type="button" class="btn-lobby btn-lobby-primario" id="btnUnirsePorCodigo">UNIRSE / SALAS ABIERTAS</button>
+            <button type="button" class="btn-lobby btn-lobby-secundario" id="btnPartidaRapida">PARTIDA RÁPIDA</button>
+        </div>
+        <div id="panelBuscarCodigo" class="panel-buscar-codigo" hidden>
+            <div class="buscar-codigo-row">
+                <input type="text" id="inputBuscarCodigo" class="input-lobby" placeholder="INTRODUCE CÓDIGO" maxlength="6" autocomplete="off">
+                <button type="button" class="btn-lobby btn-lobby-primario" id="btnBuscarUnirse">UNIRSE</button>
+                <button type="button" class="btn-lobby btn-lobby-secundario" id="btnCancelarBuscar">CANCELAR</button>
+            </div>
+            <p class="error-codigo" id="errorLobbyCodigo" hidden></p>
+        </div>
+        <div id="panelEsperandoRival" class="panel-esperando" hidden>
+            <p class="esperando-titulo" id="esperandoTitulo">ESPERANDO RIVAL...</p>
+            <p class="esperando-codigo">CÓDIGO: <span id="codigoSalaEspera">----</span></p>
+            <p class="esperando-info" id="esperandoInfo">COMPARTE ESTE CÓDIGO CON TU AMIGO</p>
+            <p class="esperando-equipos" id="esperandoEquipos" hidden></p>
+            <div class="sala-compartir"><img id="qrSala" class="qr-sala" alt="QR para unirse a la sala" hidden><div class="sala-compartir-texto"><p class="esperando-url" id="urlSalaEspera"></p><button type="button" class="btn-lobby btn-lobby-secundario" id="btnCopiarEnlaceSala">COPIAR ENLACE</button></div></div>
+            <button type="button" class="btn-lobby btn-lobby-secundario" id="btnSalirEsperando">CANCELAR</button>
+        </div>
+        <div id="panelPartidaRapida" class="panel-partida-rapida" hidden>
+            <p class="esperando-titulo" id="textoBusquedaRapida">BUSCANDO OPONENTE...</p>
+            <div class="radio-grupo modo-rapida"><label><input type="radio" name="modoRapida" value="1v1" checked> 1 VS 1</label><label><input type="radio" name="modoRapida" value="2v2"> 2 VS 2</label></div>
+            <button type="button" class="btn-lobby btn-lobby-secundario" id="btnCancelarBusqueda">CANCELAR</button>
+        </div>
+        <div class="lista-salas-container" id="listaSalasContainer">
+            <div id="listaSalas" class="lista-salas"></div>
+            <p id="salasVacio" class="salas-vacio">No hay salas disponibles.<br>¡Usa partida rápida o espera una sala!</p>
+        </div>
+        <div class="multijugador-volver-caja">
+            <button class="btn-volver-modal color-fucsia" id="closeTwoPlayersBtn" type="button">
+                <span aria-hidden="true">←</span> VOLVER
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="multijugadorModal">
+    <div class="modal-content-multijugador">
+        <div class="multijugador-header-box">
+            <div class="globo-icon">🌐</div>
+            <div class="multijugador-titulo-texto">
+                <h2>MULTIJUGADOR</h2>
+                <p class="sub-verde">CREAR · PARTIDA RÁPIDA · INVITAR AMIGOS</p>
+            </div>
+        </div>
+        <div class="barra-acciones-lobby" id="barraAccionesMultijugador">
+            <button type="button" class="btn-lobby btn-lobby-primario" id="btnCrearSalaVerdeModal">CREAR SALA</button>
+            <button type="button" class="btn-lobby btn-lobby-secundario" id="btnInvitarAmigosVerdeModal">INVITAR AMIGOS</button>
+        </div>
+        <div id="panelCrearSalaVerde" class="panel-crear-sala" hidden>
+            <div class="crear-sala-grid">
+                <div class="crear-sala-fila"><label>MODO</label><div class="radio-grupo"><label><input type="radio" name="modoPartidaVerde" value="1v1" checked> 1 VS 1</label><label><input type="radio" name="modoPartidaVerde" value="2v2"> 2 VS 2</label></div></div>
+                <div class="crear-sala-fila"><label>TIPO DE MAZO</label><div class="radio-grupo"><label><input type="radio" name="tipoMazoVerde" value="mezclar" checked> MEZCLAR ALDEAS / CLANES</label><label><input type="radio" name="tipoMazoVerde" value="aldea"> UNA ALDEA</label></div></div>
+                <div class="crear-sala-fila" id="filaAldeasMezclaVerde"><label>SELECCIONA ALDEAS O CLANES PARA MEZCLAR</label><div class="checkbox-grupo-aldeas"><label><input type="checkbox" class="chk-aldea-verde" value="konoha/hyuga" checked> KONOHA - HYUGA</label><label><input type="checkbox" class="chk-aldea-verde" value="konoha/sarutobi" checked> KONOHA - SARUTOBI</label><label><input type="checkbox" class="chk-aldea-verde" value="konoha/uchiha" checked> KONOHA - UCHIHA</label><label><input type="checkbox" class="chk-aldea-verde" value="konoha/uzumaki" checked> KONOHA - UZUMAKI</label><label><input type="checkbox" class="chk-aldea-verde" value="akatsuki" checked> AKATSUKI / OTROS</label><label><input type="checkbox" class="chk-aldea-verde" value="niebla" checked> NIEBLA</label><label><input type="checkbox" class="chk-aldea-verde" value="nube" checked> NUBE</label><label><input type="checkbox" class="chk-aldea-verde" value="roca" checked> ROCA</label><label><input type="checkbox" class="chk-aldea-verde" value="arena" checked> ARENA</label></div><p class="texto-ayuda">Selecciona al menos una aldea o clan para mezclar.</p></div>
+                <div class="crear-sala-fila" id="filaAldeaVerde" hidden><label for="selectAldeaVerde">ALDEA</label><select id="selectAldeaVerde" class="select-lobby"><option value="konoha">KONOHA</option><option value="uchiha">UCHIHA</option><option value="hyuga">HYUGA</option><option value="sarutobi">SARUTOBI</option><option value="uzumaki">UZUMAKI</option><option value="arena">ARENA</option><option value="niebla">NIEBLA</option><option value="nube">NUBE</option><option value="roca">ROCA</option><option value="otros">OTROS</option></select></div>
+                <p id="errorCrearSalaVerde" class="error-codigo" hidden></p>
+                <div class="crear-sala-fila"><label for="selectParesVerde">NÚMERO DE PAREJAS</label><select id="selectParesVerde" class="select-lobby"><option value="8">8 PAREJAS (16 CARTAS)</option><option value="10">10 PAREJAS (20 CARTAS)</option><option value="12">12 PAREJAS (24 CARTAS)</option><option value="14">14 PAREJAS (28 CARTAS)</option><option value="16">16 PAREJAS (32 CARTAS)</option></select></div>
+                <div class="crear-sala-fila"><label>SALA</label><div class="radio-grupo"><label><input type="radio" name="tipoSalaVerde" value="publica" checked> PÚBLICA</label><label><input type="radio" name="tipoSalaVerde" value="privada"> PRIVADA</label></div></div>
+                <div class="crear-sala-fila"><label><input type="checkbox" id="chkContrasenaVerde"> PROTEGER CON CONTRASEÑA</label><input type="text" id="inputContrasenaSalaVerde" class="input-lobby" placeholder="CONTRASEÑA" maxlength="12" hidden></div>
+                <div class="crear-sala-acciones"><button type="button" class="btn-lobby btn-lobby-primario" id="btnConfirmarCrearSalaVerde">CREAR SALA</button></div>
+            </div>
+        </div>
+        <div id="panelEsperandoRivalVerde" class="panel-esperando" hidden>
+            <p class="esperando-titulo" id="esperandoTituloVerde">ESPERANDO JUGADORES...</p>
+            <p class="esperando-codigo">CÓDIGO: <span id="codigoSalaEsperaVerde">----</span></p>
+            <p class="esperando-info" id="esperandoInfoVerde">COMPARTE ESTE CÓDIGO O ENLACE PARA INVITAR AMIGOS</p>
+            <p class="esperando-equipos" id="esperandoEquiposVerde" hidden></p>
+            <div class="sala-compartir"><img id="qrSalaVerde" class="qr-sala" alt="QR para unirse a la sala" hidden><div class="sala-compartir-texto"><p class="esperando-url" id="urlSalaEsperaVerde"></p><div class="sala-compartir-botones"><button type="button" class="btn-lobby btn-lobby-secundario" id="btnCopiarCodigoSalaVerde">COPIAR CÓDIGO</button><button type="button" class="btn-lobby btn-lobby-secundario" id="btnCopiarEnlaceSalaVerde">COPIAR ENLACE</button></div></div></div>
+            <button type="button" class="btn-lobby btn-lobby-secundario" id="btnSalirEsperandoVerde">SALIR DE LA SALA</button>
+        </div>
+        <button class="btn-volver-modal color-fucsia" id="closeMultijugadorModalBtn">VOLVER</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalContrasenaSala">
+    <div class="modal-content-contrasena">
+        <h3>CONTRASEÑA DE SALA</h3>
+        <input type="password" id="inputContrasenaUnirse" class="input-lobby" placeholder="CONTRASEÑA">
+        <p class="error-codigo" id="errorContrasenaSala" hidden></p>
+        <div class="contrasena-acciones">
+            <button type="button" class="btn-lobby btn-lobby-primario" id="btnConfirmarContrasena">UNIRSE</button>
+            <button type="button" class="btn-lobby btn-lobby-secundario" id="btnCancelarContrasena">CANCELAR</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- VENTANA MODAL: RANKING (TOP JUGADORES) -->
+<div class="modal-overlay" id="rankingModal">
+    <div class="modal-content-ranking">
+        
+        <!-- Cabecera del Ranking -->
+        <div class="ranking-header-box">
+            <div class="medalla-icon">🏅</div>
+            <div class="ranking-titulo-texto">
+                <h2>RANKING</h2>
+                <p class="sub-amarillo">TOP JUGADORES DE NINJA MEMORY</p>
+            </div>
+        </div>
+
+        <!-- Tabla de Posiciones -->
+        <div class="tabla-ranking-container">
+            <!-- Encabezados de Columna -->
+            <div class="ranking-row-header">
+                <span class="col-pos">#</span>
+                <span class="col-jugador">JUGADOR</span>
+                <span class="col-nivel">PARTIDAS</span>
+                <span class="col-xp">MEJOR PUNTAJE</span>
+            </div>
+
+            <!-- Filas reales: las llena js/ui/RankingModal.js desde /api/vistas/ranking -->
+            <div id="rankingBody">
+                <div class="ranking-row">
+                    <div class="col-pos"><span class="num-rank">…</span></div>
+                    <div class="col-jugador"><span class="nombre-jugador">Cargando ranking…</span></div>
+                    <div class="col-nivel">—</div>
+                    <div class="col-xp">—</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Botón Volver -->
+        <button class="btn-volver-modal color-morado-btn" id="closeRankingBtn">VOLVER</button>
+    </div>
+</div>
+
+
+
+
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <main id="contenido-principal" class="menu-principal">
+
+        <!-- CABECERA -->
+        <div class="header">
+
+            <!-- PERFIL (Activa el modal) -->
+            <div class="perfil-panel" id="openProfileBtn" role="button" tabindex="0" aria-label="Ver perfil y estadísticas shinobi">
+                <div class="avatar" aria-hidden="true"><img src="assets/img/naruto.png" alt=""></div>
+                <div>
+                    <div class="nivel-badge" style="margin: 0;">VER PERFIL</div>
+                    <p style="font-size: 12px; color: #ccc;">Estadísticas Shinobi</p>
+                </div>
+            </div>
+
+
+
+
+
+
+
+            
+            <!-- LOGO -->
+            <div class="logo-panel">
+                <img src="assets/img/logo.png" alt="Logo">
+            </div>
+
+            <!-- PANEL DERECHO -->
+            <div class="derecha">
+                <div class="menu-superior" role="button" tabindex="0" aria-label="Abrir configuración">
+                    ⚙ Configuración
+                </div>
+                <div class="ranking-panel" role="button" tabindex="0" aria-label="Ver ranking">
+                    🏆 Ranking
+                </div>
+            </div>
+<div class="menu-button" id="btnConfiguracionMain">
+   
+</div>
+
+        </div>
+
+        
+
+
+
+
+
+
+
+    <!-- MODOS DE JUEGO -->
+    <section class="modos-juego" aria-label="Modos de juego">
+
+        <!-- UN JUGADOR -->
+        <div class="panel azul" role="button" tabindex="0" aria-label="Un jugador - Juega contra el tiempo">
+            <div class="panel-titulo">
+                👤 UN JUGADOR
+            </div>
+            <div class="panel-centro">
+                <div class="texto-centro">
+                    JUEGA CONTRA EL TIEMPO
+                </div>
+                <div class="icono-centro">
+                    🎴
+                </div>
+            </div>
+            <div class="panel-footer">
+                10 NIVELES PROGRESIVOS
+            </div>
+        </div>
+
+        <!-- DOS JUGADORES -->
+        <div class="panel morado" role="button" tabindex="0" aria-label="Dos jugadores - Desafía a un amigo">
+            <div class="panel-titulo">
+                👥 DOS JUGADORES
+            </div>
+            <div class="panel-centro">
+                <div class="texto-centro">
+                    DESAFÍA A UN AMIGO
+                </div>
+                <div class="vs">
+                    VS
+                </div>
+            </div>
+            <div class="panel-footer">
+                PARTIDAS LOCALES
+            </div>
+        </div>
+
+        <!-- MULTIJUGADOR -->
+        <div class="panel verde" role="button" tabindex="0" aria-label="Multijugador - Crea o únete a salas">
+            <div class="panel-titulo">
+                🌐 MULTIJUGADOR
+            </div>
+            <div class="panel-centro">
+                <div class="texto-centro">
+                    CREA O ÚNETE A SALAS
+                </div>
+                <div class="icono-centro">
+                    👥
+                </div>
+            </div>
+            <div class="panel-footer">
+                CHAT EN TIEMPO REAL
+            </div>
+        </div>
+
+    </section>
+
+
+
+
+
+        <!-- PANEL INFERIOR (Actualizado con ID y cursor) -->
+<div class="contenedor-inferior">
+    <div class="barra-inferior">
+        <!-- Añadimos ID y cursor pointer -->
+        <div class="item" id="btnInfoPuntaje" role="button" tabindex="0" aria-label="Ver sistema de puntaje">
+            <div class="item-icono" aria-hidden="true">🏆</div>
+            <h3>PUNTAJE</h3>
+            <p>Gana puntos</p>
+        </div>
+        <div class="item" id="levelBtn" role="button" tabindex="0" aria-label="Ver niveles">
+            <div class="item-icono" aria-hidden="true">🎖️</div>
+            <h3>NIVELES</h3>
+            <p>10 niveles</p>
+        </div>
+ <!-- Botón -->
+    <div class="item" id="btnHistorial" role="button" tabindex="0" aria-label="Ver historial de partidas">
+        <div class="item-icono" aria-hidden="true">📜</div>
+        <h3>HISTORIAL</h3>
+        <p>Partidas jugadas</p>
+    </div>
+
+    <!-- Modal -->
+    <div id="modalHistorial" class="modal-historial hidden">
+
+        <div class="historial-caja">
+
+            <button class="historial-cerrar" id="cerrarHistorial" aria-label="Cerrar historial">&times;</button>
+
+            <h2>Historial de Jugador</h2>
+            <p class="historial-sub">
+                Consulta tus últimas partidas.
+            </p>
+
+            <div class="historial-tabs">
+
+                <button class="tab-historial activo" data-tab="normales">
+                    <strong>Partidas Normales</strong>
+                    <span>1 Jugador</span>
+                </button>
+
+                <button class="tab-historial" data-tab="online">
+                    <strong>Online 1vs1</strong>
+                    <span>Enfréntate a otros jugadores</span>
+                </button>
+
+                <button class="tab-historial" data-tab="sala">
+                    <strong>Unirse a sala</strong>
+                    <span>Partidas personalizadas</span>
+                </button>
+
+            </div>
+
+            <div class="historial-tabla-wrap">
+
+                <table class="historial-tabla">
+
+                    <thead>
+
+                        <tr>
+                            <th>Resultado</th>
+                            <th>Modo</th>
+                            <th>Puntaje</th>
+                            <th>Fecha y hora</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="historialBody"></tbody>
+
+                </table>
+
+            </div>
+
+            <p class="historial-nota">
+                Solo se muestran las últimas 20 partidas.
+            </p>
+
+        </div>
+
+    </div>
+
+        
+        <div class="item" role="button" tabindex="0" aria-label="Amigos - Invitar jugadores">
+            <div class="item-icono" aria-hidden="true">👥</div>
+            <h3>AMIGOS</h3>
+            <p>Invita jugadores</p>
+        </div>
+    </div>
+</div>
+
+<!-- NUEVO MODAL: EXPLICACIÓN SISTEMA DE PUNTAJE -->
+<div class="modal-overlay" id="puntajeInfoModal">
+    <div class="modal-content-info-puntaje">
+        <div class="puntaje-header-box">
+            <div class="puntaje-icon">🏆</div>
+            <div class="puntaje-titulo-texto">
+                <h2>GUÍA DE JUEGO Y PUNTAJE</h2>
+                <p class="sub-azul">REGLAS · VIDA Y CHAKRA · PODERES · CONTRARRESTOS</p>
+            </div>
+        </div>
+        <div class="puntaje-separador"></div>
+        <div class="puntaje-cuerpo puntaje-cuerpo-guia">
+            <div class="puntaje-regla-destacada">
+                <span class="puntaje-puntos">100</span>
+                <span class="puntaje-unidad">PTS</span>
+                <p>POR CADA PAR ENCONTRADO</p>
+            </div>
+            <section class="guia-seccion guia-azul"><h3>🎴 Cómo se juega</h3><p>Voltea cartas para memorizar y encontrar <strong>pares iguales</strong>. Un acierto suma puntos y puede mantener tu turno; un fallo cambia el turno o activa la condición del modo (<strong>según el modo</strong>).</p></section>
+            <section class="guia-seccion guia-naranja"><h3>❤️ Vida y ⚡ Chakra</h3><p><strong>Vida máxima: 100</strong> · <strong>Chakra máximo: 100</strong>. Los poderes consumen chakra; si no tienes suficiente, no se activan. Algunos poderes afectan vida o chakra.</p></section>
+            <section class="guia-seccion guia-morada"><h3>✋ Poderes (costo · usos · efecto base)</h3><ul class="guia-lista"><li><strong>Byakugan</strong> — 30 chakra · 1 uso · revela cartas ~3 s.</li><li><strong>Sustitución</strong> — 25 chakra · 1 uso · se arma ~8 s; puede anular/mitigar ataques.</li><li><strong>Robo de chakra</strong> — 30 chakra · 2 usos · roba 20 chakra al rival.</li><li><strong>Genjutsu</strong> — 35 chakra · 1 uso · afecta al rival ~5 s.</li><li><strong>Sello</strong> — 30 chakra · 1 uso · sella ~5 s.</li><li><strong>Bomba</strong> — 50 chakra · 2 usos · daña al rival (puede mitigarse).</li></ul></section>
+            <section class="guia-seccion guia-verde"><h3>🛡️ Contrarrestos (online 1v1/2v2)</h3><ul class="guia-lista"><li><strong>Sustitución</strong> ↔ <strong>Bomba</strong>: reduce daño <strong>20 → 10</strong> y consume Sustitución.</li><li><strong>Sustitución</strong> ↔ <strong>Robo</strong>: evade el robo y consume Sustitución.</li><li><strong>Sustitución</strong> ↔ <strong>Sello</strong>: evade el sello y consume Sustitución.</li><li><strong>Byakugan</strong> ↔ <strong>Genjutsu</strong>: Byakugan activo detecta/evita Genjutsu; usar Byakugan puede contrarrestar un Genjutsu activo y restaurar cartas.</li></ul></section>
+            <section class="guia-seccion guia-amarilla"><h3>🏆 Cómo se gana o se pierde</h3><p>Depende del modo: completar pares/objetivo, ganar por puntaje/vida, o perder por tiempo, vida en 0, condición del modo, derrota ante el rival o abandono. En salas online el servidor valida turnos, poderes y resultado. <strong>Modo a muerte (1J):</strong> memorice contrarreloj (60 s) con <strong>cartas mezcladas al azar de todas las aldeas y clanes</strong> (Konoha, Arena, Roca, Niebla, Nube, Akatsuki) y dificultad progresiva por nivel (más pares). Respaldos propios del modo.</p></section>
+        </div>
+        <p class="puntaje-nota">💡 Tip: memoriza rápido, cuida tu chakra y usa Sustitución o Byakugan para contrarrestar al rival.</p>
+        <button class="btn-volver-info" id="closePuntajeInfoBtn" aria-label="Cerrar guía de juego y puntaje">VOLVER</button>
+    </div>
+</div>
+
+
+
+
+       
+
+        <!-- ESTADO -->
+        <div class="estado">
+            <span id="estadoConexion">⚪ Verificando…</span>
+            <span id="estadoServidor">Comprobando servidor…</span>
+            <span>Ping: <span id="pingValor">--</span></span>
+            <span>Versión 1.0</span>
+        </div>
+
+    </main>
+    </div>
+
+
+    
+
+    <!-- VENTANA MODAL: CONFIGURACIÓN -->
+    <div class="modal-overlay" id="configModal" role="dialog" aria-modal="true" aria-labelledby="tituloConfig">
+        <div class="modal-content-config">
+            
+            <div class="config-header-box">
+                <div class="config-icon" aria-hidden="true">⚙️</div>
+                <div class="config-titulo-texto">
+                    <h2 id="tituloConfig">CONFIGURACIÓN</h2>
+                    <p class="sub-naranja">AJUSTA TU EXPERIENCIA DE JUEGO</p>
+                </div>
+            </div>
+
+            <div class="config-opciones">
+                <div class="config-fila">
+                    <div class="config-label">
+                        <span class="config-emoji">🎵</span>
+                        <div>
+                            <strong>MÚSICA</strong>
+                            <small>Sonido de fondo del juego</small>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="cfgMusica" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="config-fila">
+                    <div class="config-label">
+                        <span class="config-emoji">🔊</span>
+                        <div>
+                            <strong>EFECTOS DE SONIDO</strong>
+                            <small>Aciertos, errores y combates</small>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="cfgEfectos" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="config-fila">
+                    <div class="config-label">
+                        <span class="config-emoji">🔉</span>
+                        <div>
+                            <strong>VOLUMEN</strong>
+                            <small>Nivel general del sonido</small>
+                        </div>
+                    </div>
+                    <input type="range" id="cfgVolumen" min="0" max="100" value="80" class="config-slider" aria-label="Nivel de volumen">
+                    <span class="config-valor" id="cfgVolumenValor">80%</span>
+                </div>
+            </div>
+
+            <div class="config-fila config-fila-peligro">
+                    <div class="config-label">
+                        <span class="config-emoji">🔓</span>
+                        <div>
+                            <strong>CERRAR SESIÓN</strong>
+                            <small>Salir de tu cuenta y volver al login</small>
+                        </div>
+                    </div>
+                    <button class="btn-cerrar-sesion-config" id="btnCerrarSesion" type="button">SALIR</button>
+                </div>
+
+            <div class="config-guardar-caja">
+                <button class="btn-volver-modal color-naranja-btn" id="closeConfigBtn" type="button">
+                    <span aria-hidden="true">✓</span> GUARDAR Y VOLVER
+                </button>
+            </div>
+        </div>
+    </div>
+ 
+
+        <!-- VENTANA MODAL DE PERFIL RPG -->
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal-content-perfil">
+            <button class="cerrar-modal" id="closeProfileBtn" type="button" aria-label="Cerrar perfil">&times;</button>
+            
+            <div class="perfil-header-modal">
+                <div class="avatar-modal"><img src="assets/img/naruto.png" alt="Naruto"></div>
+                <div class="perfil-info-modal">
+                    <h2 id="modalName">Shinobi Player</h2>
+                    <div class="nivel-badge">NIVEL <span id="modalLevel">1</span></div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="modalExpBar" style="width: 65%;"></div>
+                    </div>
+                    <div class="exp-texto">EXP: <span id="modalExpText">650 / 1000</span></div>
+                </div>
+            </div>
+
+            <div class="estadisticas-container">
+                <h3>📜 ESTADÍSTICAS DE SHINOBI</h3>
+                <div class="stat-row">
+                    <span>Partidas Ganadas:</span>
+                    <span class="stat-val verde-txt" id="statWins">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Partidas Perdidas:</span>
+                    <span class="stat-val rojo-txt" id="statLosses">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Racha Actual:</span>
+                    <span class="stat-val amarillo-txt" id="statStreak">0 🔥</span>
+                </div>
+                <div class="stat-row">
+                    <span>Puntaje Máximo:</span>
+                    <span class="stat-val azul-txt" id="statHighScore">0 XP</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <style>
+        #modalContrasenaSala { display:none; }
+        #modalContrasenaSala.activo { display:flex; }
+    </style>
+    
+    <!-- JAVASCRIPT -->
+    <script src="js/menu.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+
+</html>

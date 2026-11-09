@@ -1,0 +1,87 @@
+classDiagram
+
+    class IStorageRepository {
+        <<interface>>
+        +getItem(key) any
+        +setItem(key, value) void
+        +removeItem(key) void
+    }
+
+    class IProfileService {
+        <<interface>>
+        +obtenerPerfil() object
+    }
+
+    class IGameSessionService {
+        <<interface>>
+        +iniciarPartida(jugador1, jugador2, modo) void
+        +cerrarSesion() void
+    }
+
+    class LocalStorageRepository {
+        +getItem(key) any
+        +setItem(key, value) void
+        +removeItem(key) void
+    }
+
+    class ProfileService {
+        +IStorageRepository storage
+        +obtenerPerfil() object
+    }
+
+    class GameSessionService {
+        +IStorageRepository storage
+        +iniciarPartida(jugador1, jugador2, modo) void
+        +cerrarSesion() void
+    }
+
+    class BaseModal {
+        +HTMLElement modalElement
+        +abrir() void
+        +cerrar() void
+        +initBaseEvents() void
+    }
+
+    class ProfileModal {
+        +ProfileService profileService
+        +abrir() void
+    }
+
+    class RankingModal {
+        +cargarRanking() void
+    }
+
+    class HistoryModal {
+        +mostrarHistorial() void
+    }
+
+    class GameModeModal {
+        +inicializarOpciones() void
+    }
+
+    class MenuController {
+        +BaseModal profileModal
+        +BaseModal gameModeModal
+        +BaseModal rankingModal
+        +BaseModal historyModal
+        +BaseModal dosJugadoresModal
+        +BaseModal multijugadorModal
+        +inicializarEventos() void
+    }
+
+    IStorageRepository <|.. LocalStorageRepository : LSP
+    IProfileService <|.. ProfileService : LSP
+    IGameSessionService <|.. GameSessionService : LSP
+
+    ProfileService --> IStorageRepository : DIP
+    GameSessionService --> IStorageRepository : DIP
+
+    BaseModal <|-- ProfileModal : Herencia
+    BaseModal <|-- RankingModal : Herencia
+    BaseModal <|-- HistoryModal : Herencia
+    BaseModal <|-- GameModeModal : Herencia
+
+    ProfileModal --> ProfileService : inyectado
+
+    MenuController --> BaseModal : compone modales
+    MenuController --> ProfileModal : compone

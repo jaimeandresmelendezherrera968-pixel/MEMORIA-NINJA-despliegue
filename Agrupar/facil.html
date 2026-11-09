@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
+    <title>Fácil</title>
+    <link rel="stylesheet" href="css/facil.css">
+</head>
+<body>
+
+    <img src="img/akatsuki.png" alt="" id="imagenfondo">
+    
+
+    <!-- Barra superior -->
+    <div class="top-bar">
+        <div class="left">
+            <img src="img/Reloj.png" alt="" class="reloj">
+            <span id="timer">40</span>s
+        </div>
+
+        <div class="right">
+            <img src="img/Pause.png" id="btnPause" class="pause-btn">
+        </div>
+    </div>
+
+    <!-- Logo -->
+    <img src="img/Logo.png" class="logo">
+
+    <!-- Texto -->
+    <p class="titulo">Agrupa los objetos según corresponda</p>
+    <p class="ayuda">Arrastrá cada carta hasta su carpeta (o tocala y después tocá la carpeta)</p>
+
+    <!-- Contenedor de objetos -->
+    <div id="objetosContainer" class="objetos-container"></div>
+
+    <!-- Carpetas -->
+    <div class="carpetas">
+        <div class="carpeta" id="mitologia">
+            <img src="img/Carpeta 1.png" alt="" class="carpeta-img">
+            <p>Aldea de la roca</p>
+            <div class="carpeta-objetos"></div>
+        </div>
+
+        <div class="carpeta" id="scifi">
+            <img src="img/Carpeta 2.png" alt="" class="carpeta-img">
+            <p>Akatsuki</p>
+            <div class="carpeta-objetos"></div>
+        </div>
+    </div>
+
+    <!-- Menú de pausa -->
+    <div id="pauseMenu" class="pause-menu hidden" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+        <div class="pause-box">
+            <h1 id="pauseTitle">Juego en pausa</h1>
+            <button id="btnResume">Reanudar</button>
+            <button data-accion="modo">Modo de juego</button>
+            <button data-accion="salir">Salir del juego</button>
+        </div>
+    </div>
+
+    <!-- Pantalla Final -->
+    <div id="finalScreen" class="final-screen hidden" role="dialog" aria-modal="true" aria-labelledby="finalMessage">
+        <div class="final-box">
+            <h1 id="finalMessage"></h1>
+            <button data-accion="reintentar">Reintentar</button>
+            <button data-accion="modo">Modo de juego</button>
+            <button data-accion="salir">Salir del juego</button>
+        </div>
+    </div>
+
+    <script src="js/facil.js"></script>
+</body>
+</html>
