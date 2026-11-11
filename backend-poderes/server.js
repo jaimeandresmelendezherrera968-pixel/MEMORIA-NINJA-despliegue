@@ -21,6 +21,7 @@ const CodigoNumericGenerator = require("./src/infraestructura/CodigoNumericGener
 const ConsolaNotificadorCorreo = require("./src/infraestructura/ConsolaNotificadorCorreo");
 const EtherealNotificadorCorreo = require("./src/infraestructura/EtherealNotificadorCorreo");
 const SmtpNotificadorCorreo = require("./src/infraestructura/SmtpNotificadorCorreo");
+const BrevoNotificadorCorreo = require("./src/infraestructura/BrevoNotificadorCorreo");
 const PartidaRepositorySQL = require("./src/repositories/PartidaRepositorySQL");
 const UsuarioRepositorySQL = require("./src/repositories/UsuarioRepositorySQL");
 const HistorialPartidaRepositorySQL = require("./src/repositories/HistorialPartidaRepositorySQL");
@@ -80,10 +81,19 @@ const codigoGenerador = new CodigoNumericGenerator();
 // Selección del notificador de correo según MAILER (fail-fast si es smtp).
 //   MAILER=consola  -> imprime el código en la consola del servidor (default)
 //   MAILER=ethereal -> Ethereal (demo, URL de vista previa; nunca llega)
-//   MAILER=smtp     -> SMTP real (Gmail/Resend/Brevo...) usando las SMTP_*
+//   MAILER=smtp     -> SMTP real usando las SMTP_* (Render free lo bloquea)
+//   MAILER=brevo    -> API HTTPS de Brevo usando BREVO_* (sí funciona en Render)
 function crearNotificadorCorreo() {
   const mailer = (process.env.MAILER || "consola").toLowerCase();
 
+  if (mailer === "brevo") {
+    if (!process.env.BREVO_API_KEY || !process.env.BREVO_SENDER_EMAIL) {
+      throw new Error(
+        "MAILER=brevo requiere BREVO_API_KEY y BREVO_SENDER_EMAIL en el .env (remitente verificado en Brevo)."
+      );
+    }
+    return new BrevoNotificadorCorreo();
+  }
   if (mailer === "smtp") {
     if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
       throw new Error(
@@ -235,6 +245,36 @@ app.use("/api", crearRutasSalas());
 // En producción (Render) el frontend vive en Vercel: SERVIR_FRONTEND=0 evita
 // exponer el código del backend y el esquema SQL.
 if (process.env.SERVIR_FRONTEND !== "0") {
+  app.get("/", (req, res) => res.redirect("/login.html"));
+
+  const patronesPrivados = [
+    /^\/backend-poderes(?:\/|$)/i,
+    /^\/sql(?:\/|$)/i,
+    /^\/docs(?:\/|$)/i,
+    /^\/diagramas(?:\/|$)/i,
+    /^\/\.git(?:\/|$)/i,
+    /^\/\.agents(?:\/|$)/i,
+    /^\/node_modules(?:\/|$)/i,
+    /^\/-files$/i,
+    /^\/package(?:-lock)?\.json$/i,
+    /^\/[^/]+\.md$/i,
+    /^\/objetos-postgresql-final\.html$/i,
+    /^\/tablas-postgresql\.html$/i,
+    /^\/sustentacion-base-de-datos\.html$/i,
+  ];
+  app.use((req, res, next) => {
+    let ruta = req.path || "/";
+    try {
+      ruta = decodeURIComponent(ruta);
+    } catch (error) {}
+    const normalizada = path.posix.normalize(
+      `/${ruta.replace(/^\/+/, "").replace(/\\/g, "/")}`
+    );
+    if (patronesPrivados.some((patron) => patron.test(normalizada))) {
+      return res.status(404).end();
+    }
+    next();
+  });
   app.use(express.static(path.join(__dirname, "..")));
 }
 

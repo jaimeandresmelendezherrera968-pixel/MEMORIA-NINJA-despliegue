@@ -104,7 +104,7 @@ class PartidaRepositorySQL extends PartidaRepository {
   }
 
   guardar(idPartida, partida) {
-    this.#insertarPartida.run(idPartida, JSON.stringify(this.#foto(partida)));
+    return this.#insertarPartida.run(idPartida, JSON.stringify(this.#foto(partida)));
   }
 
   async obtener(idPartida) {

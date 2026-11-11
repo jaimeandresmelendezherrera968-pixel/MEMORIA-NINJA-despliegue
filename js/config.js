@@ -8,4 +8,6 @@
   El backend de Render se define en la URL de abajo.
 =========================================================*/
 
-window.MEMORIA_NINJA_BACKEND_URL = "https://ninja-memory.onrender.com";
+window.MEMORIA_NINJA_BACKEND_URL = window.location.hostname.endsWith(".vercel.app")
+  ? "https://memoria-ninja-despliegue.onrender.com"
+  : "";

@@ -12,12 +12,22 @@ class DatabasePostgres {
       password: config.password || process.env.PGPASSWORD,
     };
 
+    const opcionesPool = {
+      max: Number(process.env.PG_POOL_MAX || 10),
+      connectionTimeoutMillis: Number(process.env.PG_CONNECT_TIMEOUT_MS || 10000),
+      idleTimeoutMillis: Number(process.env.PG_IDLE_TIMEOUT_MS || 30000),
+    };
+
     const databaseUrl = config.databaseUrl || process.env.DATABASE_URL;
     if (databaseUrl) {
-      this.pool = new Pool({ connectionString: databaseUrl, ssl: config.ssl });
+      this.pool = new Pool({ connectionString: databaseUrl, ssl: config.ssl, ...opcionesPool });
     } else {
-      this.pool = new Pool(poolConfig);
+      this.pool = new Pool({ ...poolConfig, ...opcionesPool });
     }
+
+    this.pool.on("error", (error) => {
+      console.error("Error inesperado en el pool de PostgreSQL:", error.message);
+    });
 
     this.ubicacion = "postgres";
     this.motor = "postgres";

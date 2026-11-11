@@ -38,7 +38,7 @@ class AuthController {
         userAgent: req.headers["user-agent"],
       });
 
-      res.cookie(NOMBRE_COOKIE, resultado.token, this.#opcionesCookie());
+      res.cookie(NOMBRE_COOKIE, resultado.token, this.#opcionesCookie(req));
       res.json({ exito: true, usuario: resultado.usuario });
     } catch (error) {
       res.status(this.#statusDe(error)).json({ exito: false, error: error.message });
@@ -59,17 +59,21 @@ class AuthController {
 
   cerrarSesion = async (req, res) => {
     await this.authService.cerrarSesion(req.cookies?.[NOMBRE_COOKIE]);
-    res.clearCookie(NOMBRE_COOKIE, { path: "/" });
+    res.clearCookie(NOMBRE_COOKIE, {
+      path: "/",
+      sameSite: "lax",
+      secure: Boolean(req?.secure) || process.env.COOKIE_SECURE === "1",
+    });
     res.json({ exito: true });
   };
 
-  #opcionesCookie() {
+  #opcionesCookie(req) {
     return {
       httpOnly: true,
       sameSite: "lax",
       // Parte 4: solo producción con HTTPS (COOKIE_SECURE=1 en .env); en
       // local (http) false, o el navegador ni siquiera guarda la cookie.
-      secure: process.env.COOKIE_SECURE === "1",
+      secure: Boolean(req?.secure) || process.env.COOKIE_SECURE === "1",
       path: "/",
       maxAge: this.duracionSesionMin * 60 * 1000,
     };

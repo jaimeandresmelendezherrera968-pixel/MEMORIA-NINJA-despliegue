@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="css/tema-aldea.css">
     <script src="js/sesion-guard.js"></script>
 </head>
-<body>
+<body data-nivel="akatsuki">
     <audio id="gameMusic" loop><source src="assets/game music.mp3" type="audio/mpeg"></audio>
     <video autoplay muted loop playsinline id="videofondo"><source src="assets/fondo.mp4" type="video/mp4"></video>
     <div class="game-shell">
@@ -48,6 +48,6 @@
             </div>
         </div>
     </div>
-    <script type="module">import { ControladorNivel } from "./js/niveles/ControladorNivel.js"; document.addEventListener("DOMContentLoaded",()=>new ControladorNivel("akatsuki"));</script>
+    <script type="module" src="js/niveles/iniciar-aldea.js"></script>
 </body>
 </html>

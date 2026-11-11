@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://ninja-memory.onrender.com/api/:path*"
+      "destination": "https://memoria-ninja-despliegue.onrender.com/api/:path*"
     },
     {
       "source": "/",
