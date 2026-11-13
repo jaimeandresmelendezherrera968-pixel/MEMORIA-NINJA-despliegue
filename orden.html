@@ -4,34 +4,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#080418">
     <title>Memoria Ninja</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/orden.css">
-    <!-- GUARD DE SESIÓN (valida contra el servidor; nunca redirige) -->
+    <link rel="stylesheet" href="css/orientacion-movil.css">
+    <!-- GUARD DE SESIÓN -->
     <script src="js/sesion-guard.js"></script>
+    <script src="js/orientacion-movil.js" defer></script>
 </head>
 
 <body>
 
+    <div class="fondo-animado" aria-hidden="true">
+        <div class="luz-lunar"></div>
+        <div class="nubes nubes-atras"></div>
+        <div class="nubes nubes-adelante"></div>
+        <div class="particulas"></div>
+    </div>
 
-<audio id="gameMusic" loop>
-    <source src="assets/game music.mp3" type="audio/mpeg">
-</audio>
- <video autoplay muted loop playsinline id="videofondo">
-        <source src="assets/fondo.mp4" type="video/mp4">
-    </video>
-
-
-
-
-
+    <audio id="gameMusic" loop>
+        <source src="assets/game music.mp3" type="audio/mpeg">
+    </audio>
 
     <main class="juego">
 
         <div id="contador" class="contador"></div>
 
         <div id="victoriaTexto" class="victoria-texto">
-        ¡BUEN TRABAJO<br>NINJA!
+            ¡BUEN TRABAJO<br>NINJA!
         </div>
 
         <section class="panel-principal">
@@ -76,39 +80,40 @@
             <!-- PANEL CENTRAL -->
             <section class="panel-central">
 
-                <div class="panel-info">
+                <!-- ESCUDO: TIEMPO Y PUNTAJE -->
+                <section class="panel-centro panel-tiempo" aria-labelledby="tituloTiempo">
 
-                    <div class="estadistica">
-                        <h2>PUNTOS</h2>
+                    <h2 class="panel-titulo" id="tituloTiempo">TIEMPO</h2>
 
-                        <div class="valor" id="puntaje">
+                    <div class="valor valor-tiempo" id="tiempo">
+                        00:00
+                    </div>
+
+                    <div class="estadistica estadistica-puntos">
+                        <div class="valor valor-puntos" id="puntaje">
                             0
                         </div>
+
+                        <span class="unidad-puntos">PTS</span>
                     </div>
 
-                    <button class="btn-ajustes" id="btnAjustes">
-                        <img src="assets/ajustes.png" alt="Ajustes">
-                    </button>
+                </section>
 
-                    <div class="estadistica">
-                        <h2>TIEMPO</h2>
+                <!-- PLACA DE PROGRESO DE LA SECUENCIA -->
+                <section class="panel-centro panel-secuencia" aria-labelledby="tituloSecuencia">
 
-                        <div class="valor" id="tiempo">
-                        00:00
-                        </div>
-                    </div>
+                    <h2 class="panel-titulo" id="tituloSecuencia">SECUENCIA</h2>
 
-                </div>
+                    <div class="secuencia-bombillas" id="secuenciaBombillas" role="list" aria-label="Progreso de las 7 secuencias"></div>
 
-                <div class="acciones">
+                </section>
 
-                    <h1 class="titulo">
-                        JUEGA
-                    </h1>
+                <!-- PLACA DE MENSAJE / INSTRUCCIÓN -->
+                <section class="panel-centro panel-mensaje">
 
-                    <a href="menu.html" class="boton">volver</a>
+                    <p class="mensaje-juego" id="mensajeJuego" aria-live="polite">Prepárate…</p>
 
-                </div>
+                </section>
 
             </section>
 
@@ -151,83 +156,41 @@
 
         </section>
 
-        
-        
     </main>
 
-
+    <!-- MODAL DE DERROTA -->
     <div id="modalPerder" class="modal">
-
-    <div class="modal-contenido">
-
-        <h2>¡Has perdido!</h2>
-
-        <p>Te equivocaste en la secuencia.</p>
-
-        <button id="reiniciar">
-            Reiniciar
-        </button>
-
-        <button id="menu">
-            Ir al menú
-        </button>
-
+        <div class="modal-contenido">
+            <h2>¡Has perdido!</h2>
+            <p>Te equivocaste en la secuencia.</p>
+            <button id="reiniciar">Reiniciar</button>
+            <button id="menu">Ir al menú</button>
+        </div>
     </div>
 
-    </div>
-
+    <!-- MODAL DE VICTORIA -->
     <div id="modalGanar" class="modal">
-
-    <div class="modal-contenido">
-
-        <h2>¡Felicidades!</h2>
-
-        <p>Has completado las 16 cartas.</p>
-
-        <button id="volverJugar">
-            Jugar otra vez
-        </button>
-
-        <button id="volverMenu">
-            Ir al menú
-        </button>
-
+        <div class="modal-contenido">
+            <h2>¡Felicidades!</h2>
+            <p>Has completado las 16 cartas.</p>
+            <button id="volverJugar">Jugar otra vez</button>
+            <button id="volverMenu">Ir al menú</button>
+        </div>
     </div>
 
-</div>
-
-
-<div id="modalAjustes" class="modal">
-
-    <div class="modal-contenido">
-
-        <h2>⚙ AJUSTES</h2>
-
-        <button id="btnMusica">
-    Música: ON
-</button>
-
-        <button id="btnPausa">
-            Pausar partida
-        </button>
-
-        <button id="btnMenuAjustes">
-            Salir al menú
-        </button>
-
-        <button id="btnCerrarAjustes">
-            Cerrar
-        </button>
-
+    <!-- MODAL DE AJUSTES -->
+    <div id="modalAjustes" class="modal">
+        <div class="modal-contenido">
+            <h2>⚙ AJUSTES</h2>
+            <button id="btnMusica">Música: ON</button>
+            <button id="btnPausa">Pausar partida</button>
+            <button id="btnMenuAjustes">Salir al menú</button>
+            <button id="btnCerrarAjustes">Cerrar</button>
+        </div>
     </div>
 
-</div>
-
-
-    
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-
-<script type="module" src="js/orden/Orden.js"></script>
+    <script type="module" src="js/orden/Orden.js"></script>
 </body>
 
 </html>

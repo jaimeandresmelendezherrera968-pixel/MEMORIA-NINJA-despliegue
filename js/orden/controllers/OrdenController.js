@@ -49,6 +49,11 @@ export class OrdenController {
                 "tiempo"
             );
 
+        this.contenedorBombillas =
+            document.getElementById(
+                "secuenciaBombillas"
+            );
+
         this.modalPerder =
             document.getElementById(
                 "modalPerder"
@@ -160,6 +165,10 @@ export class OrdenController {
 
         this.cartas = [];
 
+        this.totalSecuencias = 7;
+
+        this.bombillas = [];
+
 
         // =========================
         // INICIAR
@@ -173,6 +182,8 @@ export class OrdenController {
     iniciar() {
 
         this.crearCartas();
+
+        this.crearBombillasSecuencia();
 
         this.configurarBotones();
 
@@ -209,6 +220,132 @@ export class OrdenController {
                     elemento: elemento
 
                 });
+
+            }
+        );
+
+    }
+
+
+    crearBombillasSecuencia() {
+
+        if (!this.contenedorBombillas) {
+
+            return;
+
+        }
+
+
+        this.contenedorBombillas.innerHTML = "";
+
+        this.bombillas = [];
+
+
+        for (
+            let i = 0;
+            i < this.totalSecuencias;
+            i++
+        ) {
+
+            const bombilla =
+                document.createElement(
+                    "span"
+                );
+
+
+            bombilla.className =
+                "bombilla";
+
+
+            bombilla.setAttribute(
+                "role",
+                "listitem"
+            );
+
+
+            bombilla.dataset.secuencia =
+                String(i + 1);
+
+
+            this.contenedorBombillas
+                .appendChild(
+                    bombilla
+                );
+
+
+            this.bombillas.push(
+                bombilla
+            );
+
+        }
+
+
+        this.actualizarBombillas(0);
+
+    }
+
+
+    actualizarBombillas(completadas) {
+
+        this.bombillas.forEach(
+            (bombilla, indice) => {
+
+                const numero =
+                    indice + 1;
+
+
+                const estaCompletada =
+                    numero <= completadas;
+
+
+                const estaActual =
+                    numero === completadas + 1
+                    &&
+                    completadas < this.totalSecuencias;
+
+
+                bombilla.classList
+                    .toggle(
+                        "completada",
+                        estaCompletada
+                    );
+
+
+                bombilla.classList
+                    .toggle(
+                        "actual",
+                        estaActual
+                    );
+
+
+                if (estaActual) {
+
+                    bombilla.setAttribute(
+                        "aria-current",
+                        "step"
+                    );
+
+                } else {
+
+                    bombilla.removeAttribute(
+                        "aria-current"
+                    );
+
+                }
+
+
+                const estado =
+                    estaCompletada
+                        ? "completada"
+                        : estaActual
+                            ? "en curso"
+                            : "pendiente";
+
+
+                bombilla.setAttribute(
+                    "aria-label",
+                    `Secuencia ${numero} de ${this.totalSecuencias}: ${estado}`
+                );
 
             }
         );
@@ -522,6 +659,21 @@ export class OrdenController {
 
 
         this.actualizarPuntaje();
+
+
+        const rondaCompletada =
+            this.juegoService
+                .obtenerRonda();
+
+
+        this.actualizarBombillas(
+            Math.min(
+                this.totalSecuencias,
+                Math.round(
+                    (rondaCompletada - 4) / 2
+                ) + 1
+            )
+        );
 
 
         if (this.mensaje) {

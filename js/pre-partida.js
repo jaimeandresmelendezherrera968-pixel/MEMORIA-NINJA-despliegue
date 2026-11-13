@@ -80,7 +80,7 @@ function ajustarPrePartida() {
     if (!cont) return;
     cont.style.transform = "translate(-50%, -50%) scale(1)";
     const baseW = 1100;
-    const baseH = 720;
+    const baseH = 780;
     const margen = 8;
     const vw = Math.max((window.visualViewport && window.visualViewport.width) || window.innerWidth, 280);
     const vh = Math.max((window.visualViewport && window.visualViewport.height) || window.innerHeight, 280);
