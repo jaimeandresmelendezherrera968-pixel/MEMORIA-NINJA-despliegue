@@ -670,4 +670,3 @@ export class NieblaController {
             "menu.html";
     }
 }
-

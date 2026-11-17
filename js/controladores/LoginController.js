@@ -1,4 +1,4 @@
-/*=========================================================
+﻿/*=========================================================
   MEMORIA NINJA
   CAPA: CONTROLADORES (presentación)
   ARCHIVO: controladores/LoginController.js
@@ -34,12 +34,9 @@ export class LoginController extends FormularioControllerBase {
     const { usuario, password, recordar } = datos;
 
     try {
-      const usuarioValido = await this.autenticacionService.iniciarSesion(
-        usuario,
-        password
-      );
+      const usuarioValido = await this.autenticacionService.iniciarSesion(usuario, password, Boolean(recordar));
 
-      this.notificador.mostrar("Acceso concedido ⚡", "exito");
+      this.notificador.mostrar("Acceso concedido âš¡", "exito");
 
       // La sesión real vive en la cookie httpOnly que fijó el servidor.
       // Igualmente se guarda una copia del usuario en localStorage para

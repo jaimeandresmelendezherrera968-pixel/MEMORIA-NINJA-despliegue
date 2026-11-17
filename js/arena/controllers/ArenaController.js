@@ -670,4 +670,3 @@ export class ArenaController {
             "menu.html";
     }
 }
-

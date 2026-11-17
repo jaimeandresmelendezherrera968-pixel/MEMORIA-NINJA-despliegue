@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="css/game-online.css">
     <link rel="stylesheet" href="css/tema-aldea.css">
     <link rel="stylesheet" href="css/orientacion-movil.css">
+    <link rel="stylesheet" href="css/cargando.css">
 
     <!-- GUARD DE SESIÓN (valida contra el servidor; nunca redirige) -->
     <script src="js/sesion-guard.js"></script>
@@ -22,6 +23,10 @@
 </head>
 
 <body class="pantalla-online">
+    <div id="cargandoPagina" class="cargando-pagina" role="status" aria-live="polite">
+        <div class="cargando-pagina__marcador" aria-hidden="true"></div>
+        <span class="cargando-pagina__texto">Cargando...</span>
+    </div>
 
     <audio id="gameMusic" loop>
         <source src="assets/game music.mp3" type="audio/mpeg">

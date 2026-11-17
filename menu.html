@@ -17,6 +17,7 @@
     <!-- CSS -->
     <link rel="stylesheet" href="css/menu.css">
     <link rel="stylesheet" href="css/orientacion-movil.css">
+    <link rel="stylesheet" href="css/cargando.css">
 
     <!-- GUARD DE SESIÓN (valida contra el servidor; nunca redirige) -->
     <script src="js/sesion-guard.js"></script>
@@ -25,6 +26,11 @@
 </head>
 
 <body>
+    <div id="cargandoPagina" class="cargando-pagina" role="status" aria-live="polite">
+        <div class="cargando-pagina__marcador" aria-hidden="true"></div>
+        <span class="cargando-pagina__texto">Cargando...</span>
+    </div>
+
     <a class="skip-link" href="#contenido-principal">Saltar al contenido principal</a>
 
     <!-- CARTEL DE INVITADO (lo muestra/oculta js/sesion-guard.js) -->
@@ -113,6 +119,14 @@
             <p class="esperando-info" id="esperandoInfo">COMPARTE ESTE CÓDIGO CON TU AMIGO</p>
             <p class="esperando-equipos" id="esperandoEquipos" hidden></p>
             <div class="sala-compartir"><img id="qrSala" class="qr-sala" alt="QR para unirse a la sala" hidden><div class="sala-compartir-texto"><p class="esperando-url" id="urlSalaEspera"></p><button type="button" class="btn-lobby btn-lobby-secundario" id="btnCopiarEnlaceSala">COPIAR ENLACE</button></div></div>
+            <div class="sala-chat">
+                <p class="chat-titulo">CHAT DE SALA</p>
+                <div id="chatMensajes" class="chat-mensajes" role="log" aria-live="polite" aria-label="Mensajes de la sala"></div>
+                <div class="chat-fila">
+                    <input type="text" id="chatTexto" class="input-lobby" maxlength="200" placeholder="ESCRIBE UN MENSAJE" autocomplete="off">
+                    <button type="button" class="btn-lobby btn-lobby-secundario" id="btnEnviarChat">ENVIAR</button>
+                </div>
+            </div>
             <button type="button" class="btn-lobby btn-lobby-secundario" id="btnSalirEsperando">CANCELAR</button>
         </div>
         <div id="panelPartidaRapida" class="panel-partida-rapida" hidden>
@@ -164,6 +178,14 @@
             <p class="esperando-info" id="esperandoInfoVerde">COMPARTE ESTE CÓDIGO O ENLACE PARA INVITAR AMIGOS</p>
             <p class="esperando-equipos" id="esperandoEquiposVerde" hidden></p>
             <div class="sala-compartir"><img id="qrSalaVerde" class="qr-sala" alt="QR para unirse a la sala" hidden><div class="sala-compartir-texto"><p class="esperando-url" id="urlSalaEsperaVerde"></p><div class="sala-compartir-botones"><button type="button" class="btn-lobby btn-lobby-secundario" id="btnCopiarCodigoSalaVerde">COPIAR CÓDIGO</button><button type="button" class="btn-lobby btn-lobby-secundario" id="btnCopiarEnlaceSalaVerde">COPIAR ENLACE</button></div></div></div>
+            <div class="sala-chat">
+                <p class="chat-titulo">CHAT DE SALA</p>
+                <div id="chatMensajesVerde" class="chat-mensajes" role="log" aria-live="polite" aria-label="Mensajes de la sala"></div>
+                <div class="chat-fila">
+                    <input type="text" id="chatTextoVerde" class="input-lobby" maxlength="200" placeholder="ESCRIBE UN MENSAJE" autocomplete="off">
+                    <button type="button" class="btn-lobby btn-lobby-secundario" id="btnEnviarChatVerde">ENVIAR</button>
+                </div>
+            </div>
             <button type="button" class="btn-lobby btn-lobby-secundario" id="btnSalirEsperandoVerde">SALIR DE LA SALA</button>
         </div>
         <button class="btn-volver-modal color-fucsia" id="closeMultijugadorModalBtn">VOLVER</button>

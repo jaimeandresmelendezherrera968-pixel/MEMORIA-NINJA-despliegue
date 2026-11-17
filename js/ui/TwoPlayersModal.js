@@ -22,8 +22,12 @@ export class TwoPlayersModal extends BaseModal {
     clienteMultijugador.on('lista-salas-actualizada', (salas) => {
       this.pintarListaSalas(salas || []);
     });
+    clienteMultijugador.on('chat-mensaje', (mensaje) => {
+      this.agregarMensajeChat(mensaje, '');
+    });
     clienteMultijugador.on('partida-iniciada', (datos) => {
       if (this.redirectEnCurso) return;
+      if (!this.modalElement?.classList.contains('activo')) return;
       this.redirectEnCurso = true;
       document.getElementById('panelEsperandoRival')?.setAttribute('hidden', 'true');
       document.getElementById('panelPartidaRapida')?.setAttribute('hidden', 'true');
@@ -246,7 +250,41 @@ export class TwoPlayersModal extends BaseModal {
     } catch {}
   }
 
+  agregarMensajeChat(mensaje, sufijo = '') {
+    const lista = document.getElementById(`chatMensajes${sufijo}`);
+    if (!lista || !mensaje?.texto) return;
+    const linea = document.createElement('p');
+    linea.className = 'chat-linea';
+    const nombre = document.createElement('strong');
+    nombre.textContent = `${mensaje.nombre || 'Jugador'}: `;
+    linea.appendChild(nombre);
+    linea.appendChild(document.createTextNode(mensaje.texto));
+    lista.appendChild(linea);
+    lista.scrollTop = lista.scrollHeight;
+  }
+
+  configurarChat(sufijo = '') {
+    const input = document.getElementById(`chatTexto${sufijo}`);
+    const boton = document.getElementById(`btnEnviarChat${sufijo}`);
+    const enviar = async () => {
+      const texto = (input?.value || '').trim();
+      if (!texto) return;
+      try {
+        const respuesta = await clienteMultijugador.enviarMensajeChat(texto);
+        if (respuesta?.exito && input) input.value = '';
+      } catch {}
+    };
+    boton?.addEventListener('click', enviar);
+    input?.addEventListener('keydown', (evento) => {
+      if (evento.key === 'Enter') {
+        evento.preventDefault();
+        enviar();
+      }
+    });
+  }
+
   inicializarEventos() {
+    this.configurarChat('');
     document.getElementById('btnUnirsePorCodigo')?.addEventListener('click', () => {
       document.getElementById('modalContrasenaSala')?.classList.remove('activo');
       this.salaPendienteContrasena = null;

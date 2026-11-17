@@ -1,4 +1,4 @@
-/*=========================================================
+﻿/*=========================================================
   MEMORIA NINJA
   CAPA: SERVICIOS (lógica de negocio)
   ARCHIVO: servicios/AutenticacionService.js
@@ -28,11 +28,8 @@ export class AutenticacionService {
    * @returns {Promise<import("../core/entities/Usuario.js").Usuario>}
    * @throws {Error} si las credenciales no son válidas
    */
-  async iniciarSesion(usuario, password) {
-    const usuarioValido = await this.repositorioUsuarios.buscarPorCredenciales(
-      usuario,
-      password
-    );
+  async iniciarSesion(usuario, password, recordar = false) {
+    const usuarioValido = await this.repositorioUsuarios.buscarPorCredenciales(usuario, password, recordar);
 
     if (!usuarioValido) {
       throw new Error("Datos incorrectos");

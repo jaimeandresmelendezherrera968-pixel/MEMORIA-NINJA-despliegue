@@ -236,8 +236,12 @@ export class ClienteMultijugador {
     return this.emitir("marcar-listo");
   }
 
-  voltearCarta(index) {
-    this.socket?.emit("voltear-carta", { index });
+  enviarMensajeChat(texto) {
+    return this.emitir("chat-mensaje", { texto: String(texto || "") });
+  }
+
+  voltearCarta(index, nonce = null) {
+    this.socket?.emit("voltear-carta", { index, nonce });
   }
 
   activarPoder(poderId) {

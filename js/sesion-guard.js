@@ -144,6 +144,56 @@
     },
   };
 
+  var elementosPausados = [];
+
+  function pausarReproduccion() {
+    elementosPausados = [];
+    document.querySelectorAll("audio, video").forEach(function (elemento) {
+      if (!elemento.paused) {
+        elementosPausados.push(elemento);
+        elemento.pause();
+      }
+    });
+  }
+
+  function reanudarReproduccion() {
+    elementosPausados.forEach(function (elemento) {
+      if (elemento.muted) return;
+      var promesa = elemento.play();
+      if (promesa && typeof promesa.catch === "function") {
+        promesa.catch(function () {});
+      }
+    });
+    elementosPausados = [];
+  }
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) pausarReproduccion();
+    else reanudarReproduccion();
+  });
+  window.addEventListener("pagehide", pausarReproduccion);
+  window.addEventListener("pageshow", function (evento) {
+    if (evento.persisted) reanudarReproduccion();
+  });
+
+  function ocultarCargando() {
+    var cargando = document.getElementById("cargandoPagina");
+    if (cargando) cargando.classList.add("is-oculto");
+  }
+
+  if (document.readyState === "complete") ocultarCargando();
+  else window.addEventListener("load", ocultarCargando);
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () {});
+    });
+  }
+
+  import(new URL("./services/SincronizacionInvitadoService.js", document.baseURI).href).catch(
+    function () {}
+  );
+
   document.addEventListener("DOMContentLoaded", actualizarAviso);
   comprobar();
 })();

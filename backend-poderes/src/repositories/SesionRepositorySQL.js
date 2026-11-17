@@ -1,14 +1,6 @@
-const SesionRepository = require("./SesionRepository");
+﻿const SesionRepository = require("./SesionRepository");
 const Usuario = require("../entities/Usuario");
 
-/**
- * IMPLEMENTACIÓN CONCRETA: SesionRepositorySQL
- *
- * Sesiones en PostgreSQL (tabla sesiones). La cookie guarda el token en
- * claro; la base guarda token_hash (sha256). La vista vw_sesiones_activas
- * y el SP sp_restablecer_password (revocar todo) viven en el esquema y se
- * consumen desde el Service.
- */
 class SesionRepositorySQL extends SesionRepository {
   constructor(database) {
     super();
@@ -27,20 +19,21 @@ class SesionRepositorySQL extends SesionRepository {
   async buscarPorTokenHash(tokenHash) {
     const fila = await this.database.db
       .prepare(
-        `SELECT s.id AS sesion_id, s.usuario_id, s.token_hash, s.ip, s.user_agent,
-                s.creado_en, s.expira_en, s.revocada_en,
-                u.usuario, u.correo, u.nacimiento, u.password_hash,
+        `SELECT s.id AS sesion_id, s.usuario_id, s.creado_en, s.expira_en, s.revocada_en,
+                s.ip, s.user_agent,
+                u.id, u.usuario, u.correo, u.nacimiento, u.password_hash,
                 u.xp, u.victorias, u.derrotas, u.racha, u.puntaje_max,
                 u.correo_verificado, u.intentos_fallidos, u.bloqueado_hasta
-           FROM sesiones s
-           JOIN usuarios u ON u.id = s.usuario_id
-          WHERE s.token_hash = ?`
+         FROM sesiones s
+         JOIN usuarios u ON u.id = s.usuario_id
+         WHERE s.token_hash = ?`
       )
       .get(tokenHash);
+
     if (!fila) return null;
 
     const usuario = new Usuario({
-      id: fila.usuario_id,
+      id: fila.id,
       usuario: fila.usuario,
       correo: fila.correo,
       nacimiento: fila.nacimiento,
@@ -82,6 +75,17 @@ class SesionRepositorySQL extends SesionRepository {
 
   async revocarTodasPorUsuario(usuarioId) {
     await this.database.db
+      .prepare(
+        `UPDATE sesiones
+            SET revocada_en = now()
+          WHERE usuario_id = ?
+            AND revocada_en IS NULL`
+      )
+      .run(usuarioId);
+  }
+
+  async revocarTodasLasSesionesCon(ejecutor, usuarioId) {
+    return ejecutor
       .prepare(
         `UPDATE sesiones
             SET revocada_en = now()

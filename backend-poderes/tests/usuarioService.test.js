@@ -1,4 +1,4 @@
-const { describe, it, before, after } = require("node:test");
+﻿const { describe, it, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const PasswordHasher = require("../src/infraestructura/PasswordHasher");
 const UsuarioRepositorySQL = require("../src/repositories/UsuarioRepositorySQL");
@@ -65,7 +65,7 @@ describe("UsuarioService con repositorios SQL", () => {
 
     await assert.rejects(
       () => servicio.registrar({ usuario: "sasuke", correo: "otro@correo.com", password: "clave123" }),
-      /ya está en uso/
+      /El nombre de usuario ya esta en uso/
     );
   });
 
@@ -75,7 +75,7 @@ describe("UsuarioService con repositorios SQL", () => {
 
     await assert.rejects(
       () => servicio.registrar({ usuario: "otro", correo: "Sakura@Konoha.ni", password: "clave123" }),
-      /correo ya está registrado/
+      /El correo ya esta registrado/
     );
   });
 
@@ -88,17 +88,17 @@ describe("UsuarioService con repositorios SQL", () => {
 
     await assert.rejects(
       () => servicio.iniciarSesion({ usuario: "hinata", password: "mal" }),
-      /Usuario o contraseña incorrectos/
+      /Usuario o contrasena incorrectos/
     );
     await assert.rejects(
       () => servicio.iniciarSesion({ usuario: "fantasma", password: "byakugan" }),
-      /Usuario o contraseña incorrectos/
+      /Usuario o contrasena incorrectos/
     );
   });
 
   it("guarda resultados de partidas y los lista ordenados del más reciente al más antiguo", async () => {
     const { servicio } = await crearServicio();
-    const { id } = await servicio.registrar({ usuario: "kiba", correo: "kiba@konoha.ni", password: "akamaru" });
+    const { id } = await servicio.registrar({ usuario: "kiba", correo: "kiba@konoha.ni", password: "akamaru1" });
 
     await servicio.guardarResultadoPartida({ idUsuario: id, zona: "roca", puntaje: 120, modo: "1", ganador: "kiba" });
     await servicio.guardarResultadoPartida({ idUsuario: id, zona: "niebla", puntaje: 90, modo: "2", ganador: "rival" });
@@ -131,8 +131,8 @@ describe("UsuarioService con repositorios SQL", () => {
 
   it("obtenerTodos lista usuarios públicos sin exponer hashes", async () => {
     const { servicio } = await crearServicio();
-    await servicio.registrar({ usuario: "tenten", correo: "tenten@konoha.ni", password: "arma123" });
-    await servicio.registrar({ usuario: "neji", correo: "neji@konoha.ni", password: "giro123" });
+    await servicio.registrar({ usuario: "tenten", correo: "tenten@konoha.ni", password: "arma1234" });
+    await servicio.registrar({ usuario: "neji", correo: "neji@konoha.ni", password: "giro1234" });
 
     const todos = await servicio.obtenerTodos();
     assert.equal(todos.length, 2);

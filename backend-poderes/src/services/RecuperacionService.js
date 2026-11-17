@@ -1,17 +1,10 @@
-const { errorConCodigo } = require("../utils/errores");
+﻿const { errorConCodigo } = require("../utils/errores");
 const { plantillaCodigo } = require("../utils/plantillaCorreo");
+const { normalizarCorreo } = require("../utils/normalizar");
 
-/**
- * SERVICIO: RecuperacionService
- *
- * Recuperación de contraseña olvidada: código de 1 solo uso (tipo
- * RECUPERACION) + procedimiento almacenado sp_restablecer_password que,
- * en UNA operación atómica: revoca todas las sesiones, cambia el hash de
- * la contraseña e invalida los códigos pendientes.
- */
 class RecuperacionService {
   static INTENTOS_MAXIMOS = 5;
-  static VIGENCIA_MIN = 15;
+  static VIGENCIA_MIN = 10;
 
   constructor(
     usuarioRepository,
@@ -31,9 +24,9 @@ class RecuperacionService {
     this.database = database;
   }
 
-  /** Envía un código RECUPERACION al correo de la cuenta. */
   async solicitar({ correo }) {
-    const usuario = await this.usuarioRepository.buscarPorCorreo(correo);
+    const correoNormalizado = normalizarCorreo(correo);
+    const usuario = await this.usuarioRepository.buscarPorCorreo(correoNormalizado);
     if (!usuario) {
       throw errorConCodigo("No encontramos una cuenta con ese correo.", "NO_CUENTA");
     }
@@ -48,30 +41,25 @@ class RecuperacionService {
 
     await this.notificador.enviar({
       para: usuario.correo,
-      asunto: "Recupera tu contraseña de Memoria Ninja",
+      asunto: "Recupera tu contrasena de Memoria Ninja",
       texto:
-        `Vamos a restablecer tu contraseña.\n\n` +
-        `Tu código de recuperación es: ${codigo}\n` +
-        `Vence en ${RecuperacionService.VIGENCIA_MIN} minutos.`,
+        "Vamos a restablecer tu contrasena.\n\n" +
+        "Tu codigo de recuperacion es: " + codigo + "\n" +
+        "Vence en " + RecuperacionService.VIGENCIA_MIN + " minutos.",
       html: plantillaCodigo({
-        titulo: "Recupera tu contraseña",
-        subtitulo: "Usa este código para restablecer la contraseña de tu cuenta.",
+        titulo: "Recupera tu contrasena",
+        subtitulo: "Usa este codigo para restablecer la contrasena de tu cuenta.",
         codigo,
         vigenciaMin: RecuperacionService.VIGENCIA_MIN,
       }),
     });
 
-    return { aviso: "Si el correo existe, ya enviamos el código." };
+    return { aviso: "Si el correo existe, ya enviamos el codigo." };
   }
 
-  /**
-   * Verificación PREVIA del código de recuperación, SIN consumirlo ni
-   * quemar intentos: el flujo del front valida aquí antes de pedir la
-   * contraseña nueva. La seguridad real (consumo ACID + límite de
-   * intentos) sigue viviendo únicamente en restablecer().
-   */
   async verificar({ correo, codigo }) {
-    const usuario = await this.usuarioRepository.buscarPorCorreo(correo);
+    const correoNormalizado = normalizarCorreo(correo);
+    const usuario = await this.usuarioRepository.buscarPorCorreo(correoNormalizado);
     if (!usuario) {
       throw errorConCodigo("No encontramos una cuenta con ese correo.", "NO_CUENTA");
     }
@@ -81,23 +69,20 @@ class RecuperacionService {
       tipo: "RECUPERACION",
     });
     if (!activo || activo.codigo_hash !== this.codigoHasher.hash(codigo)) {
-      throw errorConCodigo("El código es incorrecto o ya venció.", "CODIGO_INVALIDO");
+      throw errorConCodigo("El codigo es incorrecto o ya vencio.", "CODIGO_INVALIDO");
     }
 
-    return { aviso: "Código verificado." };
+    return { aviso: "Codigo verificado." };
   }
 
-  /**
-   * Valida el código y aplica el cambio de contraseña.
-   * Mismo aislamiento ACID que la verificación + CALL al SP atómico.
-   */
   async restablecer({ correo, codigo, nuevaPassword }) {
-    const usuario = await this.usuarioRepository.buscarPorCorreo(correo);
+    const correoNormalizado = normalizarCorreo(correo);
+    const usuario = await this.usuarioRepository.buscarPorCorreo(correoNormalizado);
     if (!usuario) {
       throw errorConCodigo("No encontramos una cuenta con ese correo.", "NO_CUENTA");
     }
-    if (!nuevaPassword || String(nuevaPassword).length < 6) {
-      throw new Error("La nueva contraseña debe tener al menos 6 caracteres");
+    if (!nuevaPassword || String(nuevaPassword).length < 8) {
+      throw errorConCodigo("La nueva contrasena debe tener al menos 8 caracteres", "VALIDACION");
     }
 
     const codigoHash = this.codigoHasher.hash(codigo);
@@ -109,12 +94,12 @@ class RecuperacionService {
         db
       );
       if (!activo) {
-        throw errorConCodigo("El código venció. Vuelve a solicitar uno nuevo.", "CODIGO_INVALIDO");
+        throw errorConCodigo("El codigo vencio. Vuelve a solicitar uno nuevo.", "CODIGO_INVALIDO");
       }
 
       const intentos = await this.codigoVerificacionRepository.aumentarIntento(activo.id, db);
       if (intentos > RecuperacionService.INTENTOS_MAXIMOS) {
-        throw errorConCodigo("Demasiados intentos. Solicita un código nuevo.", "CODIGO_INVALIDO");
+        throw errorConCodigo("Demasiados intentos. Solicita un codigo nuevo.", "CODIGO_INVALIDO");
       }
 
       const estado = await this.codigoVerificacionRepository.confirmarCon(db, {
@@ -123,15 +108,14 @@ class RecuperacionService {
         tipo: "RECUPERACION",
       });
       if (estado !== "OK") {
-        throw errorConCodigo("Código incorrecto o vencido.", "CODIGO_INVALIDO");
+        throw errorConCodigo("Codigo incorrecto o vencido.", "CODIGO_INVALIDO");
       }
 
-      // Procedimiento almacenado: revoca sesiones + cambia password
-      // + invalida códigos pendientes (TO-DO o NADA).
-      await db.query("CALL sp_restablecer_password($1, $2)", [usuario.id, nuevoHash]);
+      await this.usuarioRepository.actualizarPasswordCon(db, usuario.id, nuevoHash);
+      await this.usuarioRepository.revocarTodasLasSesionesCon(db, usuario.id);
     });
 
-    return { aviso: "Contraseña actualizada. Ya puedes iniciar sesión." };
+    return { aviso: "Contrasena actualizada. Ya puedes iniciar sesion." };
   }
 }
 

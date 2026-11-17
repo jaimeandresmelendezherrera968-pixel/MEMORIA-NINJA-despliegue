@@ -10,9 +10,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/cargando.css">
 </head>
 
 <body>
+    <div id="cargandoPagina" class="cargando-pagina" role="status" aria-live="polite">
+        <div class="cargando-pagina__marcador" aria-hidden="true"></div>
+        <span class="cargando-pagina__texto">Cargando...</span>
+    </div>
 
 
     <video autoplay muted loop playsinline id="videofondo">

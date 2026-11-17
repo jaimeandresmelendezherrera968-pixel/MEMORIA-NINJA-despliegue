@@ -670,4 +670,3 @@ export class NubeController {
             "menu.html";
     }
 }
-

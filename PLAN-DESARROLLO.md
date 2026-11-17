@@ -33,15 +33,15 @@ Toda parte sigue estos 5 pasos; no se implementa nada sin cerrar el paso 1.
 - [x] pgAdmin reparado. Docs en español.
 
 ## Estado actual (2026-10-29)
-- Tests backend: **166/166 verdes (25 suites)** con `npm test`.
-- Chequeo de sintaxis JS: `npm run check:js` desde `backend-poderes/` (314 archivos).
+- Tests backend: **239/239 verdes (32 suites)** con `npm test`.
+- Chequeo de sintaxis JS: `npm run check:js` desde `backend-poderes/` (334 archivos).
 - P0 corregido: `js/ui/TwoPlayersModal.js` tenía `async async` y rompía `js/app.js`; el menú ya carga sus modales.
 - Parte 5 (MVP online 1v1) completa. Además ya existen 2v2, QR/LAN, lista de salas en UI y viewport móvil.
-- Parte 5.1 (poderes online): **implementada en código y tests**, pendiente de cierre manual. El servidor 1v1 ya decide chakra, vida, combo, tiempos, aciertos/errores, los 6 poderes y contrarrestos; el cliente aplica efectos al tablero y muestra banner/avisos de poderes. Falta la prueba con 2 clientes reales y la paridad de poderes en 2v2.
-- Parte 5.2 (social): **en progreso**. Salas/QR/listas hechas; chat y persistencia online en servidor pendientes.
-- Parte 5.3 (2v2/espectadores): **en progreso**. 2v2 hecho y testeado; espectadores pendientes.
-- Parte 6 (despliegue/pulido): **en progreso**. Viewport y páginas huérfanas resueltos; faltan despliegue, seguridad Socket.io, móvil real y accesibilidad completa.
-- Parte 7 (offline): **en progreso**. Cola/dedup/merge hechos; reintento automático solo activo desde login.
+- Parte 5.1 (poderes online): **código y tests completos** (83 tests de salas). Servidor autoritativo en 1v1 y 2v2, ventanas de 3s, contrarrestos con `contrapoderId`, vistas por usuario y timers limpiados. Falta solo la prueba E2E manual con dos navegadores.
+- Parte 5.2 (social): **en progreso**. Salas/QR/listas y chat de sala listos; faltan invitaciones/filtros y persistencia online en servidor.
+- Parte 5.3 (2v2/espectadores): **en progreso**. 2v2 con poderes, equipos y revancha hechos y testeados; espectadores pendientes.
+- Parte 6 (despliegue/pulido): **en progreso**. Viewport, páginas huérfanas, mojibake, pantallas de carga, Service Worker y pausa de audio en segundo plano resueltos; checklist de Render/Vercel documentado. Faltan confirmar logs/variables reales, seguridad Socket.io, móvil real y accesibilidad completa.
+- Parte 7 (offline): **en progreso**. Cola/dedup/merge y reintento automático al reconectar activos en todas las páginas; falta reconciliación visible en la UI.
 
 ---
 
@@ -325,12 +325,12 @@ desde la sub-parte 3.5 (2026-10-19); queda el reintento automático.
 | 2. Sesión real | Completada | 2026-10-17 | Verificado en navegador real: registro + verificación por correo Gmail real + login + logout contra PostgreSQL. Añadido botón "Jugar como invitado". Tests 98/98 |
 | 3. Datos reales | Completada (5/5) | 2026-10-19 | Ranking/historial reales, URLs relativas y mocks eliminados. Sub-parte 3.5: merge invitado→cuenta (cola local `historialPendiente` + `POST /importar` transaccional, dedup por idPartida, XP sobre base 500). Tests **104/104**. Verificación HTTP 9/9 (401 sin cookie/ajena, import/idempotencia). Adelantos Parte 6: NIVELES enganchado y ENCONTRAR PARES → mapa (deja `pares.html` huérfana). Falta prueba visual del usuario en `menu.html` |
 | 4. Endurecer backend | Completada | 2026-10-24 | Middlewares auth/owner, CORS allowlist, cookies seguras configurables, rutas protegidas. Tests 124/124 + autorizacionE2e. |
-| 5. Multijugador online base | Completada | 2026-10-25 | Socket.io real + salas en memoria, matchmaking, turnos, reconexión 15 s y abandono. Lobby verde/morado unificado y stub eliminado. Tests **137/137 al cierre**; suite actual **166/166**. |
-| 5.1 Poderes y reglas online | En progreso (código completo, falta E2E manual) | 2026-10-29 | Servidor 1v1 autoritativo para chakra, vida, combo, tiempos, 6 poderes y contrarrestos; cliente aplica Byakugan/Sello/Genjutsu al tablero. 9 tests nuevos de poderes. Banner/avisos/impacto visual implementados; falta prueba con 2 clientes reales. |
-| 5.2 Social (salas UI, chat, QR) | En progreso | 2026-10-29 | Lista de salas, QR/LAN y compartir hechos. Faltan chat, filtros/invitaciones y persistencia online en servidor. |
-| 5.3 2v2 y espectadores | En progreso | 2026-10-29 | 2v2 real con equipos, turno compartido, abandono y revancha (21 tests de salas). Faltan espectadores y poderes/chakra de equipo. |
-| 6. Pulido/despliegue | En progreso | 2026-10-29 | Viewport, páginas huérfanas y botón NIVELES resueltos. Faltan despliegue, seguridad Socket.io, móvil real y accesibilidad completa. |
-| 7. Offline/sincronización | En progreso | 2026-10-29 | Cola/dedup/merge hechos. El reintento automático solo se activa desde login; falta en páginas de juego. |
+| 5. Multijugador online base | Completada | 2026-10-25 | Socket.io real + salas en memoria, matchmaking, turnos, reconexión 15 s y abandono. Lobby verde/morado unificado y stub eliminado. Suite actual **239/239**. |
+| 5.1 Poderes y reglas online | Código y tests completos (falta E2E manual) | 2026-11-17 | Servidor autoritativo 1v1/2v2, 6 poderes, ventanas de 3s, contrarrestos con `contrapoderId`, vistas por usuario y timers limpiados. **83 tests de salas**; suite **239/239**. Falta prueba con 2 navegadores. |
+| 5.2 Social (salas UI, chat, QR) | En progreso | 2026-11-17 | Lista de salas, QR/LAN, compartir y chat de sala con rate limit hechos. Faltan filtros/invitaciones y persistencia online en servidor. |
+| 5.3 2v2 y espectadores | En progreso | 2026-11-17 | 2v2 con equipos, turno compartido, abandono, revancha y poderes/contrarrestos por equipo (83 tests de salas). Faltan espectadores. |
+| 6. Pulido/despliegue | En progreso | 2026-11-17 | Viewport, páginas huérfanas, mojibake, pantallas de carga, Service Worker y pausa de audio en segundo plano resueltos. Checklist de Render/Vercel documentado. Faltan confirmar logs/variables, seguridad Socket.io, móvil real y accesibilidad completa. |
+| 7. Offline/sincronización | En progreso | 2026-11-17 | Cola/dedup/merge y reintento automático al reconectar en todas las páginas. Falta feedback visible del proceso. |
 
 > Los ajustes de cabecera, Parte 5, Parte 6 y Registro de avance ya se aplicaron el 2026-10-29.
 
@@ -455,11 +455,11 @@ despliegue, salas privadas, invitados, mobile, QR, chat y poderes básicos.
 
 ## Parte 5.1 — Paridad de jugabilidad online (poderes y reglas) · Estado: EN PROGRESO
 
-**Estado real (2026-10-29):** implementado en servidor y cliente. `GestorSalas.js` es autoritativo en 1v1 para
-chakra, vida, combo, aciertos/errores, tiempos por jugador, los 6 poderes, Byakugan/Sello/Genjutsu reales y
-contrarrestos. `GestorSalaCliente.js` sincroniza estado y aplica efectos al tablero con `board-manager.js`
-(revelar, sellar, mezclar); `GestorPartida.js` muestra avisos y motivos de derrota por vida/tiempo. Tests de salas:
-35 (9 nuevos de poderes). Pendiente: prueba manual con 2 navegadores y paridad 2v2.
+**Estado real (2026-11-17):** código y tests completos. `GestorSalas.js` es autoritativo en 1v1 y 2v2 para
+chakra, vida, combo, aciertos/errores, tiempos, los 6 poderes y los 3 contrarrestos con ventana de 3s.
+`GestorSalaCliente.js` sincroniza estado, rehidrata tras rejoin y aplica efectos al tablero con `board-manager.js`
+(revelar, rastro de Byakugan, sellar, mezclar); `GestorPartida.js` muestra banners y avisos dinámicos con
+`contrapoderId`. Tests de salas: **81**. Pendiente solo la prueba manual con 2 navegadores.
 
 **Objetivo:** que el modo online tenga TODA la jugabilidad del juego (poderes, chakra, vida, combo, contrarrestos),
 decidida por el servidor y con el mismo aspecto visual del juego.
@@ -687,9 +687,9 @@ básicos se ve mejor en una demo que un 2v2 con poderes a medias.
 
 | Parte | Estado | Fecha | Notas |
 |---|---|---|---|
-| 5.1 Poderes y reglas online | En progreso (código completo) | 2026-10-29 | 1v1 autoritativo: vida/combo/tiempos, 6 poderes, contrarrestos y efectos en tablero; banner/avisos/impacto visual hechos, falta E2E manual |
-| 5.2 Social (salas UI, chat, QR) | En progreso | 2026-10-29 | Salas/QR/listas hechas; faltan chat y persistencia online en servidor |
-| 5.3 2v2 y espectadores | En progreso | 2026-10-29 | 2v2 y revancha hechos; faltan espectadores y poderes/chakra de equipo |
+| 5.1 Poderes y reglas online | Código y tests completos | 2026-11-17 | 1v1/2v2 autoritativo, 6 poderes, ventanas de 3s, contrarrestos con `contrapoderId`, vistas por usuario, timers limpiados, 83 tests de salas; falta E2E manual |
+| 5.2 Social (salas UI, chat, QR) | En progreso | 2026-11-17 | Salas/QR/listas y chat con rate limit hechos; faltan invitaciones y persistencia online en servidor |
+| 5.3 2v2 y espectadores | En progreso | 2026-11-17 | 2v2, revancha, poderes y contrarrestos por equipo hechos; faltan espectadores |
 
-> Estado 2026-10-29: P0 de `TwoPlayersModal.js` corregido, chequeo `npm run check:js` agregado y docs alineadas.
-> Siguiente prioridad recomendada: **cerrar 5.1 (poderes online)**; después **5.2 (chat/persistencia)** y **Parte 6 (despliegue/seguridad)**.
+> Estado 2026-11-17: 5.1 cerrado en código/tests (**239/239**, **334 JS**), chat de sala y reintento offline listos; mojibake, carga, Service Worker y audio en segundo plano corregidos.
+> Siguiente prioridad recomendada: **E2E manual con 2 navegadores**; después **espectadores/invitaciones**, persistencia online y despliegue/seguridad.

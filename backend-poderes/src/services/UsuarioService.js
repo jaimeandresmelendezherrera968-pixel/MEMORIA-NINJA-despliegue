@@ -1,5 +1,6 @@
-const crypto = require("crypto");
+﻿const crypto = require("crypto");
 const Usuario = require("../entities/Usuario");
+const { normalizarUsuario, normalizarCorreo } = require("../utils/normalizar");
 
 /**
  * Regla de negocio del perfil: XP fija que se gana por cada victoria
@@ -38,33 +39,44 @@ class UsuarioService {
   }
 
   async registrar({ usuario, correo, nacimiento, password }) {
-    // Validación en el límite (fail fast): no se confía en el cliente.
-    this.#validarCamposObligatorios({ usuario, correo, password });
+    const usuarioNormalizado = normalizarUsuario(usuario);
+    const correoNormalizado = normalizarCorreo(correo);
+    this.#validarCamposObligatorios({
+      usuario: usuarioNormalizado,
+      correo: correoNormalizado,
+      password,
+    });
 
-    if (await this.usuarioRepository.buscarPorUsuario(usuario)) {
-      throw new Error("El nombre de usuario ya está en uso");
+    if (await this.usuarioRepository.buscarPorUsuario(usuarioNormalizado)) {
+      throw new Error("El nombre de usuario ya esta en uso");
     }
-    if (await this.usuarioRepository.buscarPorCorreo(correo)) {
-      throw new Error("El correo ya está registrado");
+    if (await this.usuarioRepository.buscarPorCorreo(correoNormalizado)) {
+      throw new Error("El correo ya esta registrado");
     }
 
     const id = crypto.randomUUID();
     const passwordHash = this.passwordHasher.generarHash(password);
-
-    const nuevo = new Usuario({ id, usuario, correo, nacimiento, passwordHash });
+    const nuevo = new Usuario({
+      id,
+      usuario: usuarioNormalizado,
+      correo: correoNormalizado,
+      nacimiento,
+      passwordHash,
+    });
     await this.usuarioRepository.guardar(nuevo);
     return nuevo.publico();
   }
 
   async iniciarSesion({ usuario, password }) {
+    const identificador = normalizarUsuario(usuario);
     const encontrado =
-      (await this.usuarioRepository.buscarPorUsuario(usuario)) ||
-      (await this.usuarioRepository.buscarPorCorreo(usuario));
+      (await this.usuarioRepository.buscarPorUsuario(identificador)) ||
+      (await this.usuarioRepository.buscarPorCorreo(identificador));
 
-    // Mensaje idéntico para "no existe" y "contraseña mala":
-    // no se filtra qué usuario está registrado.
+    // Mensaje identico para no filtrar usuarios. Sin validar longitud minima
+    // para no bloquear cuentas antiguas.
     if (!encontrado || !this.passwordHasher.verificar(password, encontrado.passwordHash)) {
-      throw new Error("Usuario o contraseña incorrectos");
+      throw new Error("Usuario o contrasena incorrectos");
     }
 
     return encontrado.publico();
@@ -75,7 +87,7 @@ class UsuarioService {
   }
 
   async buscarPorCorreo(correo) {
-    const encontrado = await this.usuarioRepository.buscarPorCorreo(correo);
+    const encontrado = await this.usuarioRepository.buscarPorCorreo(normalizarCorreo(correo));
     return encontrado?.publico() || null;
   }
 
@@ -252,10 +264,10 @@ class UsuarioService {
       throw new Error("El nombre de usuario es obligatorio");
     }
     if (!correo || String(correo).trim() === "" || !String(correo).includes("@")) {
-      throw new Error("Debes ingresar un correo válido");
+      throw new Error("Debes ingresar un correo valido");
     }
-    if (!password || String(password).length < 6) {
-      throw new Error("La contraseña debe tener al menos 6 caracteres");
+    if (!password || String(password).length < 8) {
+      throw new Error("La contrasena debe tener al menos 8 caracteres");
     }
   }
 }

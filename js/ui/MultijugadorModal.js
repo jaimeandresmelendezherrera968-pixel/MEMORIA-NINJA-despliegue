@@ -16,8 +16,12 @@ export class MultijugadorModal extends BaseModal {
     clienteMultijugador.on('sala-actualizada', (sala) => {
       if (sala?.codigo) this.actualizarPanelEspera(sala);
     });
+    clienteMultijugador.on('chat-mensaje', (mensaje) => {
+      this.agregarMensajeChat(mensaje, 'Verde');
+    });
     clienteMultijugador.on('partida-iniciada', (datos) => {
       if (this.redirectEnCurso) return;
+      if (!this.modalElement?.classList.contains('activo')) return;
       this.redirectEnCurso = true;
       document.getElementById('panelEsperandoRivalVerde')?.setAttribute('hidden', 'true');
       const codigo = datos?.codigo || clienteMultijugador.codigoSala || '';
@@ -290,7 +294,41 @@ export class MultijugadorModal extends BaseModal {
     }
   }
 
+  agregarMensajeChat(mensaje, sufijo = 'Verde') {
+    const lista = document.getElementById(`chatMensajes${sufijo}`);
+    if (!lista || !mensaje?.texto) return;
+    const linea = document.createElement('p');
+    linea.className = 'chat-linea';
+    const nombre = document.createElement('strong');
+    nombre.textContent = `${mensaje.nombre || 'Jugador'}: `;
+    linea.appendChild(nombre);
+    linea.appendChild(document.createTextNode(mensaje.texto));
+    lista.appendChild(linea);
+    lista.scrollTop = lista.scrollHeight;
+  }
+
+  configurarChat(sufijo = 'Verde') {
+    const input = document.getElementById(`chatTexto${sufijo}`);
+    const boton = document.getElementById(`btnEnviarChat${sufijo}`);
+    const enviar = async () => {
+      const texto = (input?.value || '').trim();
+      if (!texto) return;
+      try {
+        const respuesta = await clienteMultijugador.enviarMensajeChat(texto);
+        if (respuesta?.exito && input) input.value = '';
+      } catch {}
+    };
+    boton?.addEventListener('click', enviar);
+    input?.addEventListener('keydown', (evento) => {
+      if (evento.key === 'Enter') {
+        evento.preventDefault();
+        enviar();
+      }
+    });
+  }
+
   inicializarEventos() {
+    this.configurarChat('Verde');
     document.getElementById('closeMultijugadorModalBtn')?.addEventListener('click', () => {
       try { clienteMultijugador.cancelarBusqueda(); } catch (e) {}
       this.cerrar();
