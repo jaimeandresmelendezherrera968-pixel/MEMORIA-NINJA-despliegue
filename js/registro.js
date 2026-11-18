@@ -43,13 +43,21 @@ async function registrar() {
   const aceptaTerminos = document.getElementById("aceptaTerminos").checked;
   const aceptaPolitica = document.getElementById("aceptaPolitica").checked;
 
-  const exito = await registroController.manejarEnvio({
+  const resultado = await registroController.manejarEnvio({
     datosFormulario,
     aceptaTerminos,
     aceptaPolitica
   });
 
-  if (exito) {
+  if (resultado?.exito) {
+    sessionStorage.setItem(
+      "memoriaNinjaVerificacionPendiente",
+      JSON.stringify({
+        correo: datosFormulario.correo,
+        correoEnviado: resultado.correoEnviado !== false,
+        enviadoEn: Date.now()
+      })
+    );
     setTimeout(() => {
       window.location.href = "verificacion.html";
     }, 1500);

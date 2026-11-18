@@ -32,16 +32,16 @@ Toda parte sigue estos 5 pasos; no se implementa nada sin cerrar el paso 1.
 - [x] Seed demo (`npm run seed:demo`) + `sql/datos-simulados.sql` + `sql/consultas-demo.sql`.
 - [x] pgAdmin reparado. Docs en español.
 
-## Estado actual (2026-10-29)
-- Tests backend: **239/239 verdes (32 suites)** con `npm test`.
-- Chequeo de sintaxis JS: `npm run check:js` desde `backend-poderes/` (334 archivos).
+## Estado actual (2026-11-17)
+- Tests backend: **268 tests en 34 suites** con `npm test`; 16 de amistades verdes (E2E/socket con rerun aislado verde tras flakes de carga).
+- Chequeo de sintaxis JS: `npm run check:js` desde `backend-poderes/` (348 archivos).
 - P0 corregido: `js/ui/TwoPlayersModal.js` tenía `async async` y rompía `js/app.js`; el menú ya carga sus modales.
 - Parte 5 (MVP online 1v1) completa. Además ya existen 2v2, QR/LAN, lista de salas en UI y viewport móvil.
-- Parte 5.1 (poderes online): **código y tests completos** (83 tests de salas). Servidor autoritativo en 1v1 y 2v2, ventanas de 3s, contrarrestos con `contrapoderId`, vistas por usuario y timers limpiados. Falta solo la prueba E2E manual con dos navegadores.
-- Parte 5.2 (social): **en progreso**. Salas/QR/listas y chat de sala listos; faltan invitaciones/filtros y persistencia online en servidor.
-- Parte 5.3 (2v2/espectadores): **en progreso**. 2v2 con poderes, equipos y revancha hechos y testeados; espectadores pendientes.
-- Parte 6 (despliegue/pulido): **en progreso**. Viewport, páginas huérfanas, mojibake, pantallas de carga, Service Worker y pausa de audio en segundo plano resueltos; checklist de Render/Vercel documentado. Faltan confirmar logs/variables reales, seguridad Socket.io, móvil real y accesibilidad completa.
-- Parte 7 (offline): **en progreso**. Cola/dedup/merge y reintento automático al reconectar activos en todas las páginas; falta reconciliación visible en la UI.
+- Parte 5.1 (poderes online): **código y tests completos** (95 tests de salas). Servidor autoritativo en 1v1 y 2v2, ventanas de 3s, contrarrestos con `contrapoderId`, vistas por usuario y timers limpiados. Falta solo la prueba E2E manual con dos navegadores.
+- Parte 5.2 (social): **completa en código**. Salas/QR/listas, filtros por modo/contraseña, botón de invitación con copia de enlace, chat de sala con rate limit y persistencia online para usuarios con sesión (sin XP; invitados no persisten).
+- Parte 5.3 (2v2/espectadores): **completa en código**. 2v2 con poderes, equipos y revancha; espectadores 1v1/2v2 solo lectura vía `?espectador=1`, sin valores ocultos y sin acciones de jugador. La contraseña de sala privada viaja como ticket efímero en `sessionStorage`, nunca en la URL.
+- Parte 6 (despliegue/pulido): **en progreso**. Viewport, páginas huérfanas, mojibake, pantallas de carga, Service Worker, pausa de audio en segundo plano, seguridad Socket.io (origen permitido + límites de eventos) y accesibilidad de loader/chat/lobby resueltos. Fase 2 cerró además el timer de fallo en revanchas inmediatas, el `allowRequest` LAN/QR, el ticket de espectador y el tablero navegable por teclado. Auditoría posterior corrigió la carrera persistencia/revancha, el límite de intentos de espectador, el origen con puerto/esquema, la revelación Byakugan vs. volteo remoto, el fallback del Service Worker y el modal de espectador. Faltan confirmar logs/variables reales y móvil real.
+- Parte 7 (offline): **completa en código**. Cola/dedup/merge, reintento automático al reconectar en todas las páginas y aviso visible del resultado de la sincronización.
 
 ---
 
@@ -252,7 +252,7 @@ frontend servido entrega `SincronizacionInvitadoService.js`.
   verde MULTIJUGADOR y el morado DOS JUGADORES abren el mismo lobby real; se eliminó el modal stub
   `multiplayerModal`.
 - [x] CSP de `helmet` resuelta importando el cliente ESM same-origin
-  `/socket.io/socket.io.esm.min.js` y ampliando `connect-src` con `ws:`/`wss:`.
+  `js/vendor/socket.io.esm.min.js` (import relativo `../vendor/...`) y ampliando `connect-src` con `ws:`/`wss:`.
 - [x] Identidad online decidida: token estable por pestaña en `sessionStorage["memoriaNinjaTokenJugador"]`
   (no `socket.id`), enviado en `handshake.auth.token`; permite reconectar y reincorporarse a la sala.
 **Tareas:**
@@ -277,7 +277,7 @@ frontend servido entrega `SincronizacionInvitadoService.js`.
 - [x] Corregidas las rutas de aldeas del mazo online (`konoha/hyuga|sarutobi|uchiha|uzumaki`, `akatsuki`) para
   que todas las imágenes existan en `assets/img/cards/aldeas/`.
 **Verificación (2026-10-25):**
-- `npm test` → **137/137 al cierre** (124 previos + 13 nuevos de `tests/gestorSalas.test.js`); suite actual **166/166**.
+- `npm test` → **137/137 al cierre** (124 previos + 13 nuevos de `tests/gestorSalas.test.js`); suite actual **268 tests**.
 - E2E real headless (Edge + CDP + 2 clientes Socket.io contra el servidor): crear sala, unirse, inicio
   automático, 16 cartas, nombres reales en ambos paneles, turno correcto y click que revela la imagen; cero
   excepciones JS.
@@ -325,12 +325,12 @@ desde la sub-parte 3.5 (2026-10-19); queda el reintento automático.
 | 2. Sesión real | Completada | 2026-10-17 | Verificado en navegador real: registro + verificación por correo Gmail real + login + logout contra PostgreSQL. Añadido botón "Jugar como invitado". Tests 98/98 |
 | 3. Datos reales | Completada (5/5) | 2026-10-19 | Ranking/historial reales, URLs relativas y mocks eliminados. Sub-parte 3.5: merge invitado→cuenta (cola local `historialPendiente` + `POST /importar` transaccional, dedup por idPartida, XP sobre base 500). Tests **104/104**. Verificación HTTP 9/9 (401 sin cookie/ajena, import/idempotencia). Adelantos Parte 6: NIVELES enganchado y ENCONTRAR PARES → mapa (deja `pares.html` huérfana). Falta prueba visual del usuario en `menu.html` |
 | 4. Endurecer backend | Completada | 2026-10-24 | Middlewares auth/owner, CORS allowlist, cookies seguras configurables, rutas protegidas. Tests 124/124 + autorizacionE2e. |
-| 5. Multijugador online base | Completada | 2026-10-25 | Socket.io real + salas en memoria, matchmaking, turnos, reconexión 15 s y abandono. Lobby verde/morado unificado y stub eliminado. Suite actual **239/239**. |
-| 5.1 Poderes y reglas online | Código y tests completos (falta E2E manual) | 2026-11-17 | Servidor autoritativo 1v1/2v2, 6 poderes, ventanas de 3s, contrarrestos con `contrapoderId`, vistas por usuario y timers limpiados. **83 tests de salas**; suite **239/239**. Falta prueba con 2 navegadores. |
-| 5.2 Social (salas UI, chat, QR) | En progreso | 2026-11-17 | Lista de salas, QR/LAN, compartir y chat de sala con rate limit hechos. Faltan filtros/invitaciones y persistencia online en servidor. |
-| 5.3 2v2 y espectadores | En progreso | 2026-11-17 | 2v2 con equipos, turno compartido, abandono, revancha y poderes/contrarrestos por equipo (83 tests de salas). Faltan espectadores. |
-| 6. Pulido/despliegue | En progreso | 2026-11-17 | Viewport, páginas huérfanas, mojibake, pantallas de carga, Service Worker y pausa de audio en segundo plano resueltos. Checklist de Render/Vercel documentado. Faltan confirmar logs/variables, seguridad Socket.io, móvil real y accesibilidad completa. |
-| 7. Offline/sincronización | En progreso | 2026-11-17 | Cola/dedup/merge y reintento automático al reconectar en todas las páginas. Falta feedback visible del proceso. |
+| 5. Multijugador online base | Completada | 2026-10-25 | Socket.io real + salas en memoria, matchmaking, turnos, reconexión 15 s y abandono. Lobby verde/morado unificado y stub eliminado. Suite actual **268 tests**. |
+| 5.1 Poderes y reglas online | Código y tests completos (falta E2E manual) | 2026-11-17 | Servidor autoritativo 1v1/2v2, 6 poderes, ventanas de 3s, contrarrestos con `contrapoderId`, vistas por usuario y timers limpiados. **95 tests de salas**; suite **268 tests**. Falta prueba con 2 navegadores. |
+| 5.2 Social (salas UI, chat, QR) | Completa en código | 2026-11-17 | Lista de salas, QR/LAN, compartir, filtros por modo/contraseña, invitaciones con copia de enlace, chat con rate limit y persistencia online para cuentas con sesión (sin XP). |
+| 5.3 2v2 y espectadores | Completa en código | 2026-11-17 | 2v2 con equipos, turno compartido, abandono, revancha y poderes/contrarrestos por equipo; espectadores 1v1/2v2 solo lectura sin cartas ocultas ni acciones de jugador (**95 tests de salas**). |
+| 6. Pulido/despliegue | En progreso | 2026-11-17 | Viewport, páginas huérfanas, mojibake, pantallas de carga, Service Worker, pausa de audio, seguridad Socket.io y accesibilidad de loader/chat/lobby resueltos. Faltan confirmar logs/variables reales y móvil real. |
+| 7. Offline/sincronización | Completa en código | 2026-11-17 | Cola/dedup/merge, reintento automático al reconectar en todas las páginas y aviso visible del resultado de la sincronización. |
 
 > Los ajustes de cabecera, Parte 5, Parte 6 y Registro de avance ya se aplicaron el 2026-10-29.
 
@@ -412,7 +412,7 @@ despliegue, salas privadas, invitados, mobile, QR, chat y poderes básicos.
 
 ### Qué ya está hecho (Parte 5, cerrada 2026-10-25)
 
-`npm test` en **166/166** (25 suites).
+`npm test` en **268 tests** (34 suites).
 
 - `GestorSalas.js` con Socket.io 4.8.4: crear/unir por código, contraseña, listado de salas públicas,
   `buscar-partida` (matchmaking), `marcar-listo`, inicio automático con 2 jugadores, abandono y limpieza a los 30 s.
@@ -430,15 +430,15 @@ despliegue, salas privadas, invitados, mobile, QR, chat y poderes básicos.
 
 | Idea | Estado | Detalle |
 |---|---|---|
-| Poderes online (6) | ⚠️ Parcial | Chakra/defensas y 3 poderes con lógica; Byakugan/Sello/Genjutsu aún genéricos |
-| Chakra, vida y combo en servidor | ⚠️ Parcial | Chakra y defensas sí; vida, combo y temporizador no |
-| Contrarrestos entre poderes | ❌ No está | Requieren ventana de reacción en tiempo real |
+| Poderes online (6) | ✅ Hecho | 6 poderes con lógica autoritativa en servidor y vistas por jugador |
+| Chakra, vida y combo en servidor | ✅ Hecho | Chakra, vida, combo, aciertos/errores y temporizadores autoritativos |
+| Contrarrestos entre poderes | ✅ Hecho | Ventana de reacción de 3s con `contrapoderId` y resolución idempotente |
 | 2v2 (4 jugadores, equipos) | ✅ Hecho | `GestorSalas.js` soporta equipos, turno compartido y revancha |
 | QR + LAN | ✅ Hecho | `GET /api/salas/:codigo/compartir` + QR data URL |
-| Chat | ❌ No está | No existe |
-| Espectadores | ❌ No está | Solo jugadores por sala |
+| Chat | ✅ Hecho | Mensajes sanitizados con `textContent` y rate limit de 1 mensaje/segundo |
+| Espectadores | ✅ Hecho | 1v1/2v2 solo lectura, sin cartas ocultas ni acciones de jugador |
 | Mobile en `game-online.html` | ✅ Hecho | Ya tiene `<meta name="viewport">`; falta prueba en teléfono real |
-| Persistencia en `historial_partidas` | ⚠️ Parcial | El cliente con sesión guarda al terminar; las salas siguen en memoria |
+| Persistencia en `historial_partidas` | ✅ Hecho | El servidor persiste el resultado para cuentas con sesión; salas siguen en memoria |
 | Quick match | ✅ Hecho | `buscar-partida` |
 | Lista de salas | ✅ Hecho | Backend `listar-salas` + pantalla en `TwoPlayersModal.js` |
 | Despliegue público | ❌ No está | Solo `localhost` y Tailscale |
@@ -588,36 +588,36 @@ es **trasladar lo existente al servidor autoritativo** (`GestorSalas.js`) para q
 
 ---
 
-## Parte 5.2 — Social y difusión · Estado: EN PROGRESO
+## Parte 5.2 — Social y difusión · Estado: COMPLETA EN CÓDIGO
 
-**Estado real (2026-10-29):** lista de salas, QR/LAN y `menu.html?codigo=` ya funcionan. Falta chat, filtros/invitaciones
-y persistencia online en servidor.
+**Estado real (2026-11-17):** lista de salas, QR/LAN, `menu.html?codigo=`, chat de sala, filtros por modo/contraseña,
+invitaciones con copia de enlace y persistencia online para cuentas con sesión ya funcionan. Invitados no persisten ni suman XP.
 
 **Objetivo:** que se sienta como un juego online: ver salas, hablar, compartir y entrar desde el celular.
 
 **Tareas:**
 - [x] **Pantalla de salas** (modales separados): SALAS AMIGAS (lista pública, filtro por ID, unirse por ID exacto)
   y CREAR SALA (cantidad de parejas, aldeas, contraseña, privada/pública). Usa `listar-salas` que ya existe.
-- [ ] **Chat de sala**, seguro desde el inicio:
+- [x] **Chat de sala**, seguro desde el inicio:
   - El servidor limita longitud, aplica *rate limit* (~1 mensaje/segundo) y descarta mensajes vacíos.
   - El cliente muestra SIEMPRE con `textContent`, nunca `innerHTML`.
   - Mensajes efímeros (sin persistencia). Invitados pueden escribir con nombre tipo "Invitado123".
   - Chat global y de amigos: fase posterior.
 - [x] **QR + enlace** para compartir la sala y unirse desde el celular (sin pedir login).
-- [ ] **Invitaciones** a sala (fase posterior).
-- [ ] Persistir el resultado final de partidas de usuarios con sesión en `historial_partidas`
+- [x] **Invitaciones** a sala: botón por sala que copia `/api/salas/:codigo/compartir` con aviso visible.
+- [x] Persistir el resultado final de partidas de usuarios con sesión en `historial_partidas`
   (invitados no guardan historial, XP ni ranking).
-- [ ] Apariencia: reutilizar los estilos y componentes del menú; sin colores nuevos.
+- [x] Apariencia: reutilizar los estilos y componentes del menú; sin colores nuevos.
 **Preguntas previas para el agente:** ¿chat visible en pantalla de espera y en partida? ¿filtros de la lista de salas?
 ¿qué datos muestra cada sala (host, aldeas, parejas, cupo)? ¿QR lleva a la sala o al menú?
 **Verificación:** 2 teléfonos reales: crear sala, escanear QR, unirse, chatear, jugar.
 
 ---
 
-## Parte 5.3 — 2v2 y espectadores · Estado: EN PROGRESO (espectadores se sacrifican primero si falta tiempo)
+## Parte 5.3 — 2v2 y espectadores · Estado: COMPLETA EN CÓDIGO
 
-**Estado real (2026-10-29):** 2v2, equipos, turno compartido, abandono por equipo y revancha ya están implementados
-y cubiertos por `gestorSalas.test.js`. Faltan espectadores y poderes/chakra de equipo.
+**Estado real (2026-11-17):** 2v2, equipos, turno compartido, abandono por equipo, revancha, poderes/contrarrestos
+por equipo y espectadores 1v1/2v2 solo lectura (`?espectador=1`) están implementados y cubiertos por `gestorSalas.test.js`.
 
 **Objetivo:** 4 asientos, 2 equipos, turno por equipo, puntaje compartido.
 
@@ -626,8 +626,8 @@ y cubiertos por `gestorSalas.test.js`. Faltan espectadores y poderes/chakra de e
 - [x] `GestorSalas.js`: salas de 4 asientos, asignación de equipos, turno por equipo.
 - [x] Marcadores por equipo y UI de 4 jugadores (respetando el diseño existente).
 - [x] Reconexión y abandono en equipos (el equipo sigue si queda un integrante).
-- [ ] Poderes y chakra en equipo (según respuesta a la pregunta 6 de la Parte 5.1).
-- [ ] Espectadores (solo lectura, sin ver cartas ocultas).
+- [x] Poderes y chakra en equipo (según respuesta a la pregunta 6 de la Parte 5.1).
+- [x] Espectadores (solo lectura, sin ver cartas ocultas).
 **Orden:** completar 5.1 antes de poderes/chakra de equipo.
 **Verificación:** E2E con 4 clientes.
 
@@ -687,9 +687,10 @@ básicos se ve mejor en una demo que un 2v2 con poderes a medias.
 
 | Parte | Estado | Fecha | Notas |
 |---|---|---|---|
-| 5.1 Poderes y reglas online | Código y tests completos | 2026-11-17 | 1v1/2v2 autoritativo, 6 poderes, ventanas de 3s, contrarrestos con `contrapoderId`, vistas por usuario, timers limpiados, 83 tests de salas; falta E2E manual |
-| 5.2 Social (salas UI, chat, QR) | En progreso | 2026-11-17 | Salas/QR/listas y chat con rate limit hechos; faltan invitaciones y persistencia online en servidor |
-| 5.3 2v2 y espectadores | En progreso | 2026-11-17 | 2v2, revancha, poderes y contrarrestos por equipo hechos; faltan espectadores |
+| 5.1 Poderes y reglas online | Código y tests completos | 2026-11-17 | 1v1/2v2 autoritativo, 6 poderes, ventanas de 3s, contrarrestos con `contrapoderId`, vistas por usuario, timers limpiados, 95 tests de salas; falta E2E manual |
+| 5.2 Social (salas UI, chat, QR) | Completa en código | 2026-11-17 | Salas/QR/listas, filtros, invitaciones con copia de enlace, chat con rate limit y persistencia online para cuentas con sesión |
+| 5.3 2v2 y espectadores | Completa en código | 2026-11-17 | 2v2, revancha, poderes/contrarrestos por equipo y espectadores solo lectura sin cartas ocultas |
+| 6. Sistema de amigos | Completa en código/tests | 2026-11-18 | ID público `NJ-XXXXXXXX`, búsqueda por nombre/código, solicitudes, notificaciones Socket.io, lista de amigos y rename sin romper referencias |
 
-> Estado 2026-11-17: 5.1 cerrado en código/tests (**239/239**, **334 JS**), chat de sala y reintento offline listos; mojibake, carga, Service Worker y audio en segundo plano corregidos.
-> Siguiente prioridad recomendada: **E2E manual con 2 navegadores**; después **espectadores/invitaciones**, persistencia online y despliegue/seguridad.
+> Estado 2026-11-18: 5.1/5.2/5.3, Parte 7 y sistema de amigos cerradas en código/tests (**268 tests**, **348 JS**, **95 tests de salas**); mojibake, carga, Service Worker, audio en segundo plano, seguridad Socket.io y accesibilidad de loader/chat/lobby corregidos. El renaming usa IDs internos estables: el código público no cambia y los nombres se resuelven por JOIN en cada listado. Auditoría posterior: guard anti-doble-respuesta, migración con duplicados, resolución exacta de destinatario, código único con reintento, notificaciones sincronizadas con la sesión socket y frontend resistente a cambios de sesión.
+> Siguiente prioridad recomendada: **E2E manual con 2 navegadores**, probar amigos/rename/notificaciones con dos cuentas reales, confirmar logs/variables reales de Render/Vercel y prueba en móvil real.

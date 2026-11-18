@@ -232,7 +232,7 @@ Consultar también: `js/COMO-INTEGRAR-NAVEGACION.md` (refactor de `niveles.js`/`
 | Reglas puras aisladas de HTTP/DOM | `backend-poderes/src/services/PoderService.js`, `js/nucleo-GAME ONLI/poderes/Poder.js` |
 | El ejemplo "saldo/chakra insuficiente" | `backend-poderes/src/services/PoderService.js:38-41` |
 | Composition root | `backend-poderes/server.js`, `js/nucleo-GAME ONLI/GestorPartida.js`, `js/login.js`, `js/app.js` |
-| Prueba de LSP (contrato único, **3 implementaciones**: memoria/archivo/SQL) + e2e de auth | `backend-poderes/tests/` → `npm test` desde `backend-poderes/` (**166 tests / 25 suites**, todos verdes) |
+| Prueba de LSP (contrato único, **3 implementaciones**: memoria/archivo/SQL) + e2e de auth/amistades | `backend-poderes/tests/` → `npm test` desde `backend-poderes/` (**268 tests / 34 suites**, 16 de amistades; E2E/socket con rerun aislado verde tras flakes de carga) |
 | Abstracciones/interfaces | `backend-poderes/src/repositories/PartidaRepository.js`, `js/core/interfaces/`, `js/domain/` |
 | UI / filas "js.ui" | `js/ui/`, `js/utils/ModalHelper.js`, `js/utils/TogglePasswordHelper.js`, `js/controladores/` |
 | Cómo el motor viejo se reorganizó en clases | `js/nucleo-GAME ONLI/COMO-QUEDO-ORGANIZADO.md` |

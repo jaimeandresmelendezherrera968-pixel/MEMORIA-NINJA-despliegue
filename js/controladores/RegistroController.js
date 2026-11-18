@@ -45,7 +45,7 @@ export class RegistroController extends FormularioControllerBase {
                 );
             }
 
-            return true;
+            return { exito: true, ...(resultado || {}) };
 
         } catch (error) {
 
@@ -54,7 +54,7 @@ export class RegistroController extends FormularioControllerBase {
                 "error"
             );
 
-            return false;
+            return { exito: false };
         }
     }
 }

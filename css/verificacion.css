@@ -210,3 +210,7 @@ html, body {
 }
 .input-codigo::placeholder, #input-correo::placeholder { color: rgba(255,255,255,.9) !important; opacity: 1; font-weight: 500; }
 .btn-acceso, .btn-verificar { color: #0b1020 !important; font-weight: 700; }
+.bloque-corregir { margin-top: 10px; }
+#formulario-corregir { margin-top: 8px; }
+.texto-reenviar #btn-mostrar-corregir { color: #7dd3ff !important; font-weight: 700; text-decoration: underline; cursor: pointer; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+.texto-reenviar #btn-mostrar-corregir:hover { color: #ffe066 !important; }

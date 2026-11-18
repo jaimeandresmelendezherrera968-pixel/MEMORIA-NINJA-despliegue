@@ -24,6 +24,11 @@ export class VerificacionService {
     this.repositorioAuth = repositorioAuth;
   }
 
+  establecerCorreo(correo) {
+    this.#correoActual = String(correo).trim();
+    return this.#correoActual;
+  }
+
   /**
    * Pide al backend que cree (o reutilice) un código de verificación para
    * el correo y lo "envíe". El código es inválido para el navegador: es
@@ -34,6 +39,16 @@ export class VerificacionService {
     await this.repositorioAuth.enviarCodigoVerificacion({ correo });
     this.#correoActual = correo;
     return this.#correoActual;
+  }
+
+  async cambiarCorreo({ usuario, password, correoNuevo }) {
+    const resultado = await this.repositorioAuth.cambiarCorreoVerificacion({
+      usuario,
+      password,
+      correoNuevo
+    });
+    this.#correoActual = resultado.correo;
+    return resultado;
   }
 
   /**

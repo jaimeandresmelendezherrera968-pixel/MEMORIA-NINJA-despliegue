@@ -35,31 +35,28 @@ export class MenuController {
   aplicarEstadosInvitado() {
     const sesion = window.SesionNinja;
     const estado = sesion?.estadoActual?.() || 'desconocido';
-    if (estado === 'activa' || estado === 'desconocido') return;
+    const bloquear = estado !== 'activa' && estado !== 'desconocido';
 
-    // Bloquear perfil, ranking, historial
-    const perfilPanel = document.querySelector('.perfil-panel');
-    if (perfilPanel) {
-      perfilPanel.classList.add('bloqueado-invitado');
-      perfilPanel.setAttribute('title', 'Inicia sesión para ver tu perfil');
-      perfilPanel.setAttribute('aria-disabled', 'true');
-    }
+    const aplicar = (elemento, mensaje) => {
+      if (!elemento) return;
+      elemento.classList.toggle('bloqueado-invitado', bloquear);
+      if (bloquear) {
+        elemento.setAttribute('title', mensaje);
+        elemento.setAttribute('aria-disabled', 'true');
+      } else {
+        elemento.removeAttribute('title');
+        elemento.removeAttribute('aria-disabled');
+      }
+    };
 
-    const rankingPanel = document.querySelector('.ranking-panel');
-    if (rankingPanel) {
-      rankingPanel.classList.add('bloqueado-invitado');
-      rankingPanel.setAttribute('title', 'Inicia sesión para ver el ranking');
-      rankingPanel.setAttribute('aria-disabled', 'true');
-    }
-
+    aplicar(document.querySelector('.perfil-panel'), 'Inicia sesión para ver tu perfil');
+    aplicar(document.querySelector('.ranking-panel'), 'Inicia sesión para ver el ranking');
     document.querySelectorAll('.contenedor-inferior .item').forEach(item => {
-      const texto = item.innerText.toLowerCase();
-      if (texto.includes('historial')) {
-        item.classList.add('bloqueado-invitado');
-        item.setAttribute('title', 'Inicia sesión para ver tu historial');
-        item.setAttribute('aria-disabled', 'true');
+      if (item.innerText.toLowerCase().includes('historial')) {
+        aplicar(item, 'Inicia sesión para ver tu historial');
       }
     });
+    aplicar(document.getElementById('btnAmigos'), 'Inicia sesión para gestionar tus amigos');
   }
 
   cerrarModalDesdeElemento(elemento) {
@@ -70,6 +67,7 @@ export class MenuController {
 
   inicializarEventos() {
     this.aplicarEstadosInvitado();
+    window.addEventListener('sesion:cambiada', () => this.aplicarEstadosInvitado());
 
     // 1. Perfil (Arriba Izquierda)
     document.querySelector('.perfil-panel')?.addEventListener('click', () => {
@@ -136,6 +134,23 @@ export class MenuController {
           this.abrirModal(this.modales.puntajeModal);
         }
       });
+    });
+
+    const btnAmigos = document.getElementById('btnAmigos');
+    const abrirAmigos = () => {
+      const estado = window.SesionNinja?.estadoActual?.() || 'desconocido';
+      if (estado === 'desconocido') {
+        window.SesionNinja?.avisarInvitado?.('gestionar tus amigos');
+        return;
+      }
+      if (this.estaBloqueado('gestionar tus amigos')) return;
+      this.abrirModal(this.modales.amigosModal);
+    };
+    btnAmigos?.addEventListener('click', abrirAmigos);
+    btnAmigos?.addEventListener('keydown', (evento) => {
+      if (evento.key !== 'Enter' && evento.key !== ' ') return;
+      evento.preventDefault();
+      abrirAmigos();
     });
 
     // 7. Cierre global delegado: cada boton invoca cerrar() del modal correspondiente

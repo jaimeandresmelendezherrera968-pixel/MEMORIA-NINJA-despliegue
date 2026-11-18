@@ -30,7 +30,8 @@ class AuthController {
       const duplicado =
         error.codigo === "CORREO_DUPLICADO" ||
         error.codigo === "USUARIO_DUPLICADO" ||
-        error.codigo === "CUENTA_DUPLICADA";
+        error.codigo === "CUENTA_DUPLICADA" ||
+        error.codigo === "CODIGO_AMIGO_DUPLICADO";
       const validacion = error.codigo === "VALIDACION";
 
       if (duplicado) {
@@ -42,6 +43,30 @@ class AuthController {
 
       console.error("Error inesperado en registro:", error);
       res.status(500).json({ exito: false, error: "No se pudo completar el registro" });
+    }
+  };
+
+  cambiarCorreoPendiente = async (req, res) => {
+    try {
+      const { usuario, password, correoNuevo } = req.body;
+      const resultado = await this.authService.cambiarCorreoPendiente({
+        usuario,
+        password,
+        correoNuevo,
+      });
+      res.json({
+        exito: true,
+        correo: resultado.correo,
+        correoEnviado: resultado.correoEnviado !== false,
+        aviso: resultado.aviso,
+      });
+    } catch (error) {
+      const status = this.#statusDe(error);
+      if (status === 500) {
+        console.error("Error inesperado al cambiar el correo:", error);
+        return res.status(500).json({ exito: false, error: "No se pudo cambiar el correo" });
+      }
+      res.status(status).json({ exito: false, error: error.message, codigo: error.codigo });
     }
   };
 
@@ -64,7 +89,12 @@ class AuthController {
         console.error("Error inesperado en login:", error);
         return res.status(500).json({ exito: false, error: "No se pudo iniciar sesion" });
       }
-      res.status(status).json({ exito: false, error: error.message });
+      const cuerpo = { exito: false, error: error.message, codigo: error.codigo };
+      if (error.codigo === "CORREO_SIN_VERIFICAR" && error.correo) {
+        cuerpo.correo = error.correo;
+        if (error.usuario) cuerpo.usuario = error.usuario;
+      }
+      res.status(status).json(cuerpo);
     }
   };
 
@@ -120,7 +150,10 @@ class AuthController {
       case "CREDENCIALES":
         return 401;
       case "CORREO_SIN_VERIFICAR":
+      case "CORREO_YA_VERIFICADO":
         return 403;
+      case "CORREO_DUPLICADO":
+        return 409;
       case "BLOQUEADA":
         return 423;
       case "VALIDACION":

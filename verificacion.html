@@ -45,6 +45,18 @@
                     ¿No te llegó? <span id="btn-reenviar">Reenviar código</span>
                 </p>
 
+                <div id="bloque-corregir" class="bloque-corregir">
+                    <p class="texto-reenviar">
+                        ¿Escribí mal mi correo? <span id="btn-mostrar-corregir">Corregir correo</span>
+                    </p>
+                    <div id="formulario-corregir" style="display:none;">
+                        <input type="text" id="input-usuario-corregir" class="input-codigo" placeholder="Tu usuario" autocomplete="username">
+                        <input type="password" id="input-password-corregir" class="input-codigo" placeholder="Tu contraseña" autocomplete="current-password">
+                        <input type="email" id="input-correo-nuevo" class="input-codigo" placeholder="Correo correcto" autocomplete="email">
+                        <button class="btn-acceso" id="btn-corregir-correo">Guardar correo y enviar código</button>
+                    </div>
+                </div>
+
                 <div id="contenedor-carga" style="display: none; margin-top: 20px; text-align: center;">
                     <img src="assets/cargar.gif" alt="Cargando..." style="width: 50px;">
                 </div>

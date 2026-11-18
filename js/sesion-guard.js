@@ -190,9 +190,21 @@
     });
   }
 
-  import(new URL("./services/SincronizacionInvitadoService.js", document.baseURI).href).catch(
-    function () {}
-  );
+  import(new URL("./services/SincronizacionInvitadoService.js", document.baseURI).href)
+    .then(function (modulo) {
+      if (modulo && typeof modulo.instalarAvisoSincronizacion === "function") {
+        modulo.instalarAvisoSincronizacion();
+      }
+    })
+    .catch(function () {});
+
+  import(new URL("./services/SocialService.js", document.baseURI).href)
+    .then(function (modulo) {
+      if (modulo && typeof modulo.socialService?.iniciar === "function") {
+        modulo.socialService.iniciar();
+      }
+    })
+    .catch(function () {});
 
   document.addEventListener("DOMContentLoaded", actualizarAviso);
   comprobar();

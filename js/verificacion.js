@@ -17,6 +17,16 @@ if (window.location.protocol === "file:") {
   );
 }
 
+const CLAVE_PENDIENTE = "memoriaNinjaVerificacionPendiente";
+
+function leerPendiente() {
+  try {
+    return JSON.parse(sessionStorage.getItem(CLAVE_PENDIENTE) || "null");
+  } catch {
+    return null;
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const inputCorreo = document.getElementById("input-correo");
   const btnEnviarCorreo = document.getElementById("btn-enviar-correo");
@@ -29,6 +39,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const temporizador = document.getElementById("temporizador");
   const reenviarBox = document.getElementById("reenviar");
   const btnReenviar = document.getElementById("btn-reenviar");
+  const btnMostrarCorregir = document.getElementById("btn-mostrar-corregir");
+  const formularioCorregir = document.getElementById("formulario-corregir");
+  const inputUsuarioCorregir = document.getElementById("input-usuario-corregir");
+  const inputPasswordCorregir = document.getElementById("input-password-corregir");
+  const inputCorreoNuevo = document.getElementById("input-correo-nuevo");
+  const btnCorregirCorreo = document.getElementById("btn-corregir-correo");
 
   // --- Composición ---
   // Verificación REAL: el código lo genera el backend (/api/auth), no el
@@ -46,13 +62,35 @@ document.addEventListener("DOMContentLoaded", () => {
       reenviarBox,
       btnComprobarCodigo,
       inputCodigo,
-      contenedorCarga
+      contenedorCarga,
+      limpiarPendiente: () => sessionStorage.removeItem(CLAVE_PENDIENTE)
     }
   );
 
   let correoActual = "";
+  let enviando = false;
+  let reenviando = false;
+  let comprobando = false;
+  let corrigiendo = false;
+
+  const pendiente = leerPendiente();
+  if (pendiente?.correo) {
+    correoActual = pendiente.correo;
+    inputCorreo.value = pendiente.correo;
+    verificacionService.establecerCorreo(pendiente.correo);
+    verificacionController.prepararCorreo(
+      pendiente.correo,
+      pendiente.correoEnviado !== false,
+      pendiente.enviadoEn || Date.now()
+    );
+    inputUsuarioCorregir.value = pendiente.usuario || "";
+    inputCorreoNuevo.value = pendiente.correo || "";
+    paso1.classList.remove("activa");
+    paso2.classList.add("activa");
+  }
 
   btnEnviarCorreo.addEventListener("click", async () => {
+    if (enviando) return;
     const correo = inputCorreo.value.trim();
 
     if (correo === "") {
@@ -60,23 +98,97 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const exito = await verificacionController.enviarCodigo(correo);
-    if (!exito) return;
+    enviando = true;
+    btnEnviarCorreo.disabled = true;
+    try {
+      const exito = await verificacionController.enviarCodigo(correo);
+      if (!exito) return;
 
-    correoActual = correo;
-    paso1.classList.remove("activa");
-    setTimeout(() => paso2.classList.add("activa"), 150);
+      correoActual = correo;
+      paso1.classList.remove("activa");
+      setTimeout(() => paso2.classList.add("activa"), 150);
+    } finally {
+      enviando = false;
+      btnEnviarCorreo.disabled = false;
+    }
   });
 
   btnReenviar.addEventListener("click", async () => {
-    const exito = await verificacionController.enviarCodigo(correoActual);
-    if (!exito) return;
+    if (reenviando || !correoActual) return;
+    reenviando = true;
+    btnReenviar.setAttribute("aria-disabled", "true");
+    btnReenviar.style.pointerEvents = "none";
+    try {
+      const exito = await verificacionController.enviarCodigo(correoActual);
+      if (!exito) return;
 
-    inputCodigo.value = "";
-    inputCodigo.focus();
+      inputCodigo.value = "";
+      inputCodigo.focus();
+    } finally {
+      reenviando = false;
+      btnReenviar.removeAttribute("aria-disabled");
+      btnReenviar.style.pointerEvents = "";
+    }
+  });
+
+  btnMostrarCorregir.addEventListener("click", () => {
+    const visible = formularioCorregir.style.display !== "none";
+    formularioCorregir.style.display = visible ? "none" : "block";
+    if (!visible) inputUsuarioCorregir.focus();
+  });
+
+  btnCorregirCorreo.addEventListener("click", async () => {
+    if (corrigiendo) return;
+    const usuario = inputUsuarioCorregir.value.trim();
+    const password = inputPasswordCorregir.value;
+    const correoNuevo = inputCorreoNuevo.value.trim();
+
+    if (!usuario || !password || !correoNuevo) {
+      notificador.mostrar("Completa usuario, contraseña y correo correcto.", "error");
+      return;
+    }
+
+    corrigiendo = true;
+    btnCorregirCorreo.disabled = true;
+    try {
+      const resultado = await verificacionService.cambiarCorreo({
+        usuario,
+        password,
+        correoNuevo
+      });
+      const correoCorregido = resultado.correo || correoNuevo;
+      correoActual = correoCorregido;
+      inputCorreo.value = correoCorregido;
+      verificacionService.establecerCorreo(correoCorregido);
+      inputCodigo.value = "";
+      inputPasswordCorregir.value = "";
+      sessionStorage.setItem(CLAVE_PENDIENTE, JSON.stringify({
+        usuario,
+        correo: correoCorregido,
+        correoEnviado: resultado.correoEnviado !== false,
+        enviadoEn: Date.now()
+      }));
+      verificacionController.prepararCorreo(
+        correoCorregido,
+        resultado.correoEnviado !== false,
+        Date.now()
+      );
+      formularioCorregir.style.display = "none";
+      notificador.mostrar(
+        resultado.aviso || "Correo corregido.",
+        resultado.correoEnviado === false ? "error" : "exito"
+      );
+      inputCodigo.focus();
+    } catch (error) {
+      notificador.mostrar(error.message, "error");
+    } finally {
+      corrigiendo = false;
+      btnCorregirCorreo.disabled = false;
+    }
   });
 
   btnComprobarCodigo.addEventListener("click", async () => {
+    if (comprobando) return;
     const codigo = inputCodigo.value.trim();
 
     if (codigo === "") {
@@ -84,6 +196,13 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    await verificacionController.manejarEnvio({ codigo });
+    comprobando = true;
+    btnComprobarCodigo.disabled = true;
+    try {
+      await verificacionController.manejarEnvio({ codigo });
+    } finally {
+      comprobando = false;
+      btnComprobarCodigo.disabled = false;
+    }
   });
 });

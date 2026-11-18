@@ -1,6 +1,8 @@
 ﻿const crypto = require("crypto");
 const Usuario = require("../entities/Usuario");
 const { normalizarUsuario, normalizarCorreo } = require("../utils/normalizar");
+const { errorConCodigo } = require("../utils/errores");
+const generarCodigoAmigoUnico = require("../utils/generarCodigoAmigoUnico");
 
 /**
  * Regla de negocio del perfil: XP fija que se gana por cada victoria
@@ -59,6 +61,7 @@ class UsuarioService {
     const nuevo = new Usuario({
       id,
       usuario: usuarioNormalizado,
+      codigoAmigo: await generarCodigoAmigoUnico(this.usuarioRepository),
       correo: correoNormalizado,
       nacimiento,
       passwordHash,
@@ -89,6 +92,34 @@ class UsuarioService {
   async buscarPorCorreo(correo) {
     const encontrado = await this.usuarioRepository.buscarPorCorreo(normalizarCorreo(correo));
     return encontrado?.publico() || null;
+  }
+
+  async cambiarNombre(idUsuario, nombre) {
+    const nuevoNombre = normalizarUsuario(nombre);
+    if (!nuevoNombre) {
+      throw errorConCodigo("El nombre de usuario es obligatorio", "VALIDACION");
+    }
+
+    const usuario = await this.usuarioRepository.buscarPorId(idUsuario);
+    if (!usuario) {
+      throw errorConCodigo("El usuario no existe", "NO_ENCONTRADO");
+    }
+
+    const existente = await this.usuarioRepository.buscarPorUsuario(nuevoNombre);
+    if (existente && existente.id !== idUsuario) {
+      throw errorConCodigo("El nombre de usuario ya esta en uso", "USUARIO_DUPLICADO");
+    }
+
+    try {
+      await this.usuarioRepository.actualizarNombre(idUsuario, nuevoNombre);
+    } catch (error) {
+      if (error?.code === "23505") {
+        throw errorConCodigo("El nombre de usuario ya esta en uso", "USUARIO_DUPLICADO");
+      }
+      throw error;
+    }
+    usuario.cambiarUsuario(nuevoNombre);
+    return usuario.publico();
   }
 
   async obtenerTodos() {

@@ -77,7 +77,7 @@ test("ruta compartir: devuelve el enlace y el QR", async (t) => {
   assert.match(datos.qrDataUrl, /^data:image\/png;base64,/);
 });
 
-test("ruta compartir: responde 400 con un c�digo inv�lido", async (t) => {
+test("ruta compartir: responde 400 con un código inválido", async (t) => {
   const { base, cerrar } = await levantarServidor();
   t.after(cerrar);
 

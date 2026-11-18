@@ -21,7 +21,7 @@ class SesionRepositorySQL extends SesionRepository {
       .prepare(
         `SELECT s.id AS sesion_id, s.usuario_id, s.creado_en, s.expira_en, s.revocada_en,
                 s.ip, s.user_agent,
-                u.id, u.usuario, u.correo, u.nacimiento, u.password_hash,
+                u.id, u.usuario, u.codigo_amigo, u.correo, u.nacimiento, u.password_hash,
                 u.xp, u.victorias, u.derrotas, u.racha, u.puntaje_max,
                 u.correo_verificado, u.intentos_fallidos, u.bloqueado_hasta
          FROM sesiones s
@@ -35,6 +35,7 @@ class SesionRepositorySQL extends SesionRepository {
     const usuario = new Usuario({
       id: fila.id,
       usuario: fila.usuario,
+      codigoAmigo: fila.codigo_amigo,
       correo: fila.correo,
       nacimiento: fila.nacimiento,
       passwordHash: fila.password_hash,

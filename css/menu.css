@@ -98,6 +98,7 @@ button,
 .modal-content-ranking,
 .modal-content-config,
 .modal-content-perfil,
+.modal-content-amigos,
 .modal-content-info-puntaje,
 .historial-caja,
 .historial-tabla,
@@ -1262,6 +1263,24 @@ button,
     transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
+.btn-lobby:focus-visible,
+.btn-filtro-sala:focus-visible,
+.btn-unirse-sala-pequeno:focus-visible,
+.input-lobby:focus-visible {
+    outline: 2px solid #6dffc0;
+    outline-offset: 2px;
+}
+
+.check-filtro-sala input:focus-visible {
+    outline: 2px solid #6dffc0;
+    outline-offset: 2px;
+}
+
+.btn-filtro-sala,
+.btn-invitar-sala {
+    min-height: 28px;
+}
+
 .btn-lobby-primario {
     background: linear-gradient(90deg, rgba(0, 255, 153, 0.9), rgba(0, 219, 255, 0.9));
     color: #001a12;
@@ -1471,6 +1490,66 @@ button,
     flex: 1 1 220px;
     min-width: 200px;
 }
+
+.filtros-salas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 10px 0 6px;
+    padding: 8px 10px;
+    border: 1px solid rgba(67, 224, 163, .28);
+    border-radius: 10px;
+    background: rgba(4, 26, 18, .55);
+}
+
+.btn-filtro-sala {
+    padding: 6px 12px;
+    border: 1px solid rgba(141, 255, 208, .35);
+    border-radius: 999px;
+    background: rgba(8, 40, 28, .9);
+    color: #a9f3d3;
+    font: 700 .72rem/1 "Trebuchet MS", sans-serif;
+    letter-spacing: 1px;
+    cursor: pointer;
+}
+
+.btn-filtro-sala:hover { background: rgba(19, 72, 51, .95); }
+
+.btn-filtro-sala-activo {
+    border-color: #6dffc0;
+    background: #1a9a68;
+    color: #04160e;
+    box-shadow: 0 0 14px rgba(109, 255, 192, .35);
+}
+
+.check-filtro-sala {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    color: #d4f7e8;
+    font: 700 .72rem/1 "Trebuchet MS", sans-serif;
+    letter-spacing: 1px;
+    cursor: pointer;
+}
+
+.check-filtro-sala input { accent-color: #35d07f; }
+
+.sala-card-acciones {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+
+.btn-invitar-sala {
+    border-color: #f6c344;
+    background: rgba(60, 38, 0, .85);
+    color: #ffe7a3;
+}
+
+.btn-invitar-sala:hover { background: rgba(96, 63, 0, .95); }
 
 /* Alineación específica para el nombre del creador */
 .sala-creador {
@@ -2935,6 +3014,7 @@ FECHA Y HORA (celda de la tabla)
     }
     .modal-content-ranking,
     .modal-content-perfil,
+    .modal-content-amigos,
     .modal-content-info-puntaje,
     .modal-content-config {
         width: 96vw;
@@ -3158,6 +3238,210 @@ body{
     font-size:clamp(9px, 1.05vmin, 13px);
 }
 
+#btnAmigos{position:relative;}
+.amigos-badge{
+    position:absolute;
+    top:6px;
+    right:8px;
+    min-width:22px;
+    height:22px;
+    padding:0 6px;
+    border-radius:999px;
+    background:linear-gradient(135deg,#ff7b00,#ffb347);
+    border:2px solid #1a0b00;
+    box-shadow:0 0 12px rgba(255,123,0,.75);
+    color:#1a0b00;
+    font-size:12px;
+    font-weight:700;
+    line-height:18px;
+    text-align:center;
+}
+.amigos-badge[hidden]{display:none;}
+.modal-content-amigos{
+    width:min(620px,100%);
+    background:radial-gradient(circle at 12% 0%,rgba(0,255,153,.12),transparent 42%),linear-gradient(160deg,rgba(8,20,16,.98),rgba(12,6,20,.98));
+    border:3px solid #00c97a;
+    box-shadow:0 0 28px rgba(0,255,153,.28),0 0 0 1px rgba(156,39,255,.18);
+    border-radius:24px;
+    padding:clamp(14px,2.4vmin,28px);
+    position:relative;
+    color:#fff;
+    overflow-y:auto;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(0,255,153,.5) transparent;
+    transform:scale(.8);
+    transition:transform .3s cubic-bezier(.175,.885,.32,1.275);
+}
+.modal-overlay.activo .modal-content-amigos{transform:scale(1);}
+.modal-content-amigos::-webkit-scrollbar{width:6px;}
+.modal-content-amigos::-webkit-scrollbar-thumb{background:rgba(0,255,153,.5);border-radius:999px;}
+.amigos-header-box{
+    display:flex;
+    align-items:center;
+    gap:clamp(10px,1.8vmin,18px);
+    margin-bottom:clamp(10px,2vmin,22px);
+    padding-right:36px;
+}
+.amigos-icon{
+    font-size:clamp(30px,5vmin,44px);
+    filter:drop-shadow(0 0 10px rgba(0,255,153,.6));
+}
+.amigos-titulo-texto h2{
+    margin:0;
+    color:#fff;
+    font-size:clamp(19px,2.6vmin,26px);
+    font-weight:700;
+    letter-spacing:2px;
+}
+.amigos-titulo-texto .sub-verde{color:#00ffaa;font-size:11px;font-weight:700;letter-spacing:1.4px;margin:2px 0 0;}
+.amigos-seccion{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    padding:clamp(10px,1.6vmin,16px);
+    margin-bottom:10px;
+    border:1px solid rgba(0,255,153,.18);
+    border-radius:16px;
+    background:rgba(0,0,0,.26);
+}
+.amigos-seccion h3{
+    margin:0;
+    color:#c9a4ff;
+    font-size:clamp(12px,1.6vmin,15px);
+    letter-spacing:1.2px;
+}
+.amigos-label{color:#b9d6cc;font-size:11px;font-weight:700;letter-spacing:.6px;}
+.amigos-perfil-box{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:6px 10px;
+    padding:10px 12px;
+    border-radius:12px;
+    border:1px solid rgba(188,37,255,.3);
+    background:linear-gradient(90deg,rgba(188,37,255,.14),rgba(0,255,153,.06));
+}
+.amigos-fila-nombre{color:#f3f8ff;font-weight:700;overflow-wrap:anywhere;display:inline-flex;align-items:center;gap:6px;}
+.amigos-presencia{width:8px;height:8px;flex:0 0 8px;border-radius:50%;display:inline-block;}
+.amigos-presencia--online{background:#00ffaa;box-shadow:0 0 8px rgba(0,255,170,.8);}
+.amigos-presencia--offline{background:#7c8b96;}
+.amigos-fila-codigo{color:#00ffaa;font-size:11px;font-weight:700;letter-spacing:.08em;overflow-wrap:anywhere;}
+.amigos-fila-meta{color:#9fb0c8;font-size:10px;}
+.amigos-buscar-row{display:flex;gap:8px;}
+.amigos-buscar-row input{
+    flex:1 1 auto;
+    min-width:0;
+    padding:10px 12px;
+    border:1px solid rgba(0,255,153,.35);
+    border-radius:10px;
+    background:rgba(4,12,10,.9);
+    color:#fff;
+    font-size:13px;
+}
+.amigos-buscar-row input::placeholder{color:#829b92;}
+.amigos-btn{
+    flex:0 0 auto;
+    min-height:34px;
+    padding:7px 12px;
+    border:1px solid transparent;
+    border-radius:10px;
+    color:#fff;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.5px;
+    cursor:pointer;
+    transition:filter .2s ease,transform .2s ease,box-shadow .2s ease;
+}
+.amigos-btn:hover:not(:disabled){filter:brightness(1.12);transform:translateY(-1px);}
+.amigos-btn:disabled{opacity:.45;cursor:not-allowed;}
+.amigos-btn-buscar,
+.amigos-btn-enviar,
+.amigos-btn-aceptar,
+.amigos-btn-copiar{background:linear-gradient(135deg,#007a4a,#00c97a);border-color:#00ffaa;box-shadow:0 0 10px rgba(0,255,153,.28);}
+.amigos-btn-rechazar,
+.amigos-btn-eliminar,
+.amigos-btn-bloquear{background:linear-gradient(135deg,#9c3b00,#ff7b00);border-color:#ffb347;box-shadow:0 0 10px rgba(255,123,0,.24);}
+.amigos-btn-invitar,
+.amigos-btn-desbloquear{background:linear-gradient(135deg,#6b17a8,#bc25ff);border-color:#c9a4ff;box-shadow:0 0 10px rgba(188,37,255,.28);}
+.amigos-btn-cancelar{background:rgba(255,255,255,.08);border-color:rgba(201,164,255,.45);color:#e8ddff;}
+.amigos-lista,
+.amigos-resultados{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin:0;
+    padding:0;
+    max-height:min(30vh,240px);
+    overflow-y:auto;
+    scrollbar-width:thin;
+}
+.amigos-resultados:empty{min-height:0;}
+.amigos-fila{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:9px 11px;
+    border:1px solid rgba(255,255,255,.1);
+    border-left:3px solid rgba(0,255,153,.65);
+    border-radius:12px;
+    background:rgba(255,255,255,.035);
+}
+.amigos-fila-info{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.amigos-acciones{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}
+.amigos-vacio{
+    margin:0;
+    padding:12px 8px;
+    border:1px dashed rgba(188,37,255,.35);
+    border-radius:12px;
+    color:#9a94b5;
+    font-size:12px;
+    text-align:center;
+}
+.amigos-vacio[hidden],
+.amigos-aviso[hidden],
+.perfil-codigo-publico[hidden],
+.cambiar-nombre-form[hidden]{display:none;}
+.amigos-aviso{
+    margin:10px 0 0;
+    padding:9px 12px;
+    border-radius:10px;
+    background:rgba(0,255,153,.08);
+    color:#bfffe4;
+    font-size:12px;
+    text-align:center;
+}
+.amigos-copiar-temporal{position:fixed;top:-1000px;left:-1000px;opacity:0;}
+.perfil-codigo-publico{margin:4px 0 0;color:#00ffaa;font-size:12px;font-weight:700;letter-spacing:.08em;overflow-wrap:anywhere;}
+.cambiar-nombre-form{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid rgba(188,37,255,.25);
+}
+.cambiar-nombre-row{display:flex;gap:8px;}
+.cambiar-nombre-row input{
+    flex:1 1 auto;
+    min-width:0;
+    padding:9px 11px;
+    border:1px solid rgba(188,37,255,.4);
+    border-radius:10px;
+    background:rgba(4,2,12,.9);
+    color:#fff;
+    font-size:13px;
+}
+#btnAmigos:focus-visible,
+.modal-content-amigos :focus-visible,
+.cambiar-nombre-form :focus-visible{outline:2px solid #00f2ff;outline-offset:2px;}
+@media (prefers-reduced-motion: reduce){
+    .modal-content-amigos,
+    .modal-overlay.activo .modal-content-amigos,
+    .amigos-btn{transition:none;transform:none;}
+}
+
 /* ==========================================================================
    MODALES: TODOS AJUSTADOS AL VIEWPORT (SIN SCROLL DE PÁGINA)
    ========================================================================== */
@@ -3172,6 +3456,7 @@ body{
 .modal-content-ranking,
 .modal-content-config,
 .modal-content-perfil,
+.modal-content-amigos,
 .modal-content-info-puntaje,
 .modal-content-contrasena{
     max-width:calc(100vw - clamp(16px, 4.8vmin, 56px));
@@ -3550,5 +3835,837 @@ body{
 
     .historial-caja{
         padding:14px;
+    }
+}
+
+@media (max-width:560px){
+    .amigos-buscar-row,
+    .cambiar-nombre-row{flex-direction:column;}
+    .amigos-buscar-row .amigos-btn,
+    .cambiar-nombre-row .amigos-btn{width:100%;}
+    .amigos-fila{align-items:flex-start;flex-direction:column;}
+    .amigos-acciones{width:100%;justify-content:flex-start;}
+    .amigos-acciones .amigos-btn{flex:1 1 auto;}
+}
+
+#multijugadorModal .modal-content-multijugador,
+#twoPlayersModal .modal-content-multijugador{
+    --mj-verde:#00ffaa;
+    --mj-cian:#00d9ff;
+    --mj-violeta:#bc25ff;
+    --mj-texto:#eafff6;
+    --mj-mate:#9fd8c4;
+    width:min(760px,100%);
+    background:
+        radial-gradient(circle at 12% -10%,rgba(0,255,170,.18),transparent 42%),
+        radial-gradient(circle at 94% 8%,rgba(188,37,255,.13),transparent 38%),
+        repeating-linear-gradient(135deg,rgba(255,255,255,.018) 0 1px,transparent 1px 9px),
+        linear-gradient(160deg,rgba(4,26,18,.98),rgba(2,10,8,.99));
+    border:1px solid rgba(0,255,170,.42);
+    box-shadow:0 0 0 1px rgba(0,0,0,.65),0 24px 70px rgba(0,0,0,.75),0 0 36px rgba(0,255,170,.22);
+    border-radius:24px;
+    padding:clamp(14px,2.6vmin,28px);
+    overflow-y:auto;
+    scrollbar-color:var(--mj-verde) transparent;
+}
+
+#multijugadorModal .modal-content-multijugador::before,
+#twoPlayersModal .modal-content-multijugador::before{
+    content:"";
+    position:absolute;
+    inset:0 0 auto;
+    height:3px;
+    background:linear-gradient(90deg,var(--mj-verde),var(--mj-cian),var(--mj-violeta));
+    border-radius:24px 24px 0 0;
+}
+
+#multijugadorModal .multijugador-header-box,
+#twoPlayersModal .multijugador-header-box{
+    gap:clamp(10px,2vmin,18px);
+    margin-bottom:clamp(10px,2vmin,20px);
+}
+
+#multijugadorModal .globo-icon,
+#twoPlayersModal .globo-icon{
+    width:56px;
+    height:56px;
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+    border-radius:16px;
+    border:1px solid rgba(0,255,170,.45);
+    background:linear-gradient(150deg,rgba(0,255,170,.2),rgba(0,217,255,.08));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 22px rgba(0,255,170,.22);
+    font-size:clamp(24px,4vmin,32px);
+}
+
+#multijugadorModal .multijugador-titulo-texto h2,
+#twoPlayersModal .multijugador-titulo-texto h2{
+    font-size:clamp(18px,3vmin,27px);
+    font-weight:900;
+    letter-spacing:.06em;
+    text-shadow:0 0 18px rgba(0,255,170,.25);
+}
+
+#multijugadorModal .sub-verde,
+#twoPlayersModal .sub-verde{
+    color:var(--mj-cian);
+    font-size:clamp(9px,1.4vmin,11px);
+    font-weight:800;
+    letter-spacing:.18em;
+}
+
+#multijugadorModal .barra-acciones-lobby,
+#twoPlayersModal .barra-acciones-lobby{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+    padding:5px;
+    background:rgba(0,0,0,.45);
+    border:1px solid rgba(0,255,170,.18);
+    border-radius:999px;
+}
+
+#multijugadorModal .btn-lobby,
+#twoPlayersModal .btn-lobby{
+    min-height:42px;
+    padding:9px 14px;
+    border:1px solid transparent;
+    border-radius:999px;
+    color:var(--mj-texto);
+    font-size:clamp(10px,1.35vmin,12px);
+    font-weight:800;
+    letter-spacing:.08em;
+}
+
+#multijugadorModal .btn-lobby-primario,
+#multijugadorModal .btn-lobby-activo,
+#twoPlayersModal .btn-lobby-primario,
+#twoPlayersModal .btn-lobby-activo{
+    background:linear-gradient(100deg,#00ffaa,#00d9ff);
+    color:#02150f;
+    box-shadow:0 0 18px rgba(0,255,170,.28);
+}
+
+#multijugadorModal .btn-lobby-secundario,
+#twoPlayersModal .btn-lobby-secundario{
+    background:rgba(3,24,18,.85);
+    border-color:rgba(0,255,170,.32);
+    color:#cffff0;
+}
+
+#multijugadorModal .btn-lobby-secundario:hover,
+#twoPlayersModal .btn-lobby-secundario:hover{
+    background:rgba(0,255,170,.12);
+    border-color:rgba(0,255,170,.7);
+}
+
+#panelCrearSalaVerde[hidden],
+#filaAldeaVerde[hidden],
+#filaAldeasMezclaVerde[hidden],
+#inputContrasenaSalaVerde[hidden],
+#panelEsperandoRivalVerde[hidden]{
+    display:none!important;
+}
+
+#panelCrearSalaVerde{
+    background:linear-gradient(145deg,rgba(0,255,170,.08),rgba(0,0,0,.45) 38%,rgba(188,37,255,.07));
+    border:1px solid rgba(0,255,170,.24);
+    border-radius:18px;
+    padding:clamp(12px,2vmin,18px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 12px 30px rgba(0,0,0,.35);
+}
+
+#multijugadorModal .crear-sala-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:clamp(8px,1.4vmin,14px);
+}
+
+#multijugadorModal .crear-sala-fila{
+    min-width:0;
+    min-height:78px;
+    padding:11px 13px;
+    border:1px solid rgba(0,255,170,.14);
+    border-radius:14px;
+    background:rgba(2,18,13,.7);
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    transition:border-color .2s ease,background .2s ease,transform .2s ease;
+}
+
+#multijugadorModal .crear-sala-fila:hover,
+#multijugadorModal .crear-sala-fila:focus-within{
+    border-color:rgba(0,255,170,.48);
+    background:rgba(4,30,22,.82);
+}
+
+#multijugadorModal .crear-sala-fila--ancho{
+    grid-column:1 / -1;
+}
+
+#multijugadorModal .crear-sala-fila > label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--mj-mate);
+    font-size:clamp(9px,1.25vmin,10.5px);
+    font-weight:800;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+}
+
+#multijugadorModal .crear-sala-fila > label::before{
+    content:"";
+    width:8px;
+    height:8px;
+    flex:0 0 auto;
+    transform:rotate(45deg);
+    border-radius:2px;
+    background:var(--mj-verde);
+    box-shadow:0 0 10px rgba(0,255,170,.8);
+}
+
+#multijugadorModal .radio-grupo,
+#multijugadorModal .checkbox-grupo-aldeas{
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+}
+
+#multijugadorModal .checkbox-grupo-aldeas{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+}
+
+#multijugadorModal .radio-grupo label,
+#multijugadorModal .checkbox-grupo-aldeas label{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    min-height:34px;
+    padding:7px 10px;
+    border:1px solid rgba(0,255,170,.2);
+    border-radius:10px;
+    background:rgba(255,255,255,.035);
+    color:#d9f9ed;
+    font-size:clamp(9px,1.3vmin,11px);
+    font-weight:700;
+    letter-spacing:.05em;
+    cursor:pointer;
+    transition:border-color .18s ease,background .18s ease,transform .18s ease;
+}
+
+#multijugadorModal .radio-grupo label:hover,
+#multijugadorModal .checkbox-grupo-aldeas label:hover{
+    border-color:rgba(0,255,170,.55);
+    transform:translateY(-1px);
+}
+
+#multijugadorModal .radio-grupo label:has(input:checked),
+#multijugadorModal .checkbox-grupo-aldeas label:has(input:checked){
+    border-color:rgba(0,255,170,.8);
+    background:linear-gradient(100deg,rgba(0,255,170,.22),rgba(0,217,255,.12));
+    color:#fff;
+    box-shadow:0 0 14px rgba(0,255,170,.18),inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+#multijugadorModal .radio-grupo input,
+#multijugadorModal .checkbox-grupo-aldeas input,
+#multijugadorModal .crear-sala-fila--pass input[type="checkbox"]{
+    width:15px;
+    height:15px;
+    flex:0 0 auto;
+    margin:0;
+    accent-color:var(--mj-verde);
+    cursor:pointer;
+}
+
+#multijugadorModal .select-lobby,
+#multijugadorModal .input-lobby{
+    width:100%;
+    min-height:42px;
+    padding:9px 12px;
+    border:1px solid rgba(0,255,170,.28);
+    border-radius:11px;
+    background:#041a14;
+    color:#f2fffb;
+    font-size:12px;
+    letter-spacing:.03em;
+}
+
+#multijugadorModal .select-lobby:focus-visible,
+#multijugadorModal .input-lobby:focus-visible,
+#multijugadorModal .radio-grupo label:focus-within,
+#multijugadorModal .checkbox-grupo-aldeas label:focus-within{
+    outline:none;
+    border-color:var(--mj-cian);
+    box-shadow:0 0 0 3px rgba(0,217,255,.18);
+}
+
+#multijugadorModal .texto-ayuda{
+    color:var(--mj-mate);
+    font-size:10px;
+    opacity:.85;
+}
+
+#multijugadorModal .crear-sala-fila--pass{
+    flex-direction:row;
+    align-items:center;
+    flex-wrap:wrap;
+}
+
+#multijugadorModal .crear-sala-fila--pass > label{
+    flex:1 1 220px;
+}
+
+#multijugadorModal .crear-sala-fila--pass .input-lobby{
+    flex:1 1 180px;
+    width:auto;
+}
+
+#errorCrearSalaVerde:not([hidden]){
+    grid-column:1 / -1;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0;
+    padding:10px 12px;
+    border:1px solid rgba(255,179,71,.45);
+    border-radius:10px;
+    background:rgba(255,123,0,.1);
+    color:#ffd7a1;
+    font-size:11px;
+}
+
+#errorCrearSalaVerde::before{
+    content:"!";
+    display:grid;
+    place-items:center;
+    width:18px;
+    height:18px;
+    flex:0 0 auto;
+    border-radius:50%;
+    background:#ff7b00;
+    color:#160b00;
+    font-weight:900;
+}
+
+#multijugadorModal .crear-sala-acciones--principal{
+    grid-column:1 / -1;
+    margin-top:4px;
+}
+
+#btnConfirmarCrearSalaVerde{
+    width:100%;
+    min-height:50px;
+    border-radius:14px;
+    background:linear-gradient(100deg,#00ffaa,#00d9ff 60%,#7af7ff);
+    color:#02150f;
+    font-size:14px;
+    font-weight:900;
+    letter-spacing:.16em;
+    box-shadow:0 10px 28px rgba(0,255,170,.22),inset 0 1px 0 rgba(255,255,255,.45);
+}
+
+#btnConfirmarCrearSalaVerde:hover{
+    transform:translateY(-2px);
+    box-shadow:0 14px 34px rgba(0,255,170,.32),inset 0 1px 0 rgba(255,255,255,.55);
+}
+
+#btnConfirmarCrearSalaVerde:active{
+    transform:translateY(0);
+}
+
+#multijugadorModal .panel-esperando,
+#twoPlayersModal .panel-esperando{
+    background:linear-gradient(160deg,rgba(0,255,170,.1),rgba(0,0,0,.5));
+    border:1px solid rgba(0,255,170,.24);
+    border-radius:18px;
+    padding:clamp(12px,2vmin,18px);
+}
+
+#esperandoTituloVerde{
+    color:var(--mj-verde);
+    font-size:clamp(15px,2.4vmin,20px);
+    letter-spacing:.08em;
+}
+
+#codigoSalaEsperaVerde{
+    display:inline-block;
+    margin-left:6px;
+    padding:4px 12px;
+    border:1px dashed rgba(0,255,170,.55);
+    border-radius:9px;
+    background:rgba(0,255,170,.08);
+    color:#baffea;
+    font-size:clamp(16px,2.6vmin,22px);
+    font-weight:900;
+    letter-spacing:.28em;
+}
+
+#multijugadorModal .chat-mensajes,
+#twoPlayersModal .chat-mensajes{
+    background:rgba(0,0,0,.5);
+    border:1px solid rgba(0,255,170,.18);
+}
+
+#multijugadorModal .chat-titulo,
+#twoPlayersModal .chat-titulo{
+    color:#ffcf6b;
+    letter-spacing:.14em;
+}
+
+@media (max-width:680px){
+    #multijugadorModal .modal-content-multijugador,
+    #twoPlayersModal .modal-content-multijugador{
+        border-radius:18px;
+    }
+
+    #multijugadorModal .modal-content-multijugador::before,
+    #twoPlayersModal .modal-content-multijugador::before{
+        border-radius:18px 18px 0 0;
+    }
+
+    #multijugadorModal .crear-sala-grid{
+        grid-template-columns:1fr;
+    }
+
+    #multijugadorModal .crear-sala-fila--ancho,
+    #multijugadorModal .crear-sala-acciones--principal{
+        grid-column:1;
+    }
+
+    #multijugadorModal .crear-sala-fila{
+        min-height:0;
+    }
+
+    #multijugadorModal .radio-grupo label{
+        flex:1 1 auto;
+        justify-content:center;
+    }
+
+    #codigoSalaEsperaVerde{
+        letter-spacing:.18em;
+    }
+}
+
+@media (max-width:420px){
+    #multijugadorModal .checkbox-grupo-aldeas{
+        grid-template-columns:1fr;
+    }
+
+    #btnConfirmarCrearSalaVerde{
+        letter-spacing:.1em;
+    }
+}
+
+@media screen and (max-width:900px) and (orientation:landscape){
+    html,
+    body{
+        width:100%;
+        height:100dvh;
+        min-height:0;
+        overflow:hidden!important;
+    }
+
+    body{
+        padding:0!important;
+    }
+
+    #contenido-principal.menu-principal{
+        width:100vw;
+        height:100dvh;
+        min-height:0;
+        margin:0;
+        padding:clamp(3px,1vh,10px) clamp(6px,1.5vw,16px) clamp(30px,9vh,44px);
+        display:grid;
+        grid-template-rows:auto minmax(0,1fr) auto;
+        gap:clamp(3px,.8vh,8px);
+        overflow:hidden;
+    }
+
+    #contenido-principal .header{
+        flex-wrap:nowrap;
+        gap:clamp(4px,1.5vw,14px);
+    }
+
+    #contenido-principal .perfil-panel{
+        flex:0 1 28%;
+        min-width:0;
+        max-width:none;
+        padding:clamp(4px,1vh,9px);
+        gap:clamp(4px,1vw,9px);
+    }
+
+    #contenido-principal .avatar{
+        width:clamp(26px,7vh,44px);
+        height:clamp(26px,7vh,44px);
+        font-size:clamp(14px,3.4vh,22px);
+    }
+
+    #contenido-principal .perfil-panel p{
+        display:none;
+    }
+
+    #contenido-principal .nivel-badge{
+        font-size:clamp(8px,1.7vh,11px);
+        padding:clamp(3px,.7vh,6px) clamp(5px,1vw,9px);
+    }
+
+    #contenido-principal .logo-panel img{
+        width:clamp(70px,18vw,150px);
+    }
+
+    #contenido-principal .derecha{
+        flex:0 1 30%;
+        gap:clamp(4px,1vw,10px);
+    }
+
+    #contenido-principal .menu-superior,
+    #contenido-principal .ranking-panel{
+        min-width:0;
+        flex:1 1 0;
+        height:clamp(26px,7vh,44px);
+        font-size:clamp(8px,1.7vh,12px);
+    }
+
+    #contenido-principal .menu-button{
+        display:none;
+    }
+
+    #contenido-principal .modos-juego{
+        margin-top:0;
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        align-items:stretch;
+        gap:clamp(4px,1.4vw,12px);
+        height:100%;
+        min-height:0;
+        overflow:hidden;
+    }
+
+    #contenido-principal .panel{
+        width:100%;
+        max-width:none;
+        min-height:0;
+        height:100%;
+        padding:clamp(5px,1.2vh,10px);
+        border-radius:clamp(10px,2vh,18px);
+    }
+
+    #contenido-principal .panel-titulo{
+        font-size:clamp(9px,2vh,14px);
+    }
+
+    #contenido-principal .panel-centro{
+        flex-direction:column;
+        gap:clamp(1px,.4vh,4px);
+        margin:0;
+    }
+
+    #contenido-principal .texto-centro{
+        display:block;
+        font-size:clamp(7px,1.5vh,10px);
+        padding:0 4px;
+    }
+
+    #contenido-principal .icono-centro,
+    #contenido-principal .vs{
+        font-size:clamp(18px,5vh,34px);
+    }
+
+    #contenido-principal .panel-footer{
+        display:block;
+        font-size:clamp(7px,1.4vh,10px);
+    }
+
+    #contenido-principal .contenedor-inferior{
+        width:100%;
+        margin:0;
+        padding:clamp(4px,1vh,8px);
+    }
+
+    #contenido-principal .barra-inferior{
+        gap:clamp(4px,1.2vw,10px);
+    }
+
+    #contenido-principal .item{
+        min-height:0;
+        height:clamp(44px,12vh,72px);
+        padding:clamp(3px,.8vh,7px);
+        gap:clamp(1px,.4vh,4px);
+        border-width:1px;
+    }
+
+    #contenido-principal .item-icono{
+        font-size:clamp(14px,4vh,24px);
+    }
+
+    #contenido-principal .item h3{
+        font-size:clamp(8px,1.7vh,12px);
+    }
+
+    #contenido-principal .item p{
+        display:block;
+        font-size:clamp(7px,1.4vh,10px);
+    }
+
+    #avisoInvitado{
+        position:fixed;
+        top:0;
+        left:0;
+        right:0;
+        z-index:12000;
+        font-size:clamp(8px,1.6vh,11px);
+        padding:clamp(3px,.8vh,7px) 10px;
+    }
+
+    .estado{
+        height:clamp(28px,8vh,42px);
+        font-size:clamp(8px,1.6vh,11px);
+    }
+
+    .modal-overlay{
+        padding:clamp(3px,1vh,8px);
+    }
+
+    .modal-overlay.activo .modal-content-multijugador,
+    .modal-overlay.activo .modal-content-juego,
+    .modal-overlay.activo .modal-content-contrasena,
+    .modal-overlay.activo .modal-content-amigos,
+    .modal-overlay.activo .modal-content-ranking,
+    .modal-overlay.activo .modal-content-config,
+    .modal-overlay.activo .modal-content-perfil,
+    .modal-overlay.activo .modal-content-info-puntaje,
+    .modal-overlay.activo .historial-caja{
+        max-height:none;
+        overflow:hidden;
+    }
+}
+
+@media screen and (max-width:900px) and (orientation:landscape) and (max-height:430px){
+    .modal-overlay.activo .modal-content-multijugador,
+    .modal-overlay.activo .modal-content-juego,
+    .modal-overlay.activo .modal-content-contrasena,
+    .modal-overlay.activo .modal-content-amigos,
+    .modal-overlay.activo .modal-content-ranking,
+    .modal-overlay.activo .modal-content-config,
+    .modal-overlay.activo .modal-content-perfil,
+    .modal-overlay.activo .modal-content-info-puntaje,
+    .modal-overlay.activo .historial-caja{
+        zoom:.42;
+    }
+}
+
+@media screen and (max-width:900px) and (orientation:landscape) and (min-height:431px){
+    .modal-overlay.activo .modal-content-multijugador,
+    .modal-overlay.activo .modal-content-juego,
+    .modal-overlay.activo .modal-content-contrasena,
+    .modal-overlay.activo .modal-content-amigos,
+    .modal-overlay.activo .modal-content-ranking,
+    .modal-overlay.activo .modal-content-config,
+    .modal-overlay.activo .modal-content-perfil,
+    .modal-overlay.activo .modal-content-info-puntaje,
+    .modal-overlay.activo .historial-caja{
+        zoom:.62;
+    }
+}
+
+@media screen and (max-width:900px) and (orientation:portrait){
+    html,
+    body{
+        width:100%;
+        height:100dvh;
+        min-height:0;
+        overflow:hidden!important;
+    }
+
+    body{
+        padding:0!important;
+    }
+
+    .aviso-orientacion{
+        display:none!important;
+    }
+
+    #contenido-principal.menu-principal{
+        width:100vw;
+        height:100dvh;
+        min-height:0;
+        margin:0;
+        padding:6px 8px 34px;
+        display:grid;
+        grid-template-rows:auto minmax(0,1fr) auto;
+        gap:6px;
+        overflow:hidden;
+    }
+
+    #contenido-principal .header{
+        flex-wrap:wrap;
+        gap:6px;
+    }
+
+    #contenido-principal .perfil-panel{
+        flex:1 1 45%;
+        min-width:0;
+        max-width:none;
+        padding:6px 8px;
+        gap:6px;
+    }
+
+    #contenido-principal .avatar{
+        width:32px;
+        height:32px;
+        font-size:16px;
+    }
+
+    #contenido-principal .perfil-panel p{
+        display:none;
+    }
+
+    #contenido-principal .nivel-badge{
+        font-size:9px;
+        padding:3px 6px;
+    }
+
+    #contenido-principal .logo-panel{
+        flex:0 0 100%;
+        order:3;
+        text-align:center;
+    }
+
+    #contenido-principal .logo-panel img{
+        width:110px;
+    }
+
+    #contenido-principal .derecha{
+        flex:1 1 45%;
+        gap:6px;
+    }
+
+    #contenido-principal .menu-superior,
+    #contenido-principal .ranking-panel{
+        min-width:0;
+        flex:1 1 0;
+        height:32px;
+        font-size:10px;
+    }
+
+    #contenido-principal .menu-button{
+        display:none;
+    }
+
+    #contenido-principal .modos-juego{
+        margin-top:0;
+        display:grid;
+        grid-template-columns:1fr;
+        grid-auto-rows:minmax(0,1fr);
+        gap:6px;
+        height:100%;
+        min-height:0;
+        overflow:hidden;
+    }
+
+    #contenido-principal .panel{
+        width:100%;
+        max-width:none;
+        min-height:0;
+        height:100%;
+        padding:8px 10px;
+        border-radius:14px;
+    }
+
+    #contenido-principal .panel-centro{
+        flex-direction:row;
+        justify-content:center;
+        gap:8px;
+        margin:0;
+    }
+
+    #contenido-principal .icono-centro{
+        font-size:26px;
+    }
+
+    #contenido-principal .vs{
+        display:none;
+    }
+
+    #contenido-principal .texto-centro{
+        font-size:11px;
+    }
+
+    #contenido-principal .panel-titulo{
+        font-size:12px;
+    }
+
+    #contenido-principal .panel-footer{
+        font-size:10px;
+    }
+
+    #contenido-principal .contenedor-inferior{
+        width:100%;
+        margin:0;
+        padding:6px;
+    }
+
+    #contenido-principal .barra-inferior{
+        display:grid;
+        grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:6px;
+    }
+
+    #contenido-principal .item{
+        min-height:0;
+        height:56px;
+        padding:4px 2px;
+        gap:2px;
+        border-width:1px;
+    }
+
+    #contenido-principal .item-icono{
+        font-size:18px;
+    }
+
+    #contenido-principal .item h3{
+        font-size:9px;
+    }
+
+    #contenido-principal .item p{
+        display:none;
+    }
+
+    #avisoInvitado{
+        position:fixed;
+        top:0;
+        left:0;
+        right:0;
+        z-index:12000;
+        font-size:9px;
+        padding:4px 8px;
+    }
+
+    .estado{
+        height:30px;
+        font-size:9px;
+    }
+
+    .modal-overlay{
+        padding:6px;
+    }
+
+    .modal-overlay.activo .modal-content-multijugador,
+    .modal-overlay.activo .modal-content-juego,
+    .modal-overlay.activo .modal-content-contrasena,
+    .modal-overlay.activo .modal-content-amigos,
+    .modal-overlay.activo .modal-content-ranking,
+    .modal-overlay.activo .modal-content-config,
+    .modal-overlay.activo .modal-content-perfil,
+    .modal-overlay.activo .modal-content-info-puntaje,
+    .modal-overlay.activo .historial-caja{
+        zoom:.6;
+        max-height:none;
+        overflow:hidden;
     }
 }

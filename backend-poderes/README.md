@@ -155,7 +155,7 @@ asíncrono, aplica `sql/esquema.sql` al iniciar). `DatabaseSqlite` se conserva
 npm test
 ```
 
-Corre **166 tests en 25 suites**, todos verdes. El `pretest` aplica el esquema
+Corre **268 tests en 34 suites** (16 de amistades; E2E/socket con rerun aislado verde tras flakes de carga). El `pretest` aplica el esquema
 a `memoria_ninja_test`. La mayoría son **tests de contrato**: la misma batería
 corre contra varias implementaciones de `PartidaRepository` (memoria, archivo,
 SQL) y contra los 6 poderes → **el LSP está verificado con tests, no prometido**.

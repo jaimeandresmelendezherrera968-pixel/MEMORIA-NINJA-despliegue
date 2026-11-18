@@ -5,9 +5,12 @@ class UsuarioRepositorySQL extends UsuarioRepository {
   #consultaPorUsuario;
   #consultaPorCorreo;
   #consultaPorId;
+  #consultaPorCodigoAmigo;
+  #consultaPorNombreOCodigo;
   #consultaTodos;
   #insertaUsuario;
   #actualizaPerfil;
+  #actualizaNombre;
   #marcaCorreoVerificado;
   #sumaIntentoFallido;
   #marcaBloqueado;
@@ -24,18 +27,27 @@ class UsuarioRepositorySQL extends UsuarioRepository {
       "SELECT * FROM usuarios WHERE lower(correo) = lower(?)"
     );
     this.#consultaPorId = this.database.db.prepare("SELECT * FROM usuarios WHERE id = ?");
+    this.#consultaPorCodigoAmigo = this.database.db.prepare(
+      "SELECT * FROM usuarios WHERE upper(codigo_amigo) = upper(?)"
+    );
+    this.#consultaPorNombreOCodigo = this.database.db.prepare(
+      "SELECT * FROM usuarios WHERE lower(usuario) LIKE lower(?) || '%' OR upper(codigo_amigo) = upper(?)"
+    );
     this.#consultaTodos = this.database.db.prepare(
       "SELECT * FROM usuarios ORDER BY lower(usuario) ASC"
     );
     this.#insertaUsuario = this.database.db.prepare(`
-      INSERT INTO usuarios (id, usuario, correo, nacimiento, password_hash,
+      INSERT INTO usuarios (id, usuario, codigo_amigo, correo, nacimiento, password_hash,
                             xp, victorias, derrotas, racha, puntaje_max)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     this.#actualizaPerfil = this.database.db.prepare(`
       UPDATE usuarios
       SET xp = ?, victorias = ?, derrotas = ?, racha = ?, puntaje_max = ?
       WHERE id = ?
+    `);
+    this.#actualizaNombre = this.database.db.prepare(`
+      UPDATE usuarios SET usuario = ? WHERE id = ?
     `);
     this.#marcaCorreoVerificado = this.database.db.prepare(`
       UPDATE usuarios SET correo_verificado = true, correo_verificado_en = now() WHERE id = ?
@@ -59,6 +71,7 @@ class UsuarioRepositorySQL extends UsuarioRepository {
     return new Usuario({
       id: fila.id,
       usuario: fila.usuario,
+      codigoAmigo: fila.codigo_amigo,
       correo: fila.correo,
       nacimiento: fila.nacimiento,
       passwordHash: fila.password_hash,
@@ -85,6 +98,19 @@ class UsuarioRepositorySQL extends UsuarioRepository {
     return this.#filaAUsuario(await this.#consultaPorId.get(id));
   }
 
+  async buscarPorCodigoAmigo(codigo) {
+    return this.#filaAUsuario(await this.#consultaPorCodigoAmigo.get(codigo));
+  }
+
+  async buscarPorNombreOCodigo(termino) {
+    const filas = await this.#consultaPorNombreOCodigo.all(termino, termino);
+    return filas.map((fila) => this.#filaAUsuario(fila));
+  }
+
+  async actualizarNombre(id, nombre) {
+    return this.#actualizaNombre.run(nombre, id);
+  }
+
   async obtenerTodos() {
     const filas = await this.#consultaTodos.all();
     return filas.map((fila) => this.#filaAUsuario(fila));
@@ -94,6 +120,7 @@ class UsuarioRepositorySQL extends UsuarioRepository {
     const valores = [
       usuario.id,
       usuario.usuario,
+      usuario.codigoAmigo,
       usuario.correo,
       usuario.nacimiento,
       usuario.passwordHash,
@@ -106,9 +133,9 @@ class UsuarioRepositorySQL extends UsuarioRepository {
     if (ejecutor) {
       return ejecutor
         .prepare(
-          `INSERT INTO usuarios (id, usuario, correo, nacimiento, password_hash,
+          `INSERT INTO usuarios (id, usuario, codigo_amigo, correo, nacimiento, password_hash,
            xp, victorias, derrotas, racha, puntaje_max)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(...valores);
     }
@@ -161,6 +188,16 @@ class UsuarioRepositorySQL extends UsuarioRepository {
     return ejecutor
       .prepare(`UPDATE usuarios SET password_hash = ? WHERE id = ?`)
       .run(nuevoHash, id);
+  }
+
+  async actualizarCorreoCon(ejecutor, id, correo) {
+    return ejecutor
+      .prepare(
+        `UPDATE usuarios
+            SET correo = ?, correo_verificado = false, correo_verificado_en = NULL
+          WHERE id = ?`
+      )
+      .run(correo, id);
   }
 
   async revocarTodasLasSesionesCon(ejecutor, idUsuario) {

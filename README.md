@@ -48,7 +48,7 @@ Luego abrí `http://localhost:3000/login.html`.
 
 ```bash
 cd backend-poderes
-npm test                    # 166 tests / 25 suites (incluye un e2e de auth)
+npm test                    # 268 tests / 34 suites (incluye e2e de auth y amistades)
 npm run check:js            # sintaxis de todo el JS del repo (frontend + backend)
 ```
 

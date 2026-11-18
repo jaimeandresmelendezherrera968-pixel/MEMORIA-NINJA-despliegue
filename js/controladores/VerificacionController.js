@@ -13,11 +13,12 @@
 
 import { FormularioControllerBase } from "./FormularioControllerBase.js";
 
-const DURACION_CODIGO = 60; // segundos
+const DURACION_CODIGO = 600; // segundos
 
 export class VerificacionController extends FormularioControllerBase {
   #intervaloId = null;
   #segundosRestantes = DURACION_CODIGO;
+  #ocupado = false;
 
   /**
    * @param {import("../servicios/VerificacionService.js").VerificacionService} verificacionService
@@ -37,12 +38,31 @@ export class VerificacionController extends FormularioControllerBase {
     return `${visible}${"•".repeat(Math.max(usuario.length - 2, 2))}@${dominio}`;
   }
 
+  prepararCorreo(correo, correoEnviado = true, enviadoEn = Date.now()) {
+    this.elementos.textoEnviado.textContent = `Enviamos un código a ${this.enmascararCorreo(correo)}`;
+
+    if (!correoEnviado) {
+      clearInterval(this.#intervaloId);
+      this.elementos.temporizador.textContent = "No pudimos enviarte el correo. Usa Reenviar código.";
+      this.elementos.reenviarBox.style.display = "block";
+      return;
+    }
+
+    const restante = Math.max(
+      1,
+      DURACION_CODIGO - Math.floor((Date.now() - enviadoEn) / 1000)
+    );
+    this.#iniciarTemporizador(restante);
+  }
+
   /**
    * Pide el código al backend y, si el envío es exitoso, pone en marcha
    * el temporizador de expiración.
    * @returns {Promise<boolean>}
    */
   async enviarCodigo(correo) {
+    if (this.#ocupado) return false;
+    this.#ocupado = true;
     try {
       await this.verificacionService.enviarCodigo(correo);
       this.elementos.textoEnviado.textContent = `Enviamos un código a ${this.enmascararCorreo(correo)}`;
@@ -51,12 +71,14 @@ export class VerificacionController extends FormularioControllerBase {
     } catch (error) {
       this.notificador.mostrar(error.message, "error");
       return false;
+    } finally {
+      this.#ocupado = false;
     }
   }
 
-  #iniciarTemporizador() {
+  #iniciarTemporizador(segundos = DURACION_CODIGO) {
     clearInterval(this.#intervaloId);
-    this.#segundosRestantes = DURACION_CODIGO;
+    this.#segundosRestantes = segundos;
     this.elementos.reenviarBox.style.display = "none";
     this.#actualizarTemporizadorTexto();
 
@@ -80,11 +102,14 @@ export class VerificacionController extends FormularioControllerBase {
    * @param {{ codigo: string }} datos
    */
   async manejarEnvio(datos) {
+    if (this.#ocupado) return;
     const { codigo } = datos;
 
+    this.#ocupado = true;
     try {
       await this.verificacionService.confirmarCodigo(codigo);
       clearInterval(this.#intervaloId);
+      this.elementos.limpiarPendiente?.();
 
       this.elementos.btnComprobarCodigo.style.display = "none";
       this.elementos.inputCodigo.disabled = true;
@@ -97,6 +122,8 @@ export class VerificacionController extends FormularioControllerBase {
       this.notificador.mostrar(error.message, "error");
       this.elementos.inputCodigo.value = "";
       this.elementos.inputCodigo.focus();
+    } finally {
+      this.#ocupado = false;
     }
   }
 }

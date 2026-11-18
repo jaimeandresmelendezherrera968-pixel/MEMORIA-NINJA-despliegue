@@ -20,6 +20,18 @@ class UsuarioRepository {
     throw new Error("buscarPorId() no implementado");
   }
 
+  buscarPorCodigoAmigo(codigo) {
+    throw new Error("buscarPorCodigoAmigo() no implementado");
+  }
+
+  buscarPorNombreOCodigo(termino) {
+    throw new Error("buscarPorNombreOCodigo() no implementado");
+  }
+
+  actualizarNombre(id, nombre) {
+    throw new Error("actualizarNombre() no implementado");
+  }
+
   obtenerTodos() {
     throw new Error("obtenerTodos() no implementado");
   }
@@ -51,6 +63,10 @@ class UsuarioRepository {
 
   actualizarPassword(id, nuevoHash) {
     throw new Error("actualizarPassword() no implementado");
+  }
+
+  actualizarCorreoCon(ejecutor, id, correo) {
+    throw new Error("actualizarCorreoCon() no implementado");
   }
 }
 

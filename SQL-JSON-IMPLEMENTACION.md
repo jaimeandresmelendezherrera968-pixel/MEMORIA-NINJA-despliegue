@@ -223,7 +223,7 @@ if (typeof notificar === "function") {
 
 ---
 
-## 5. Tests (166/166 verdes — 25 suites)
+## 5. Tests (268 tests — 34 suites, incluye 16 de amistades)
 
 | Archivo | Qué cubre |
 |---|---|
@@ -235,12 +235,12 @@ if (typeof notificar === "function") {
 | `tests/usuarioPerfil.test.js` | XP/estadísticas + migración de perfil SQLite |
 | `tests/procedimientoService.test.js` | `sp_registrar_partida` + vista `vw_historial_detallado` (PostgreSQL) |
 | `tests/poderService.test.js` | Activación, contraataques, chakra insuficiente |
-| `tests/gestorSalas.test.js` | Salas 1v1/2v2, turnos, vida/chakra/tiempos, 6 poderes y contrarrestos (Socket.io) |
+| `tests/gestorSalas.test.js` | Salas 1v1/2v2, turnos, vida/chakra/tiempos, 6 poderes, contrarrestos, chat, persistencia online, espectadores y seguridad (Socket.io, 95 tests) |
 | `tests/authE2e.test.js` | e2e real: levanta `server.js` y recorre registro→verificación→login/cookie→logout→recuperación por HTTP |
 
 ```bash
 cd backend-poderes
-npm test     # 166 passing, 0 failing (el pretest aplica el esquema a memoria_ninja_test)
+npm test     # 260 passing, 0 failing (el pretest aplica el esquema a memoria_ninja_test)
 ```
 
 ---

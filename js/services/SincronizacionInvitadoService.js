@@ -30,6 +30,11 @@ export class SincronizacionInvitadoService {
     }
   }
 
+  notificar(detalle) {
+    if (typeof window === "undefined" || typeof window.dispatchEvent !== "function") return;
+    window.dispatchEvent(new CustomEvent("sincronizacion-invitado", { detail }));
+  }
+
   registrarEventosOnline() {
     if (typeof window === 'undefined') return;
     window.addEventListener('online', () => {
@@ -64,6 +69,7 @@ export class SincronizacionInvitadoService {
     if (!idUsuario) return { sincronizado: false, motivo: "sin_usuario" };
 
     this.sincronizando = true;
+    this.notificar({ estado: "sincronizando" });
     let cola = [];
     let perfil = null;
     try {
@@ -71,12 +77,14 @@ export class SincronizacionInvitadoService {
       perfil = JSON.parse(localStorage.getItem(CLAVE_PERFIL_INVITADO));
     } catch {
       this.sincronizando = false;
+      this.notificar({ estado: "error", motivo: "datos_locales_corruptos" });
       return { sincronizado: false, motivo: "datos_locales_corruptos" };
     }
     if (!Array.isArray(cola)) cola = [];
  
     if (cola.length === 0 && !perfil) {
       this.sincronizando = false;
+      this.notificar({ estado: "nada" });
       return { sincronizado: true, nada_que_importar: true };
     }
 
@@ -92,6 +100,7 @@ export class SincronizacionInvitadoService {
       );
       if (!respuesta.ok) {
         this.sincronizando = false;
+        this.notificar({ estado: "error", motivo: "servidor_rechazo" });
         return { sincronizado: false, motivo: "servidor_rechazo" };
       }
 
@@ -99,6 +108,11 @@ export class SincronizacionInvitadoService {
       localStorage.removeItem(CLAVE_COLA_PENDIENTE);
       localStorage.removeItem(CLAVE_PERFIL_INVITADO);
       this.sincronizando = false;
+      this.notificar({
+        estado: "ok",
+        importados: cuerpo.importados ?? 0,
+        omitidos: cuerpo.omitidos ?? 0
+      });
       return {
         sincronizado: true,
         importados: cuerpo.importados ?? 0,
@@ -106,9 +120,70 @@ export class SincronizacionInvitadoService {
       };
     } catch {
       this.sincronizando = false;
+      this.notificar({ estado: "error", motivo: "sin_conexion" });
       return { sincronizado: false, motivo: "sin_conexion" };
     }
   }
+}
+
+export function instalarAvisoSincronizacion() {
+  if (typeof window === "undefined" || window.__avisoSincronizacionInstalado) return;
+  window.__avisoSincronizacionInstalado = true;
+
+  window.addEventListener("sincronizacion-invitado", (evento) => {
+    const detalle = evento.detail || {};
+    if (detalle.estado === "nada") return;
+
+    let aviso = document.getElementById("avisoSincronizacion");
+    if (!aviso) {
+      aviso = document.createElement("div");
+      aviso.id = "avisoSincronizacion";
+      aviso.setAttribute("role", "status");
+      aviso.setAttribute("aria-live", "polite");
+      Object.assign(aviso.style, {
+        position: "fixed",
+        right: "18px",
+        bottom: "18px",
+        zIndex: "9999",
+        maxWidth: "min(360px, calc(100vw - 36px))",
+        padding: "12px 16px",
+        borderRadius: "12px",
+        border: "1px solid rgba(255,255,255,0.25)",
+        background: "rgba(18,18,28,0.94)",
+        color: "#fff",
+        font: "600 14px/1.4 system-ui, sans-serif",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+        opacity: "0",
+        transform: "translateY(10px)",
+        transition: "opacity .2s ease, transform .2s ease",
+        pointerEvents: "none"
+      });
+      document.body.appendChild(aviso);
+    }
+
+    const textos = {
+      sincronizando: "Sincronizando partidas guardadas…",
+      ok: detalle.importados > 0
+        ? `Partidas recuperadas: ${detalle.importados}${detalle.omitidos ? ` (${detalle.omitidos} ya estaban)` : ""}`
+        : "Progreso sincronizado.",
+      error: "No se pudo sincronizar ahora. Se reintentará al volver a entrar."
+    };
+    aviso.textContent = textos[detalle.estado] || "Estado de sincronización actualizado.";
+    aviso.dataset.estado = detalle.estado;
+    if (detalle.estado === "error") aviso.style.background = "rgba(96,20,28,0.96)";
+    else if (detalle.estado === "ok") aviso.style.background = "rgba(18,72,48,0.96)";
+    else aviso.style.background = "rgba(18,18,28,0.94)";
+
+    requestAnimationFrame(() => {
+      aviso.style.opacity = "1";
+      aviso.style.transform = "translateY(0)";
+    });
+    clearTimeout(window.__timerAvisoSincronizacion);
+    window.__timerAvisoSincronizacion = setTimeout(() => {
+      aviso.style.opacity = "0";
+      aviso.style.transform = "translateY(10px)";
+    }, 4500);
+  });
 }
 
 /** Instancia compartida: el login y el guard usan la misma. */

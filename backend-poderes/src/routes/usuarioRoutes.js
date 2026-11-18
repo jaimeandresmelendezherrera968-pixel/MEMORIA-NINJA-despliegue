@@ -40,6 +40,13 @@ function crearRutasUsuarios(usuarioController, autorizacion) {
     usuarioController.importarProgreso
   );
 
+  router.patch(
+    "/usuarios/:idUsuario/nombre",
+    requiereSesion,
+    esPropietario,
+    usuarioController.cambiarNombre
+  );
+
   // Perfil de juego (XP y estadísticas de la cuenta)
   router.get(
     "/usuarios/:idUsuario/perfil",

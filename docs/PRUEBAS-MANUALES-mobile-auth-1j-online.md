@@ -86,8 +86,8 @@ Tú reportaste que botones del mapa, info de pre-partida y vistas mobile funcion
 
 ---
 
-## 7) Online 1v1/2v2 — verificación (NO mezclar lógica de `main`; sensible)
-**Evidencia (git):** los commits de esta sesión (auth/1J/menú/muerte/orden) **no modifican** `backend-poderes/src/servicios/online/GestorSalas.js`, `js/multijugador/*`, `js/nucleo-GAME ONLI/{GestorPartida,GestorTurno,GestorPoderes,GestorTiempo,poderes/*,entidades/*}`, `js/game-online.js`, `js/sesion-guard.js`, `backend-poderes/src/routes/salasRoutes.js`. `origin/main..HEAD` difiere en `game-online.html`/`css/game-online.css`/`TemaAldea` por integraciones **selectivas** previas (C3a/C1/C2), **no** por bajar lógica de `main` ahora. **Conclusión:** lógica online sensible intacta respecto a estos cambios; confirmar con prueba real de 2 clientes.
+## 7) Online 1v1/2v2 — verificación (ya integrado en `main`; sensible)
+**Evidencia (git):** el **working tree** (cambios aún sin commitear) modifica `backend-poderes/src/servicios/online/GestorSalas.js`, `js/multijugador/*`, `js/board-manager.js`, `js/nucleo-GAME ONLI/GestorPartida.js` y `css/game-online.css` para Fase 2 (origen Socket.io, timer de revancha, ticket de espectador, modal neutral y a11y del tablero); `js/nucleo-GAME ONLI/{GestorTurno,GestorPoderes,GestorTiempo,poderes/*,entidades/*}`, `js/game-online.js`, `js/sesion-guard.js` y `backend-poderes/src/routes/salasRoutes.js` siguen intactos. También hay integraciones **selectivas** previas (C3a/C1/C2) en `game-online.html`/`css/game-online.css`/`TemaAldea`. **Conclusión:** lógica online sensible auditada y cubierta por 95 tests de salas; confirmar con prueba real de 2 clientes.
 
 **Conservado en código (revisado estáticamente):** contrarrestos/validaciones server en `GestorSalas.js` (emite `contrarresto`, efectos byakugan/sello/genjutsu, 6 poderes `sustitucion,byakugan,robo,genjutsu,sello,bomba`); cliente `GestorPartida` escucha `poder-efecto-online` y maneja `contrarresto`; `Poder` delega `activarPoderOnline` en partidas online. `game-online.css` conserva animaciones (byakugan/sustitución explícitas + pulso/bonificación/fuego/carta-fade; confirmar visualmente que **los 6 poderes y el contrarresto** animan como antes).
 
@@ -96,8 +96,10 @@ Tú reportaste que botones del mapa, info de pre-partida y vistas mobile funcion
 2. **Turno/volteo:** solo el jugador del turno voltea; acierto conserva turno y suma; fallo espera ~800 ms y cambia turno; marcador/estado coherente.
 3. **6 poderes + contrarresto:** activar cada uno (`sustitucion, byakugan, robo, genjutsu, sello, bomba`) verificando costo/efecto real en chakra/vida/combo/tiempo/cartas según aplique; provocar y confirmar **contrarresto** (animación + efecto bloqueado/esperado). *Vida/chakra máx 100, autoritativo server.*
 4. **Animaciones:** cada poder y el contrarresto muestran su FX (sin quedarse pegados/romper el tablero).
-5. **Fin:** victoria/derrota/**empate** posibles; abandono → rival gana; **revancha** (solo anfitrión, todos conectados) reinicia; reconexión dentro de 15 s reincorpora.
+5. **Fin:** victoria/derrota/**empate** posibles; abandono → rival gana; **revancha** (solo anfitrión, todos conectados) reinicia; si se pide apenas después de un fallo, no se aplica el timer viejo; reconexión dentro de 15 s reincorpora.
 6. **2v2 (pendiente de paridad, AGENTS 5.3):** 4 jugadores, asientos 0-1 A / 2-3 B, turno compartido, poderes/contrarrestos por equipo — verificar paridad con 1v1.
+7. **Espectador privado:** observar sala con contraseña, recargar `?espectador=1` y reconectar; la contraseña viaja como ticket de pestaña, nunca en la URL.
+8. **Accesibilidad:** tabular hasta una carta, activar con Enter/Espacio y ver el foco dorado; con el tablero bloqueado no debe voltearse por teclado.
 
 ---
 

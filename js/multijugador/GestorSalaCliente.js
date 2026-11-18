@@ -23,6 +23,7 @@ export class GestorSalaCliente {
     this.ultimaIntencion = null;
     this.nonceIntencion = 0;
     this.intencionPendiente = null; // { nonce, index, turno, version }
+    this.espectador = false;
   }
 
   get es2v2() {
@@ -30,6 +31,7 @@ export class GestorSalaCliente {
   }
 
   get esAnfitrion() {
+    if (this.espectador) return false;
     const yo = this.estado?.jugadores?.find((j) => j.id === this.miId);
     const primero = this.estado?.jugadores?.[0];
     return !!yo && !!primero && yo.id === primero.id;
@@ -46,15 +48,19 @@ export class GestorSalaCliente {
     }
 
     await clienteMultijugador.conectar();
-    this.miId = clienteMultijugador.token;
+    this.espectador = opciones.espectador === true;
+    this.miId = this.espectador ? null : clienteMultijugador.token;
     this.registrarEventos();
 
-    const respuesta = await clienteMultijugador.reincorporarseSala(this.codigoSala);
+    const respuesta = this.espectador
+      ? await clienteMultijugador.observarSala(this.codigoSala)
+      : await clienteMultijugador.reincorporarseSala(this.codigoSala);
     if (!respuesta?.exito) {
       this.iniciado = true;
       this.mostrarErrorSala(respuesta?.error || "No se pudo entrar a la sala.");
       return null;
     }
+    if (this.espectador) this.mostrarDistintivoEspectador();
 
     this.aplicarEstado(respuesta.estado);
     this.iniciado = true;
@@ -65,6 +71,18 @@ export class GestorSalaCliente {
 
     this.esperandoInicio();
     return this.promesaPartida;
+  }
+
+  mostrarDistintivoEspectador() {
+    if (document.getElementById("distintivoEspectador")) return;
+    const distintivo = document.createElement("div");
+    distintivo.id = "distintivoEspectador";
+    distintivo.className = "distintivo-espectador";
+    distintivo.setAttribute("role", "status");
+    distintivo.setAttribute("aria-live", "polite");
+    distintivo.setAttribute("aria-atomic", "true");
+    distintivo.textContent = "OBSERVANDO PARTIDA";
+    document.body.appendChild(distintivo);
   }
 
   esperandoInicio() {
@@ -152,7 +170,7 @@ export class GestorSalaCliente {
       BoardManager.bloquearTablero(true);
       // Procesar cola de intenciones cuando el tablero se desbloquee
       setTimeout(() => {
-        BoardManager.bloquearTablero(false);
+        if (!this.partidaTerminada && !this.espectador) BoardManager.bloquearTablero(false);
         this.procesarColaIntenciones();
       }, 850);
       BoardManager.ocultarCartasRemotas(datos.index1, datos.index2, 800);
@@ -199,6 +217,7 @@ export class GestorSalaCliente {
         this.#aplicarEstadoJugadores(datos);
       }
       this.partidaTerminada = true;
+      if (this.espectador) clienteMultijugador.limpiarContrasenaEspectador(this.codigoSala);
       BoardManager.bloquearTablero(true);
       this.renderizarEstado(this.estado);
       window.dispatchEvent(new CustomEvent("partida-terminada-online", { detail: datos }));
@@ -325,8 +344,10 @@ export class GestorSalaCliente {
     window.addEventListener("reconectado", () => {
       if (!this.codigoSala) return;
       this.actualizarEstadoConexion();
-      clienteMultijugador
-        .reincorporarseSala(this.codigoSala)
+      const solicitud = this.espectador
+        ? clienteMultijugador.observarSala(this.codigoSala)
+        : clienteMultijugador.reincorporarseSala(this.codigoSala);
+      solicitud
         .then((respuesta) => {
           if (respuesta?.exito) {
             this.aplicarEstado(respuesta.estado);
@@ -430,6 +451,7 @@ export class GestorSalaCliente {
     this.refrescarMarcadores();
     this.refrescarEquipos();
     this.actualizarTurno(estado.turno);
+    if (this.espectador) BoardManager.bloquearTablero(true);
 
     if (estado.estado === "terminada") {
       this.partidaTerminada = true;
@@ -735,10 +757,12 @@ export class GestorSalaCliente {
   }
 
   async solicitarRevancha(config = {}) {
+    if (this.espectador) return { exito: false, error: "Un espectador no puede pedir revancha." };
     return clienteMultijugador.solicitarRevancha(config);
   }
 
   voltearCarta(index) {
+    if (this.espectador) return false;
     if (!this.estado || this.estado.estado !== "jugando") return false;
     if (!this.esMiTurno) return false;
     // Evitar doble clic sobre la misma carta ya pendiente
@@ -753,6 +777,10 @@ export class GestorSalaCliente {
   }
 
   procesarColaIntenciones() {
+    if (this.espectador) {
+      this.colaIntenciones = [];
+      return;
+    }
     if (!this.estado || this.estado.estado !== "jugando") {
       this.colaIntenciones = [];
       return;
@@ -785,7 +813,8 @@ export class GestorSalaCliente {
   }
 
   abandonar() {
-    clienteMultijugador.abandonarSala();
+    if (this.espectador) clienteMultijugador.salirDeObservacion();
+    else clienteMultijugador.abandonarSala();
   }
 }
 

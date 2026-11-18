@@ -66,7 +66,10 @@ export class HttpUsuarioRepositorio extends IUsuarioLector {
     const cuerpo = await respuesta.json().catch(() => ({}));
 
     if (!respuesta.ok) {
-      throw new Error(cuerpo.error || "Error del servidor.");
+      const error = new Error(cuerpo.error || "Error del servidor.");
+      error.codigo = cuerpo.codigo;
+      error.correo = cuerpo.correo;
+      throw error;
     }
     return cuerpo;
   }

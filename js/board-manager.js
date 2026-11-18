@@ -76,6 +76,7 @@ function mostrarFrente(carta, valor, aldea) {
     if (!carta || !valor) return;
     setImagenesCarta(carta, valor, aldea);
     carta.classList.add("volteada", "flip");
+    carta.setAttribute("aria-label", `Carta ${Number(carta.dataset.index) + 1}: ${valor} de ${aldea}`);
 }
 
 export const BoardManager = {
@@ -116,7 +117,11 @@ export const BoardManager = {
 
     bloquearTablero(bloqueado) {
         const tablero = document.getElementById("board");
-        if (tablero) tablero.classList.toggle("bloqueado-turno", !!bloqueado);
+        if (!tablero) return;
+        tablero.classList.toggle("bloqueado-turno", !!bloqueado);
+        tablero.querySelectorAll(".card").forEach((carta) => {
+            carta.setAttribute("aria-disabled", bloqueado ? "true" : "false");
+        });
     },
 
     revelarCartaRemota(index, valor, aldea, emparejada = false) {
@@ -124,6 +129,10 @@ export const BoardManager = {
         if (!carta) return;
         // Idempotencia: no re-renderizar si ya está volteada o emparejada
         if (carta.classList.contains("emparejada")) return;
+        if (carta.classList.contains("byakugan-revelada")) {
+            carta.classList.remove("byakugan-revelada");
+            carta.dataset._volteadaPorJuego = "1";
+        }
         if (carta.classList.contains("volteada") && valor) {
             // Ya revelada: solo actualizar imagen si cambió
             const front = carta.querySelector("img.front, img.img-card.front");
@@ -285,9 +294,11 @@ export const BoardManager = {
             const valor = usaMazo && typeof entrada === "object" ? entrada.valor : entrada;
             const aldea = usaMazo && typeof entrada === "object" ? (entrada.aldea || "arena") : "arena";
 
-            const carta = document.createElement('div');
+            const carta = document.createElement('button');
+            carta.type = 'button';
             carta.className = 'card';
             carta.dataset.index = idx;
+            carta.setAttribute('aria-label', `Carta ${idx + 1}, boca abajo`);
             if (valor != null) {
                 carta.dataset.valor = String(valor);
                 carta.dataset.aldea = aldea || "arena";
@@ -318,6 +329,7 @@ export const BoardManager = {
     },
 
     voltearCarta(carta) {
+        if (carta?.closest("#board")?.classList.contains("bloqueado-turno")) return;
         if (onEsMiTurno && !onEsMiTurno()) return;
         if (!carta || carta.classList.contains("carta-sellada")) return;
         if (carta.classList.contains("volteada") || carta.classList.contains("emparejada") || carta.classList.contains("matched")) return;

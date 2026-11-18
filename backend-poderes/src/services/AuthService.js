@@ -2,10 +2,13 @@
 const Usuario = require("../entities/Usuario");
 const { errorConCodigo } = require("../utils/errores");
 const { normalizarUsuario, normalizarCorreo } = require("../utils/normalizar");
+const generarCodigoAmigoUnico = require("../utils/generarCodigoAmigoUnico");
+const { plantillaCodigo } = require("../utils/plantillaCorreo");
 
 class AuthService {
   static INTENTOS_MAXIMOS = 5;
   static BLOQUEO_MINUTOS = 5;
+  static VIGENCIA_CODIGO_MIN = 10;
 
   constructor(
     usuarioRepository,
@@ -37,7 +40,7 @@ class AuthService {
 
   async #codigoEnvio(idUsuario, ejecutor = null) {
     const codigo = this.codigoGenerador.generar();
-    const vigenciaMs = 10 * 60 * 1000;
+    const vigenciaMs = AuthService.VIGENCIA_CODIGO_MIN * 60 * 1000;
     await this.codigoVerificacionRepository.guardar(
       {
         usuarioId: idUsuario,
@@ -71,6 +74,7 @@ class AuthService {
     const nuevo = new Usuario({
       id,
       usuario: usuarioNormalizado,
+      codigoAmigo: await generarCodigoAmigoUnico(this.usuarioRepository),
       correo: correoNormalizado,
       nacimiento,
       passwordHash: this.passwordHasher.generarHash(password),
@@ -95,6 +99,12 @@ class AuthService {
         if (detalle.includes("usuario")) {
           throw errorConCodigo("El nombre de usuario ya esta en uso", "USUARIO_DUPLICADO");
         }
+        if (detalle.includes("codigo_amigo")) {
+          throw errorConCodigo(
+            "No se pudo generar un ID publico unico, intenta de nuevo",
+            "CODIGO_AMIGO_DUPLICADO"
+          );
+        }
       }
       throw error;
     }
@@ -112,12 +122,125 @@ class AuthService {
         asunto: "Verifica tu correo en Memoria Ninja",
         texto:
           "Falta un paso para activar tu cuenta de Memoria Ninja.\n\n" +
-          "Tu codigo de verificacion es: " + codigo + "\nVence en 10 minutos.",
+          "Tu codigo de verificacion es: " + codigo + "\nVence en " + AuthService.VIGENCIA_CODIGO_MIN + " minutos.",
+        html: plantillaCodigo({
+          titulo: "Verifica tu correo",
+          subtitulo: "Usa este código para activar tu cuenta de Memoria Ninja.",
+          codigo,
+          vigenciaMin: AuthService.VIGENCIA_CODIGO_MIN,
+        }),
       });
     } catch (error) {
       resultado.correoEnviado = false;
       resultado.aviso =
         "La cuenta se creo, pero no pudimos enviar el correo. Reenvia el codigo desde la pantalla de verificacion.";
+      console.error("No se pudo enviar el correo de verificacion:", error.message);
+    }
+
+    return resultado;
+  }
+
+  async cambiarCorreoPendiente({ usuario, password, correoNuevo }) {
+    const usuarioNormalizado = normalizarUsuario(usuario);
+    const correoNormalizado = normalizarCorreo(correoNuevo);
+
+    this.#validarCamposObligatorios({
+      usuario: usuarioNormalizado,
+      correo: correoNormalizado,
+      password,
+    });
+
+    const encontrado = await this.usuarioRepository.buscarPorUsuario(usuarioNormalizado);
+    if (!encontrado) {
+      throw errorConCodigo("Usuario o contrasena incorrectos", "CREDENCIALES");
+    }
+
+    const bloqueado = encontrado.bloqueadoHasta && new Date(encontrado.bloqueadoHasta) > new Date();
+    if (bloqueado) {
+      throw errorConCodigo(
+        "Cuenta temporalmente bloqueada por muchos intentos. Intenta mas tarde.",
+        "BLOQUEADA"
+      );
+    }
+
+    const claveValida = this.passwordHasher.verificar(password, encontrado.passwordHash);
+    if (!claveValida) {
+      const intentos = await this.usuarioRepository.sumarIntentoFallido(encontrado.id);
+      if (intentos >= AuthService.INTENTOS_MAXIMOS) {
+        const hasta = new Date(Date.now() + AuthService.BLOQUEO_MINUTOS * 60 * 1000);
+        await this.usuarioRepository.marcarBloqueado(encontrado.id, hasta);
+        throw errorConCodigo(
+          "Cuenta temporalmente bloqueada por muchos intentos. Intenta mas tarde.",
+          "BLOQUEADA"
+        );
+      }
+      throw errorConCodigo("Usuario o contrasena incorrectos", "CREDENCIALES");
+    }
+
+    if (encontrado.correoVerificado) {
+      throw errorConCodigo(
+        "Tu correo ya esta verificado. Ya puedes iniciar sesion.",
+        "CORREO_YA_VERIFICADO"
+      );
+    }
+    if (normalizarCorreo(encontrado.correo) === correoNormalizado) {
+      throw errorConCodigo("Escribe un correo diferente al que registraste.", "VALIDACION");
+    }
+    if (await this.usuarioRepository.buscarPorCorreo(correoNormalizado)) {
+      throw errorConCodigo("El correo ya esta registrado", "CORREO_DUPLICADO");
+    }
+
+    let codigo;
+    try {
+      const persistir = async (db) => {
+        await this.usuarioRepository.actualizarCorreoCon(db, encontrado.id, correoNormalizado);
+        await this.codigoVerificacionRepository.invalidarActivos(
+          { usuarioId: encontrado.id, tipo: "REGISTRO" },
+          db
+        );
+        return this.#codigoEnvio(encontrado.id, db);
+      };
+
+      codigo = this.database
+        ? await this.database.transaccion(persistir)
+        : await persistir(null);
+    } catch (error) {
+      if (
+        error &&
+        error.code === "23505" &&
+        String(error.detail || "").toLowerCase().includes("correo")
+      ) {
+        throw errorConCodigo("El correo ya esta registrado", "CORREO_DUPLICADO");
+      }
+      throw error;
+    }
+
+    await this.usuarioRepository.limpiarIntentosFallidos(encontrado.id);
+
+    const resultado = {
+      correo: correoNormalizado,
+      correoEnviado: true,
+      aviso: "Correo actualizado. Revisa tu bandeja de entrada para verificar tu cuenta.",
+    };
+
+    try {
+      await this.notificador.enviar({
+        para: correoNormalizado,
+        asunto: "Verifica tu correo en Memoria Ninja",
+        texto:
+          "Actualizamos el correo de tu cuenta de Memoria Ninja.\n\n" +
+          "Tu codigo de verificacion es: " + codigo + "\nVence en " + AuthService.VIGENCIA_CODIGO_MIN + " minutos.",
+        html: plantillaCodigo({
+          titulo: "Verifica tu correo",
+          subtitulo: "Usa este codigo para activar tu cuenta de Memoria Ninja.",
+          codigo,
+          vigenciaMin: AuthService.VIGENCIA_CODIGO_MIN,
+        }),
+      });
+    } catch (error) {
+      resultado.correoEnviado = false;
+      resultado.aviso =
+        "El correo se actualizo, pero no pudimos enviar el codigo. Reenvialo desde la pantalla de verificacion.";
       console.error("No se pudo enviar el correo de verificacion:", error.message);
     }
 
@@ -157,9 +280,16 @@ class AuthService {
     }
 
     if (!encontrado.correoVerificado) {
-      throw errorConCodigo(
-        "Verifica tu correo antes de iniciar sesion. Revisa la bandeja de entrada.",
-        "CORREO_SIN_VERIFICAR"
+      throw Object.assign(
+        errorConCodigo(
+          "Verifica tu correo antes de iniciar sesion. Revisa la bandeja de entrada.",
+          "CORREO_SIN_VERIFICAR"
+        ),
+        {
+          correo: encontrado.correo,
+          usuario: encontrado.usuario,
+          idUsuario: encontrado.id,
+        }
       );
     }
 
