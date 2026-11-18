@@ -139,16 +139,17 @@ async function main() {
 
     // ---------- usuarios ----------
     const idPorUsuario = {};
-    for (const c of CUENTAS) {
+    for (const [indice, c] of CUENTAS.entries()) {
       const id = crypto.randomUUID();
       idPorUsuario[c.usuario] = id;
       await cliente.query(
         `insert into usuarios
-           (id, usuario, correo, nacimiento, password_hash, xp, victorias, derrotas, racha, puntaje_max, correo_verificado, correo_verificado_en)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+           (id, usuario, codigo_amigo, correo, nacimiento, password_hash, xp, victorias, derrotas, racha, puntaje_max, correo_verificado, correo_verificado_en)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
         [
           id,
           c.usuario,
+          "NJ-DEMO" + String(indice + 1).padStart(4, "0"),
           c.usuario + DOMINIO_DEMO,
           c.nacimiento,
           hasherPassword.generarHash(CLAVE_DEMO),
@@ -158,6 +159,28 @@ async function main() {
         ]
       );
     }
+
+    const AMISTADES_DEMO = [
+      ["sasuke", "sakura"],
+      ["sasuke", "kakashi"],
+      ["kakashi", "rocklee"],
+    ];
+    for (const [nombreA, nombreB] of AMISTADES_DEMO) {
+      const idA = idPorUsuario[nombreA];
+      const idB = idPorUsuario[nombreB];
+      await cliente.query(
+        `insert into amistades (id, usuario_id, amigo_id)
+         values ($1, least($2,$3), greatest($2,$3))
+         on conflict do nothing`,
+        [crypto.randomUUID(), idA, idB]
+      );
+    }
+    await cliente.query(
+      `insert into solicitudes_amistad (id, emisor_id, receptor_id, estado, creado_en)
+       values ($1,$2,$3,'PENDIENTE',now())
+       on conflict do nothing`,
+      [crypto.randomUUID(), idPorUsuario.hinata, idPorUsuario.sasuke]
+    );
 
     // ---------- jugadores (legacy, aislada) ----------
     for (const j of JUGADORES_LEGACY) {
@@ -271,7 +294,7 @@ async function main() {
   // ---------- Verificación (contenido, no vacío) ----------
   const ver = new Client(config);
   await ver.connect();
-  const tablas = ["usuarios", "partidas", "historial_partidas", "jugadores", "codigos_verificacion", "sesiones", "auditoria_cuentas"];
+  const tablas = ["usuarios", "partidas", "historial_partidas", "jugadores", "codigos_verificacion", "sesiones", "auditoria_cuentas", "amistades", "solicitudes_amistad"];
   const vistas = ["vw_partidas_recientes", "vw_historial_detallado", "vw_ranking_mejor_puntaje", "vw_usuarios_resumen", "vw_usuarios_seguro", "vw_sesiones_activas"];
   console.log("\n--- FILAS POR TABLA ---");
   for (const t of tablas) {

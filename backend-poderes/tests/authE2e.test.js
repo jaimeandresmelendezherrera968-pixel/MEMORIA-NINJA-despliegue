@@ -114,6 +114,8 @@ describe("Autenticacion e2e (servidor real + PostgreSQL)", () => {
 
     codigoRegistro = await esperarCodigo(0);
     assert.ok(codigoRegistro, "el servidor debio imprimir el codigo de verificacion en consola");
+    await pausa(150);
+    assert.equal(codigosEnLog().length, 1, "el registro no debe generar un segundo codigo");
   });
 
   it("1b) registro duplicado responde 409", async () => {
@@ -136,9 +138,12 @@ describe("Autenticacion e2e (servidor real + PostgreSQL)", () => {
     assert.equal(res.status, 409);
   });
 
-  it("2) login pre-verificacion se bloquea con 403", async () => {
+  it("2) login pre-verificacion se bloquea con 403 y devuelve codigo y correo", async () => {
     const res = await post("/api/auth/login", { usuario: USUARIO, password: "clave1234" });
-    assert.equal(res.status, 403);
+    const body = await res.json();
+    assert.equal(res.status, 403, JSON.stringify(body));
+    assert.equal(body.codigo, "CORREO_SIN_VERIFICAR");
+    assert.equal(body.correo, CORREO);
   });
 
   it("3) login con clave incorrecta responde 401", async () => {
@@ -264,5 +269,76 @@ describe("Autenticacion e2e (servidor real + PostgreSQL)", () => {
     const nuevoToken = extraerToken(setCookie);
     const me = await fetch(`${BASE}/api/auth/me`, { headers: { Cookie: `memoria_ninja_sesion=${nuevoToken}` } });
     assert.equal(me.status, 200);
+  });
+
+  it("14) correo mal escrito se corrige con contraseña y el codigo viejo deja de servir", async () => {
+    const usuario = "correoMalTest";
+    const correoMal = "equivocado@test.com";
+    const correoBien = "arreglado@test.com";
+
+    const registro = await post("/api/auth/registro", {
+      usuario,
+      correo: correoMal,
+      nacimiento: "2000-03-03",
+      password: "clave1234",
+    });
+    assert.equal(registro.status, 201, await registro.text());
+
+    const codigoMal = await esperarCodigo(2);
+    assert.ok(codigoMal, "el registro con correo mal escrito debio imprimir un codigo");
+
+    const antes = await post("/api/auth/login", { usuario, password: "clave1234" });
+    const antesBody = await antes.json();
+    assert.equal(antes.status, 403, JSON.stringify(antesBody));
+    assert.equal(antesBody.correo, correoMal);
+    assert.equal(antesBody.usuario, usuario);
+
+    const claveMala = await post("/api/auth/verificacion/cambiar-correo", {
+      usuario,
+      password: "claveMALA",
+      correoNuevo: correoBien,
+    });
+    assert.equal(claveMala.status, 401, await claveMala.text());
+
+    const cambio = await post("/api/auth/verificacion/cambiar-correo", {
+      usuario,
+      password: "clave1234",
+      correoNuevo: correoBien,
+    });
+    const cambioBody = await cambio.json();
+    assert.equal(cambio.status, 200, JSON.stringify(cambioBody));
+    assert.equal(cambioBody.correo, correoBien);
+    assert.equal(cambioBody.correoEnviado, true);
+
+    const codigoBien = await esperarCodigo(3);
+    assert.ok(codigoBien, "el cambio de correo debio imprimir un codigo nuevo");
+
+    const conCorreoViejo = await post("/api/auth/verificacion/confirmar", {
+      correo: correoMal,
+      codigo: codigoMal,
+    });
+    assert.equal(conCorreoViejo.status, 404);
+
+    const conCodigoViejo = await post("/api/auth/verificacion/confirmar", {
+      correo: correoBien,
+      codigo: codigoMal,
+    });
+    assert.equal(conCodigoViejo.status, 400);
+
+    const confirmado = await post("/api/auth/verificacion/confirmar", {
+      correo: correoBien,
+      codigo: codigoBien,
+    });
+    assert.equal(confirmado.status, 200, await confirmado.text());
+
+    const yaVerificado = await post("/api/auth/verificacion/cambiar-correo", {
+      usuario,
+      password: "clave1234",
+      correoNuevo: "otra@test.com",
+    });
+    assert.equal(yaVerificado.status, 403, await yaVerificado.text());
+
+    const login = await post("/api/auth/login", { usuario, password: "clave1234" });
+    assert.equal(login.status, 200, await login.text());
   });
 });

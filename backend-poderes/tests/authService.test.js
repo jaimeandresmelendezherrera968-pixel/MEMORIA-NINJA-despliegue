@@ -36,7 +36,7 @@ describe("AuthService (registro atomico, correo post-commit, recordar)", () => {
     database.db.exec("DROP TABLE IF EXISTS codigos_verificacion; DROP TABLE IF EXISTS usuarios; DROP TABLE IF EXISTS historial_partidas; DROP TABLE IF EXISTS partidas;");
     database.db.exec(
       "CREATE TABLE usuarios (id TEXT PRIMARY KEY, usuario TEXT, correo TEXT);" +
-      "CREATE TABLE codigos_verificacion (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id TEXT, codigo_hash TEXT, tipo TEXT, expira_en TEXT);"
+      "CREATE TABLE codigos_verificacion (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id TEXT, codigo_hash TEXT, tipo TEXT, expira_en TEXT, usado_en TEXT);"
     );
     usuarios = [];
     sesiones = [];
@@ -45,7 +45,22 @@ describe("AuthService (registro atomico, correo post-commit, recordar)", () => {
       async buscarPorCorreo(c) { return usuarios.find((x) => String(x.correo).toLowerCase() === String(c).toLowerCase()) || null; },
       async guardar(entidad, ejecutor = null) {
         const db = ejecutor || database.db;
-        return db.prepare("INSERT INTO usuarios (id, usuario, correo) VALUES (?, ?, ?)").run(entidad.id, entidad.usuario, entidad.correo);
+        const resultado = await db.prepare("INSERT INTO usuarios (id, usuario, correo) VALUES (?, ?, ?)").run(entidad.id, entidad.usuario, entidad.correo);
+        usuarios.push({
+          id: entidad.id,
+          usuario: entidad.usuario,
+          correo: entidad.correo,
+          passwordHash: entidad.passwordHash,
+          correoVerificado: false,
+          bloqueadoHasta: null,
+        });
+        return resultado;
+      },
+      async actualizarCorreoCon(ejecutor, id, correo) {
+        const db = ejecutor || database.db;
+        await db.prepare("UPDATE usuarios SET correo = ? WHERE id = ?").run(correo, id);
+        const encontrado = usuarios.find((x) => x.id === id);
+        if (encontrado) encontrado.correo = correo;
       },
       async sumarIntentoFallido() { return 0; },
       async marcarBloqueado() {},
@@ -55,6 +70,12 @@ describe("AuthService (registro atomico, correo post-commit, recordar)", () => {
       async guardar(datos, ejecutor = null) {
         const db = ejecutor || database.db;
         return db.prepare("INSERT INTO codigos_verificacion (usuario_id, codigo_hash, tipo, expira_en) VALUES (?, ?, ?, ?)").run(datos.usuarioId, datos.codigoHash, datos.tipo, String(datos.expiraEn));
+      },
+      async invalidarActivos({ usuarioId, tipo }, ejecutor = null) {
+        const db = ejecutor || database.db;
+        await db
+          .prepare("UPDATE codigos_verificacion SET usado_en = ? WHERE usuario_id = ? AND tipo = ? AND usado_en IS NULL")
+          .run(new Date().toISOString(), usuarioId, tipo);
       },
     };
     sesionRepo = {
@@ -98,6 +119,8 @@ describe("AuthService (registro atomico, correo post-commit, recordar)", () => {
     assert.equal(res.usuario.usuario, "Naruto");
     assert.equal(enviados.length, 1);
     assert.match(enviados[0].texto, /123456/);
+    assert.match(enviados[0].html, /1 2 3 4 5 6/);
+    assert.match(enviados[0].html, /Vence en 10 minutos/);
     const filasU = await database.db.prepare("SELECT * FROM usuarios").all();
     const filasC = await database.db.prepare("SELECT * FROM codigos_verificacion").all();
     assert.equal(filasU.length, 1);
@@ -198,5 +221,76 @@ describe("AuthService (registro atomico, correo post-commit, recordar)", () => {
     const esperadoMin = antes + 60 * 60 * 1000;
     const esperadoMax = despues + 60 * 60 * 1000;
     assert.ok(exp >= esperadoMin - 1000 && exp <= esperadoMax + 1000);
+  });
+
+  it("iniciarSesion con correo sin verificar expone codigo y correo sin crear sesion", async () => {
+    const service = crearService();
+    const passHash = new PasswordHasher().generarHash("clave1234");
+    const encontrado = {
+      id: "u3", usuario: "neji", correo: "neji@konoha.ni", correoVerificado: false,
+      passwordHash: passHash, bloqueadoHasta: null,
+      publico() { return { id: "u3", usuario: "neji", correo: "neji@konoha.ni" }; },
+    };
+    usuarioRepo.buscarPorUsuario = async (u) => String(u).toLowerCase() === "neji" ? encontrado : null;
+    usuarioRepo.buscarPorCorreo = async () => null;
+
+    await assert.rejects(
+      () => service.iniciarSesion({ usuario: "neji", password: "clave1234" }),
+      (error) => error && error.codigo === "CORREO_SIN_VERIFICAR" && error.correo === "neji@konoha.ni"
+    );
+    assert.equal(sesiones.length, 0);
+  });
+
+  it("cambiarCorreoPendiente corrige correo mal escrito, invalida codigo viejo y envia uno nuevo", async () => {
+    const enviados = [];
+    const service = crearService({ notificador: crearNotificador(true, enviados) });
+    await service.registrar({
+      usuario: "Tenten",
+      correo: "tenten@konohaa.ni",
+      nacimiento: "2000-02-02",
+      password: "clave1234",
+    });
+
+    const mutable = usuarios[0];
+    usuarioRepo.buscarPorUsuario = async (u) =>
+      String(u).toLowerCase() === "tenten" ? mutable : null;
+    usuarioRepo.buscarPorCorreo = async (c) =>
+      usuarios.find((x) => String(x.correo).toLowerCase() === String(c).toLowerCase()) || null;
+
+    const res = await service.cambiarCorreoPendiente({
+      usuario: "TENTEN",
+      password: "clave1234",
+      correoNuevo: "TENTEN@KONOHA.NI",
+    });
+
+    assert.equal(res.correo, "tenten@konoha.ni");
+    assert.equal(res.correoEnviado, true);
+    assert.equal(mutable.correo, "tenten@konoha.ni");
+    assert.equal(enviados.length, 2);
+    assert.match(enviados[1].texto, /123456/);
+
+    const codigos = await database.db.prepare("SELECT * FROM codigos_verificacion ORDER BY id").all();
+    assert.equal(codigos.length, 2);
+    assert.ok(codigos[0].usado_en, "el codigo del correo mal escrito debe quedar invalidado");
+    assert.equal(codigos[1].usado_en, null);
+
+    await assert.rejects(
+      () => service.cambiarCorreoPendiente({
+        usuario: "tenten",
+        password: "mala1234",
+        correoNuevo: "otra@konoha.ni",
+      }),
+      (e) => e && e.codigo === "CREDENCIALES"
+    );
+
+    mutable.correoVerificado = true;
+    await assert.rejects(
+      () => service.cambiarCorreoPendiente({
+        usuario: "tenten",
+        password: "clave1234",
+        correoNuevo: "otra@konoha.ni",
+      }),
+      (e) => e && e.codigo === "CORREO_YA_VERIFICADO"
+    );
   });
 });

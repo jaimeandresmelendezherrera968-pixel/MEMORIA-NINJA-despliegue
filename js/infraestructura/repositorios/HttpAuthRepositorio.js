@@ -66,6 +66,12 @@ export class HttpAuthRepositorio {
     });
   }
 
+  async cambiarCorreoVerificacion({ usuario, password, correoNuevo }) {
+    return this.#peticion("/auth/verificacion/cambiar-correo", {
+      body: JSON.stringify({ usuario, password, correoNuevo })
+    });
+  }
+
   async confirmarCodigoVerificacion({ correo, codigo }) {
     return this.#peticion("/auth/verificacion/confirmar", {
       body: JSON.stringify({ correo, codigo })

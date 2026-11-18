@@ -48,10 +48,19 @@ function pausa(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function conectar(url, token) {
+async function esperarCondicion(condicion, ms = 1000) {
+  const inicio = Date.now();
+  while (!condicion()) {
+    if (Date.now() - inicio > ms) throw new Error("La condición no se cumplió a tiempo");
+    await pausa(10);
+  }
+}
+
+function conectar(url, token, headers = {}) {
   return new Promise((resolve, reject) => {
     const socket = io(url, {
       auth: { token },
+      extraHeaders: headers,
       transports: ["websocket"],
       forceNew: true,
       reconnection: false,
@@ -92,8 +101,8 @@ describe("GestorSalas (multijugador online real)", () => {
     if (servidor.listening) await new Promise((resolve) => servidor.close(resolve));
   });
 
-  async function cliente(token) {
-    const socket = await conectar(url, token);
+  async function cliente(token, headers = {}) {
+    const socket = await conectar(url, token, headers);
     clientes.push(socket);
     return socket;
   }
@@ -1509,6 +1518,38 @@ describe("GestorSalas (multijugador online real)", () => {
     assert.equal(sala.timersPoderes.length, 0);
   });
 
+  it("una revancha inmediata no recibe el timer de fallo de la partida anterior", async () => {
+    gestor.retardoFalloMs = 300;
+    const { uno, dos, codigo } = await salaIniciada();
+    const idPartidaAnterior = gestor.salas.get(codigo).idPartida;
+
+    const fallo = esperarEvento(uno, "fallo");
+    uno.emit("voltear-carta", { index: 2 });
+    uno.emit("voltear-carta", { index: 4 });
+    await fallo;
+
+    const terminada = esperarEvento(uno, "partida-terminada");
+    dos.emit("abandonar-sala");
+    await terminada;
+
+    let turnosTrasRevancha = 0;
+    let terminadasTrasRevancha = 0;
+    uno.on("turno-cambiado", () => { turnosTrasRevancha += 1; });
+    uno.on("partida-terminada", () => { terminadasTrasRevancha += 1; });
+
+    const inicioRevancha = esperarEvento(uno, "partida-iniciada");
+    const respuesta = await emitir(uno, "revancha-sala", { config: { pares: 8 } });
+    assert.equal(respuesta.exito, true);
+    const estadoRevancha = await inicioRevancha;
+
+    await pausa(360);
+
+    assert.notEqual(estadoRevancha.idPartida, idPartidaAnterior);
+    assert.equal(gestor.salas.get(codigo).idPartida, estadoRevancha.idPartida);
+    assert.equal(turnosTrasRevancha, 0);
+    assert.equal(terminadasTrasRevancha, 0);
+  });
+
   it("poderEnProceso se limpia solo tras Sustitución y Robo", async () => {
     const { uno, codigo } = await salaIniciada();
 
@@ -1553,4 +1594,276 @@ describe("GestorSalas (multijugador online real)", () => {
     assert.match(segundo.error, /Espera/);
   });
 
+  it("rechaza conexiones con un origen no permitido", async () => {
+    const socket = io(url, {
+      auth: { token: "token-origen-malicioso" },
+      extraHeaders: { Origin: "https://ejemplo-malicioso.invalid" },
+      transports: ["websocket"],
+      forceNew: true,
+      reconnection: false,
+    });
+    clientes.push(socket);
+
+    const error = await new Promise((resolve, reject) => {
+      const temporizador = setTimeout(() => reject(new Error("No rechazó el origen")), 2000);
+      socket.once("connect_error", (fallo) => {
+        clearTimeout(temporizador);
+        resolve(fallo);
+      });
+      socket.once("connect", () => {
+        clearTimeout(temporizador);
+        reject(new Error("Aceptó un origen no permitido"));
+      });
+    });
+
+    assert.ok(error);
+    assert.equal(socket.connected, false);
+    assert.equal(GestorSalas.esOrigenPermitidoSocket({
+      origen: "https://ejemplo-malicioso.invalid",
+      host: "127.0.0.1:3000",
+    }), false);
+  });
+
+  it("acepta orígenes LAN con el mismo host y rechaza Origin: null", () => {
+    const permitidos = ["https://memoria-ninja-despliegue.vercel.app"];
+    assert.equal(GestorSalas.esOrigenPermitidoSocket({ origen: undefined, host: "192.168.1.50:3000", permitidos }), true);
+    assert.equal(GestorSalas.esOrigenPermitidoSocket({ origen: "null", host: "192.168.1.50:3000", permitidos }), false);
+    assert.equal(GestorSalas.esOrigenPermitidoSocket({ origen: permitidos[0], host: "127.0.0.1:3000", permitidos }), true);
+    assert.equal(GestorSalas.esOrigenPermitidoSocket({ origen: "http://192.168.1.50:3000", host: "192.168.1.50:3000", permitidos }), true);
+    assert.equal(GestorSalas.esOrigenPermitidoSocket({ origen: "http://[::1]:3000", host: "[::1]:3000", permitidos }), true);
+    assert.equal(GestorSalas.esOrigenPermitidoSocket({ origen: "http://192.168.1.51:3000", host: "192.168.1.50:3000", permitidos }), false);
+    assert.equal(GestorSalas.esOrigenPermitidoSocket({ origen: "http://192.168.1.50:4000", host: "192.168.1.50:3000", permitidos }), false);
+    assert.equal(GestorSalas.esOrigenPermitidoSocket({ origen: "https://192.168.1.50:3000", host: "192.168.1.50:3000", permitidos }), false);
+    assert.equal(GestorSalas.esOrigenPermitidoSocket({ origen: "https://ejemplo-malicioso.invalid", host: "192.168.1.50:3000", permitidos }), false);
+  });
+
+  it("limita la creación repetida de salas por socket", async () => {
+    const uno = await cliente("token-limite-salas");
+    for (let intento = 0; intento < 5; intento++) {
+      const respuesta = await emitir(uno, "crear-sala", { nombre: "Uno" });
+      assert.equal(respuesta.exito, true);
+    }
+
+    const excedido = await emitir(uno, "crear-sala", { nombre: "Uno" });
+    assert.equal(excedido.exito, false);
+    assert.match(excedido.error, /Demasiadas salas/);
+  });
+
+  it("permite observar una partida en curso sin revelar cartas ni ocupar asiento", async () => {
+    const { codigo } = await salaIniciada();
+    const espectador = await cliente("token-espectador-uno");
+    const actualizacion = esperarEvento(espectador, "espectadores-actualizados", 2000);
+
+    const respuesta = await emitir(espectador, "unirse-como-espectador", {
+      codigo,
+      nombre: "Maestro observe",
+    });
+    const conteo = await actualizacion;
+
+    assert.equal(respuesta.exito, true);
+    assert.equal(respuesta.estado.espectador, true);
+    assert.equal(respuesta.estado.jugadores.length, 2);
+    assert.ok(respuesta.estado.mazo.every((carta) => carta.valor === undefined));
+    assert.deepEqual(respuesta.estado.byakugan, {});
+    assert.deepEqual(respuesta.estado.byakuganReveladas, []);
+    assert.deepEqual(respuesta.estado.sustitucionArmada, {});
+    assert.equal(conteo.cantidad, 1);
+    assert.equal(gestor.salas.get(codigo).jugadores.length, 2);
+
+    const salida = esperarEvento(espectador, "espectadores-actualizados", 2000);
+    espectador.emit("salir-como-espectador");
+    assert.equal((await salida).cantidad, 0);
+  });
+
+  it("unirse-como-espectador exige la contraseña de una sala privada", async () => {
+    const uno = await cliente("token-privado-uno");
+    const dos = await cliente("token-privado-dos");
+    const creada = await emitir(uno, "crear-sala", {
+      nombre: "Uno",
+      publica: false,
+      contrasena: "clave",
+      config: { mezclarAldeas: true, pares: 8 },
+    });
+    const inicioUno = esperarEvento(uno, "partida-iniciada");
+    const inicioDos = esperarEvento(dos, "partida-iniciada");
+    const buenaEntrada = await emitir(dos, "unirse-sala", {
+      codigo: creada.codigo,
+      nombre: "Dos",
+      contrasena: "clave",
+    });
+    assert.equal(buenaEntrada.exito, true);
+    await Promise.all([inicioUno, inicioDos]);
+
+    const espectador = await cliente("token-espectador-privado");
+    const mala = await emitir(espectador, "unirse-como-espectador", {
+      codigo: creada.codigo,
+      nombre: "Observe",
+      contrasena: "otra",
+    });
+    assert.equal(mala.exito, false);
+    assert.equal(mala.error, "Contraseña incorrecta");
+
+    const buena = await emitir(espectador, "unirse-como-espectador", {
+      codigo: creada.codigo,
+      nombre: "Observe",
+      contrasena: "clave",
+    });
+    assert.equal(buena.exito, true);
+    assert.equal(buena.estado.espectador, true);
+  });
+
+  it("limita los intentos de observar una sala privada", async () => {
+    const uno = await cliente("token-privado-limite");
+    const espectador = await cliente("token-espectador-limite");
+    const creada = await emitir(uno, "crear-sala", {
+      nombre: "Uno",
+      publica: false,
+      contrasena: "clave",
+      config: { pares: 8 },
+    });
+
+    for (let intento = 0; intento < 10; intento++) {
+      const respuesta = await emitir(espectador, "unirse-como-espectador", {
+        codigo: creada.codigo,
+        contrasena: "incorrecta",
+      });
+      assert.equal(respuesta.exito, false);
+      assert.equal(respuesta.error, "Contraseña incorrecta");
+    }
+
+    const excedido = await emitir(espectador, "unirse-como-espectador", {
+      codigo: creada.codigo,
+      contrasena: "clave",
+    });
+    assert.equal(excedido.exito, false);
+    assert.match(excedido.error, /Demasiados intentos/);
+  });
+
+  it("persiste el resultado online solo para jugadores con sesión válida", async () => {
+    const persistidos = [];
+    gestor.resolverUsuarioPorCookie = (token) =>
+      Promise.resolve(token === "sesion-valida" ? { id: "usuario-1" } : null);
+    gestor.persistirResultado = (datos) => {
+      persistidos.push(datos);
+      return Promise.resolve();
+    };
+
+    const uno = await cliente("token-auth", {
+      Cookie: "memoria_ninja_sesion=sesion-valida; tema=oscuro",
+    });
+    const dos = await cliente("token-invitado", { Cookie: "otra=cosa" });
+    await pausa(10);
+
+    const creada = await emitir(uno, "crear-sala", { nombre: "Uno", config: { pares: 8 } });
+    const terminada = esperarEvento(uno, "partida-terminada", 2000);
+    await emitir(dos, "unirse-sala", { codigo: creada.codigo, nombre: "Dos" });
+    dos.emit("abandonar-sala");
+    await terminada;
+    await esperarCondicion(() => persistidos.length === 1);
+
+    assert.equal(persistidos.length, 1);
+    const datos = persistidos[0];
+    assert.equal(datos.zona, "online");
+    assert.equal(datos.modo, "1v1");
+    assert.equal(datos.idPartida, gestor.salas.get(creada.codigo).idPartida);
+    assert.equal(datos.ganadorId, "token-auth");
+    assert.deepEqual(datos.jugadores.map((j) => j.idUsuario), ["usuario-1", null]);
+  });
+
+  it("espera a resolver la sesión antes de persistir el resultado online", async () => {
+    const persistidos = [];
+    let resolverSesion;
+    gestor.resolverUsuarioPorCookie = () => new Promise((resolve) => {
+      resolverSesion = () => resolve({ id: "usuario-lento" });
+    });
+    gestor.persistirResultado = (datos) => {
+      persistidos.push(datos);
+      return Promise.resolve();
+    };
+
+    const uno = await cliente("token-auth-lento", {
+      Cookie: "memoria_ninja_sesion=sesion-lenta",
+    });
+    const dos = await cliente("token-invitado-lento");
+    const creada = await emitir(uno, "crear-sala", { nombre: "Uno", config: { pares: 8 } });
+    const terminada = esperarEvento(uno, "partida-terminada", 2000);
+    await emitir(dos, "unirse-sala", { codigo: creada.codigo, nombre: "Dos" });
+    dos.emit("abandonar-sala");
+    await terminada;
+    await pausa(10);
+
+    assert.equal(persistidos.length, 0);
+    assert.equal(typeof resolverSesion, "function");
+    resolverSesion();
+    await esperarCondicion(() => persistidos.length === 1);
+
+    assert.equal(persistidos.length, 1);
+    assert.equal(persistidos[0].jugadores[0].idUsuario, "usuario-lento");
+  });
+
+  it("una revancha antes de resolver la sesión no cambia el resultado persistido", async () => {
+    const persistidos = [];
+    let resolverSesion;
+    gestor.resolverUsuarioPorCookie = () => new Promise((resolve) => {
+      resolverSesion = () => resolve({ id: "usuario-carrera" });
+    });
+    gestor.persistirResultado = (datos) => {
+      persistidos.push(datos);
+      return Promise.resolve();
+    };
+
+    const uno = await cliente("token-carrera", {
+      Cookie: "memoria_ninja_sesion=carrera",
+    });
+    const dos = await cliente("token-carrera-invitado");
+    const creada = await emitir(uno, "crear-sala", { nombre: "Uno", config: { pares: 8 } });
+    const terminada = esperarEvento(uno, "partida-terminada", 2000);
+    await emitir(dos, "unirse-sala", { codigo: creada.codigo, nombre: "Dos" });
+    const idPartidaAnterior = gestor.salas.get(creada.codigo).idPartida;
+    dos.emit("abandonar-sala");
+    await terminada;
+
+    const inicioRevancha = esperarEvento(uno, "partida-iniciada");
+    const revancha = await emitir(uno, "revancha-sala", { config: { pares: 4 } });
+    await inicioRevancha;
+    assert.equal(revancha.exito, true);
+
+    resolverSesion();
+    await esperarCondicion(() => persistidos.length === 1);
+
+    assert.equal(persistidos.length, 1);
+    assert.equal(persistidos[0].idPartida, idPartidaAnterior);
+    assert.notEqual(gestor.salas.get(creada.codigo).idPartida, idPartidaAnterior);
+  });
+
+  it("limpia el idUsuario cuando la cookie deja de ser válida", async () => {
+    const socket = await cliente("token-cookie-cambiante", {
+      Cookie: "memoria_ninja_sesion=valida",
+    });
+    const socketServidor = () => gestor.io.sockets.sockets.get(socket.id);
+    gestor.resolverUsuarioPorCookie = (token) =>
+      Promise.resolve(token === "valida" ? { id: "usuario-valido" } : null);
+    gestor.vincularUsuarioAutenticado(socketServidor());
+    await esperarCondicion(() => socketServidor()?.data.idUsuario === "usuario-valido");
+    assert.equal(socketServidor().data.idUsuario, "usuario-valido");
+
+    socketServidor().handshake.headers.cookie = "memoria_ninja_sesion=invalida";
+    gestor.vincularUsuarioAutenticado(socketServidor());
+    await esperarCondicion(() => socketServidor()?.data.idUsuario === null);
+    assert.equal(socketServidor().data.idUsuario, null);
+  });
+
+  it("el fallo del persistidor no rompe el evento de fin de partida", async () => {
+    gestor.resolverUsuarioPorCookie = () => Promise.resolve({ id: "usuario-1" });
+    gestor.persistirResultado = () => {
+      throw new Error("BD caída");
+    };
+
+    const { uno, dos } = await salaIniciada();
+    const terminada = esperarEvento(uno, "partida-terminada", 2000);
+    dos.emit("abandonar-sala");
+    const datos = await terminada;
+
+    assert.equal(datos.motivo, "abandono");
+  });
 });

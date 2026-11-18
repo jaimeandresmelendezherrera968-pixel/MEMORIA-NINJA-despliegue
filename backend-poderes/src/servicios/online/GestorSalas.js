@@ -67,6 +67,7 @@ const COSTOS_PODER = {
   sello: 30,
   bomba: 50,
 };
+const NOMBRE_COOKIE_SESION = "memoria_ninja_sesion";
 
 function hashEstado(sala) {
   const base = JSON.stringify({
@@ -98,24 +99,50 @@ function hashEstado(sala) {
   return (h >>> 0).toString(16);
 }
 class GestorSalas {
+  static esOrigenPermitidoSocket({ origen, host, permitidos = [] } = {}) {
+    if (!origen) return true;
+    if (origen === "null") return false;
+    if (permitidos.includes(origen)) return true;
+    let urlOrigen;
+    try {
+      urlOrigen = new URL(origen);
+    } catch {
+      return false;
+    }
+    if (!["http:", "https:"].includes(urlOrigen.protocol)) return false;
+    let hostPeticion;
+    try {
+      hostPeticion = new URL(`http://${host || "localhost"}`);
+    } catch {
+      return false;
+    }
+    return urlOrigen.protocol === hostPeticion.protocol && urlOrigen.host === hostPeticion.host;
+  }
+
   constructor(httpServer, opciones = {}) {
+    const origenesConfigurados = [
+      process.env.CORS_ORIGINS,
+      process.env.PUBLIC_FRONTEND_URL,
+    ]
+      .filter(Boolean)
+      .join(",")
+      .split(",")
+      .map((o) => o.trim())
+      .filter(Boolean);
+    this.origenesPermitidos = origenesConfigurados.length
+      ? origenesConfigurados
+      : ["http://localhost:3000", "http://127.0.0.1:3000"];
     this.io = new Server(httpServer, {
       cors: {
-        origin: (() => {
-          const origenes = [
-            process.env.CORS_ORIGINS,
-            process.env.PUBLIC_FRONTEND_URL,
-          ]
-            .filter(Boolean)
-            .join(",")
-            .split(",")
-            .map((o) => o.trim())
-            .filter(Boolean);
-          return origenes.length
-            ? origenes
-            : ["http://localhost:3000", "http://127.0.0.1:3000"];
-        })(),
+        origin: this.origenesPermitidos,
         credentials: true,
+      },
+      allowRequest: (req, callback) => {
+        callback(null, GestorSalas.esOrigenPermitidoSocket({
+          origen: req?.headers?.origin,
+          host: req?.headers?.host,
+          permitidos: this.origenesPermitidos,
+        }));
       },
     });
     this.salas = new Map();
@@ -128,6 +155,18 @@ class GestorSalas {
     this.duracionSelloMs = opciones.duracionSelloMs ?? 5000;
     this.duracionGenjutsuMs = opciones.duracionGenjutsuMs ?? 5000;
     this.intervaloSnapshotMs = opciones.intervaloSnapshotMs ?? 5000;
+    this.resolverUsuarioPorCookie = opciones.resolverUsuarioPorCookie || null;
+    this.persistirResultado = opciones.persistirResultado || null;
+    this.notificadorAmistades = opciones.notificadorAmistades || null;
+    this.gestorInvitaciones = opciones.gestorInvitaciones || null;
+    this.limitesEventos = opciones.limitesEventos || {
+      "crear-sala": { max: 5, ventanaMs: 60000 },
+      "unirse-sala": { max: 10, ventanaMs: 60000 },
+      "unirse-como-espectador": { max: 10, ventanaMs: 60000 },
+      "buscar-partida": { max: 10, ventanaMs: 60000 },
+      "revancha-sala": { max: 5, ventanaMs: 60000 },
+      "activar-poder": { max: 24, ventanaMs: 10000 },
+    };
     this.inicializar();
   }
 
@@ -384,7 +423,63 @@ class GestorSalas {
       publica: sala.publica,
       conContrasena: !!sala.contrasena,
       equipos: this.equiposPublicos(sala),
+      espectadores: (sala.espectadores || []).length,
     };
+  }
+
+  vistaEspectador(sala) {
+    const vista = this.vistaEstadoPara(sala, null);
+    vista.espectador = true;
+    vista.espectadores = (sala.espectadores || []).length;
+    vista.sustitucionArmada = {};
+    vista.accionPendiente = null;
+    vista.byakugan = {};
+    vista.byakuganReveladas = [];
+    return vista;
+  }
+
+  agregarEspectador(sala, socket, nombre) {
+    if (!Array.isArray(sala.espectadores)) sala.espectadores = [];
+    const existente = sala.espectadores.find((e) => e.socketId === socket.id);
+    if (existente) {
+      existente.nombre = nombre;
+    } else {
+      sala.espectadores.push({
+        id: socket.data.token,
+        socketId: socket.id,
+        nombre,
+      });
+    }
+    socket.join(sala.codigo);
+    socket.data.codigoSala = sala.codigo;
+    socket.data.espectador = true;
+    this.emitirEspectadores(sala, socket);
+  }
+
+  quitarEspectador(sala, socket) {
+    if (!Array.isArray(sala.espectadores)) return false;
+    const cantidad = sala.espectadores.length;
+    sala.espectadores = sala.espectadores.filter((e) => e.socketId !== socket.id);
+    if (sala.espectadores.length === cantidad) return false;
+    socket.leave(sala.codigo);
+    socket.data.codigoSala = null;
+    socket.data.espectador = false;
+    this.emitirEspectadores(sala, socket);
+    this.io.to(sala.codigo).emit("sala-actualizada", this.vistaPublica(sala));
+    return true;
+  }
+
+  emitirEspectadores(sala, socketQueCambia = null) {
+    const datos = {
+      codigo: sala.codigo,
+      cantidad: (sala.espectadores || []).length,
+    };
+    if (socketQueCambia) {
+      socketQueCambia.to(sala.codigo).emit("espectadores-actualizados", datos);
+      socketQueCambia.emit("espectadores-actualizados", datos);
+      return;
+    }
+    this.io.to(sala.codigo).emit("espectadores-actualizados", datos);
   }
 
   inicializarEstadoSala(sala) {
@@ -451,6 +546,10 @@ class GestorSalas {
       const socket = this.io.sockets.sockets.get(jugador.socketId);
       if (socket) socket.emit("partida-iniciada", this.vistaEstadoPara(sala, jugador.id));
     }
+    for (const espectador of sala.espectadores || []) {
+      const socket = this.io.sockets.sockets.get(espectador.socketId);
+      if (socket) socket.emit("partida-iniciada", this.vistaEspectador(sala));
+    }
     this.iniciarTemporizador(sala);
     this.iniciarSnapshot(sala, codigo);
     this.io.emit("lista-salas-actualizada", this.obtenerListaSalasPublicas());
@@ -478,6 +577,10 @@ class GestorSalas {
     for (const jugador of sala.jugadores) {
       const socket = this.io.sockets.sockets.get(jugador.socketId);
       if (socket) socket.emit("estado-completo", this.vistaEstadoPara(sala, jugador.id));
+    }
+    for (const espectador of sala.espectadores || []) {
+      const socket = this.io.sockets.sockets.get(espectador.socketId);
+      if (socket) socket.emit("estado-completo", this.vistaEspectador(sala));
     }
   }
 
@@ -536,6 +639,143 @@ class GestorSalas {
 
   jugadorPorSocket(sala, socketId) {
     return sala.jugadores.find((j) => j.socketId === socketId);
+  }
+
+  eventoPermitido(socket, evento) {
+    const limite = this.limitesEventos[evento];
+    if (!limite) return true;
+    if (!socket.data.limitesEventos) socket.data.limitesEventos = new Map();
+    const ahora = Date.now();
+    const registro = socket.data.limitesEventos.get(evento) || { inicio: ahora, cantidad: 0 };
+    if (ahora - registro.inicio >= limite.ventanaMs) {
+      registro.inicio = ahora;
+      registro.cantidad = 0;
+    }
+    if (registro.cantidad >= limite.max) return false;
+    registro.cantidad += 1;
+    socket.data.limitesEventos.set(evento, registro);
+    return true;
+  }
+
+  tokenSesionDelHandshake(socket) {
+    const cabecera = socket?.handshake?.headers?.cookie;
+    if (typeof cabecera !== "string" || cabecera === "") return null;
+    for (const parte of cabecera.split(";")) {
+      const posicion = parte.indexOf("=");
+      if (posicion < 0) continue;
+      if (parte.slice(0, posicion).trim() !== NOMBRE_COOKIE_SESION) continue;
+      const valor = parte.slice(posicion + 1).trim();
+      try {
+        return decodeURIComponent(valor) || null;
+      } catch (error) {
+        return valor || null;
+      }
+    }
+    return null;
+  }
+
+  vincularUsuarioAutenticado(socket) {
+    const salirSalasAmigos = (id) => {
+      if (!id || typeof socket.leave !== "function") return;
+      socket.leave("amigos:activos");
+      socket.leave("usuario:" + id);
+    };
+    socket.data.usuarioResuelto = Promise.resolve();
+    if (typeof this.resolverUsuarioPorCookie !== "function") {
+      salirSalasAmigos(socket.data.idUsuario);
+      socket.data.idUsuario = null;
+      socket.data.usuario = null;
+      return socket.data.usuarioResuelto;
+    }
+    const tokenSesion = this.tokenSesionDelHandshake(socket);
+    if (!tokenSesion) {
+      salirSalasAmigos(socket.data.idUsuario);
+      socket.data.idUsuario = null;
+      socket.data.usuario = null;
+      return socket.data.usuarioResuelto;
+    }
+    socket.data.usuarioResuelto = Promise.resolve()
+      .then(() => this.resolverUsuarioPorCookie(tokenSesion))
+      .then((usuario) => {
+        const idAnterior = socket.data.idUsuario;
+        const idNuevo = usuario?.id || null;
+        if (idAnterior && idAnterior !== idNuevo) salirSalasAmigos(idAnterior);
+        socket.data.idUsuario = idNuevo;
+        socket.data.usuario = usuario ? usuario.publico?.() || { id: usuario.id, usuario: usuario.usuario, codigoAmigo: usuario.codigoAmigo } : null;
+        if (idNuevo && typeof socket.join === "function") {
+          socket.join("amigos:activos");
+          socket.join("usuario:" + idNuevo);
+        }
+        for (const sala of this.salas.values()) {
+          const jugador = this.jugadorPorToken(sala, socket.data.token);
+          if (jugador) jugador.idUsuario = socket.data.idUsuario;
+        }
+      })
+      .catch(() => {});
+    return socket.data.usuarioResuelto;
+  }
+
+  persistirResultadoOnline(sala, resultado) {
+    if (typeof this.persistirResultado !== "function") return;
+    const snapshot = {
+      idPartida: sala.idPartida,
+      modo: sala.config?.modo || "1v1",
+      motivo: resultado.motivo,
+      ganadorId: resultado.ganadorId,
+      ganadorEquipo: resultado.ganadorEquipo,
+      puntaje: resultado.puntaje,
+      parejas: { ...sala.parejas },
+      parejasEquipos: { ...resultado.parejasEquipos },
+      jugadores: sala.jugadores.map((j) => ({
+        id: j.id,
+        nombre: j.nombre,
+        equipo: j.equipo,
+        socketId: j.socketId,
+        idUsuario: j.idUsuario || null,
+      })),
+    };
+    const conTiempoLimite = (promesa) => {
+      let temporizador;
+      const resultadoPromesa = Promise.race([
+        Promise.resolve(promesa).catch(() => null),
+        new Promise((resolve) => {
+          temporizador = setTimeout(() => resolve(null), 3000);
+          temporizador.unref?.();
+        }),
+      ]);
+      return resultadoPromesa.finally(() => clearTimeout(temporizador));
+    };
+
+    Promise.resolve()
+      .then(() => Promise.all(snapshot.jugadores.map((j) => {
+        const socket = this.io.sockets.sockets.get(j.socketId);
+        return conTiempoLimite(socket?.data?.usuarioResuelto);
+      })))
+      .then(() => {
+        const jugadores = snapshot.jugadores.map(({ socketId, ...jugador }) => {
+          const socket = this.io.sockets.sockets.get(socketId);
+          return {
+            ...jugador,
+            idUsuario: jugador.idUsuario || socket?.data?.idUsuario || null,
+          };
+        });
+        if (!jugadores.some((j) => j.idUsuario)) return;
+        return this.persistirResultado({
+          idPartida: snapshot.idPartida,
+          modo: snapshot.modo,
+          zona: "online",
+          motivo: snapshot.motivo,
+          ganadorId: snapshot.ganadorId,
+          ganadorEquipo: snapshot.ganadorEquipo,
+          puntaje: snapshot.puntaje,
+          parejas: snapshot.parejas,
+          parejasEquipos: snapshot.parejasEquipos,
+          jugadores,
+        });
+      })
+      .catch((error) => {
+        console.error("[GestorSalas] No se pudo persistir el resultado online:", error?.message || error);
+      });
   }
 
   otroJugador(sala, token) {
@@ -641,6 +881,14 @@ class GestorSalas {
       config: sala.config,
     });
 
+    this.persistirResultadoOnline(sala, {
+      motivo,
+      ganadorId,
+      ganadorEquipo,
+      puntaje,
+      parejasEquipos,
+    });
+
     this.limpiarTemporizadorLimpieza(sala);
     sala.temporizadorLimpieza = setTimeout(() => this.salas.delete(sala.codigo), 30000);
     sala.temporizadorLimpieza.unref?.();
@@ -691,6 +939,10 @@ class GestorSalas {
     if (!codigo) return;
     const sala = this.salas.get(codigo);
     if (!sala) return;
+    if (socket.data.espectador) {
+      this.quitarEspectador(sala, socket);
+      return;
+    }
     socket.leave(codigo);
     const jugador = this.jugadorPorSocket(sala, socket.id);
     if (!jugador) return;
@@ -726,9 +978,21 @@ class GestorSalas {
         return;
       }
       socket.data.token = token;
+      this.vincularUsuarioAutenticado(socket);
+      this.gestorInvitaciones?.registrar(socket);
+      socket.data.usuarioResuelto.then(() => {
+        const idUsuario = socket.data.idUsuario;
+        if (!idUsuario || !socket.connected) return;
+        this.notificadorAmistades?.registrarConexion(idUsuario, socket);
+        this.notificadorAmistades?.notificarPresencia(idUsuario, "online");
+        this.notificadorAmistades?.notificarSnapshotPresencia(socket, idUsuario);
+      }).catch(() => {});
 
       socket.on("crear-sala", (datos = {}, callback = () => {}) => {
         try {
+          if (!this.eventoPermitido(socket, "crear-sala")) {
+            return callback({ exito: false, error: "Demasiadas salas creadas. Intenta en unos segundos." });
+          }
           this.sacarDeSala(socket, "salida");
           const config = this.normalizarConfig(datos.config || {});
           const codigo = this.generarCodigo();
@@ -744,11 +1008,15 @@ class GestorSalas {
                 conectado: true,
                 asiento: 0,
                 equipo: "A",
-                abandonado: false,
-              },
-            ],
+                 abandonado: false,
+                 idUsuario: socket.data.idUsuario || null,
+               },
+              ],
+
             estado: "esperando",
+            espectadores: [],
             mazo: [],
+
             cartasVolteadas: [],
             movimientos: 0,
             parejas: {},
@@ -778,6 +1046,9 @@ class GestorSalas {
 
       socket.on("unirse-sala", (datos = {}, callback = () => {}) => {
         try {
+          if (!this.eventoPermitido(socket, "unirse-sala")) {
+            return callback({ exito: false, error: "Demasiados intentos de entrada. Intenta en unos segundos." });
+          }
           const codigo = String(datos.codigo || "").toUpperCase();
           const sala = this.salas.get(codigo);
           if (!sala) return callback({ exito: false, error: "Sala no encontrada" });
@@ -789,9 +1060,11 @@ class GestorSalas {
           const existente = this.jugadorPorToken(sala, token);
           if (existente) {
             existente.socketId = socket.id;
-            existente.conectado = true;
-            existente.abandonado = false;
-            socket.join(codigo);
+             existente.conectado = true;
+             existente.abandonado = false;
+             existente.idUsuario = socket.data.idUsuario || existente.idUsuario || null;
+             socket.join(codigo);
+
             socket.data.codigoSala = codigo;
             callback({ exito: true, codigo, sala: this.vistaPublica(sala), reincorporado: true });
             this.io.to(codigo).emit("sala-actualizada", this.vistaPublica(sala));
@@ -811,9 +1084,11 @@ class GestorSalas {
             listo: true,
             conectado: true,
             asiento,
-            equipo: this.equipoDeAsiento(asiento),
-            abandonado: false,
-          });
+             equipo: this.equipoDeAsiento(asiento),
+             abandonado: false,
+             idUsuario: socket.data.idUsuario || null,
+           });
+
           socket.join(codigo);
           socket.data.codigoSala = codigo;
           sala.version = (sala.version || 0) + 1; this.salas.set(codigo, sala);
@@ -860,9 +1135,11 @@ class GestorSalas {
 
           this.limpiarTemporizadorAbandono(sala, jugador);
           jugador.socketId = socket.id;
-          jugador.conectado = true;
-          jugador.abandonado = false;
-          socket.join(codigo);
+           jugador.conectado = true;
+           jugador.abandonado = false;
+           jugador.idUsuario = socket.data.idUsuario || jugador.idUsuario || null;
+           socket.join(codigo);
+
           socket.data.codigoSala = codigo;
           sala.version = (sala.version || 0) + 1; this.salas.set(codigo, sala);
           this.io.to(codigo).emit("jugador-reconectado", {
@@ -987,6 +1264,10 @@ class GestorSalas {
 
       socket.on("activar-poder", (datos = {}) => {
         try {
+          if (!this.eventoPermitido(socket, "activar-poder")) {
+            socket.emit("poder-rechazado", { motivo: "limite", mensaje: "Demasiados poderes. Intenta en unos segundos." });
+            return;
+          }
           const sala = this.salas.get(socket.data.codigoSala);
           if (!sala || sala.estado !== "jugando") return;
           const jugador = this.jugadorPorSocket(sala, socket.id);
@@ -1569,6 +1850,9 @@ class GestorSalas {
 
       socket.on("revancha-sala", (datos = {}, callback = () => {}) => {
         try {
+          if (!this.eventoPermitido(socket, "revancha-sala")) {
+            return callback({ exito: false, error: "Demasiadas revanchas. Intenta en unos segundos." });
+          }
           const sala = this.salas.get(socket.data.codigoSala);
           if (!sala) return callback({ exito: false, error: "Sala no encontrada" });
           if (sala.estado !== "terminada") {
@@ -1598,6 +1882,39 @@ class GestorSalas {
 
       socket.on("abandonar-sala", () => this.sacarDeSala(socket, "abandono"));
 
+      socket.on("unirse-como-espectador", (datos = {}, callback = () => {}) => {
+        try {
+          if (typeof datos === "function") callback = datos;
+          if (!this.eventoPermitido(socket, "unirse-como-espectador")) {
+            return callback({ exito: false, error: "Demasiados intentos para observar. Intenta en unos segundos." });
+          }
+          const salaActual = this.salas.get(socket.data.codigoSala);
+          if (salaActual && this.jugadorPorToken(salaActual, token)) {
+            return callback({ exito: false, error: "Ya estás jugando en una sala" });
+          }
+          const codigo = String(datos.codigo || "").toUpperCase();
+          const sala = this.salas.get(codigo);
+          if (!sala) return callback({ exito: false, error: "Sala no encontrada" });
+          if (sala.estado === "terminada") {
+            return callback({ exito: false, error: "La partida ya terminó" });
+          }
+          if (sala.contrasena && sala.contrasena !== datos.contrasena) {
+            return callback({ exito: false, error: "Contraseña incorrecta" });
+          }
+          if (salaActual && salaActual !== sala) this.quitarEspectador(salaActual, socket);
+          this.agregarEspectador(sala, socket, this.normalizarNombre(datos.nombre || "Espectador"));
+          callback({ exito: true, codigo, estado: this.vistaEspectador(sala) });
+          this.io.to(codigo).emit("sala-actualizada", this.vistaPublica(sala));
+        } catch (error) {
+          callback({ exito: false, error: "No se pudo observar la sala" });
+        }
+      });
+
+      socket.on("salir-como-espectador", () => {
+        const sala = this.salas.get(socket.data.codigoSala);
+        if (sala) this.quitarEspectador(sala, socket);
+      });
+
       socket.on("listar-salas", (datos, callback = () => {}) => {
         try {
           if (typeof datos === "function") callback = datos;
@@ -1623,12 +1940,21 @@ class GestorSalas {
 
       socket.on("buscar-partida", (datos = {}, callback = () => {}) => {
         try {
+          if (!this.eventoPermitido(socket, "buscar-partida")) {
+            return callback({ exito: false, error: "Demasiadas búsquedas. Intenta en unos segundos." });
+          }
           const modo = this.normalizarModo(datos.modo);
           const requeridos = modo === "2v2" ? 4 : 2;
           const nombre = this.normalizarNombre(datos.nombre);
           const cola = this.colasMatchmaking[modo];
           const filtrada = cola.filter((c) => c.token !== token);
-          filtrada.push({ token, nombre, socketId: socket.id, modo });
+          filtrada.push({
+            token,
+            nombre,
+            socketId: socket.id,
+            modo,
+            idUsuario: socket.data?.idUsuario || null,
+          });
           this.colasMatchmaking[modo] = filtrada;
 
           if (filtrada.length < requeridos) {
@@ -1648,6 +1974,10 @@ class GestorSalas {
             jugadores: elegidos.map((p, indice) => ({
               id: p.token,
               socketId: p.socketId,
+              idUsuario:
+                p.idUsuario ||
+                this.io.sockets.sockets.get(p.socketId)?.data?.idUsuario ||
+                null,
               nombre: p.nombre,
               listo: true,
               conectado: true,
@@ -1692,6 +2022,8 @@ class GestorSalas {
       });
 
       socket.on("disconnect", () => {
+        this.notificadorAmistades?.registrarDesconexion(socket.data.idUsuario, socket.id);
+        this.gestorInvitaciones?.cancelarPorSocket(socket.id);
         for (const modo of Object.keys(this.colasMatchmaking)) {
           this.colasMatchmaking[modo] = this.colasMatchmaking[modo].filter(
             (c) => c.socketId !== socket.id
@@ -1701,6 +2033,10 @@ class GestorSalas {
         const sala = codigo ? this.salas.get(codigo) : null;
         if (!sala) {
           this.io.emit("lista-salas-actualizada", this.obtenerListaSalasPublicas());
+          return;
+        }
+        if ((sala.espectadores || []).some((e) => e.socketId === socket.id)) {
+          this.quitarEspectador(sala, socket);
           return;
         }
         const jugador = this.jugadorPorSocket(sala, socket.id);
@@ -2045,9 +2381,10 @@ class GestorSalas {
     });
 
     const debeTerminar = !sustitucionActiva && sala.vida[actorId] <= 0;
-    setTimeout(() => {
+    const idPartida = sala.idPartida;
+    this.registrarTimerPoder(sala, () => {
       const actual = this.salas.get(sala.codigo);
-      if (!actual || actual.estado !== "jugando") return;
+      if (!actual || actual.estado !== "jugando" || actual.idPartida !== idPartida) return;
       actual.cartasVolteadas = [];
       actual.bloqueada = false;
       if (debeTerminar) {
@@ -2067,7 +2404,7 @@ class GestorSalas {
         turnoEquipo: actual.turnoEquipo,
         sustitucion: sustitucionActiva,
       });
-    }, this.retardoFalloMs).unref?.();
+    }, this.retardoFalloMs);
   }
 
   acreditarAcierto(sala, jugadorId, equipo) {
@@ -2122,6 +2459,9 @@ class GestorSalas {
       this.limpiarTemporizadorAbandono(sala);
       this.limpiarTemporizadorPartida(sala);
       this.limpiarTemporizadorLimpieza(sala);
+      this.limpiarSnapshot(sala);
+      this.limpiarTimersPoderes(sala);
+      this.limpiarTimersReaccion(sala);
     }
     this.salas.clear();
     this.colasMatchmaking = { "1v1": [], "2v2": [] };

@@ -1,0 +1,151 @@
+.social-toasts {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(26rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.social-toast {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(0, 255, 170, 0.55);
+  border-left: 4px solid #00ffaa;
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(8, 18, 24, 0.98), rgba(14, 10, 28, 0.98));
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.55);
+  color: #f4fff9;
+  font-family: "Fredoka", system-ui, sans-serif;
+  animation: social-toast-entrada 0.22s ease-out;
+}
+
+.social-toast--morado {
+  border-color: rgba(188, 37, 255, 0.6);
+  border-left-color: #bc25ff;
+}
+
+.social-toast--error {
+  border-color: rgba(255, 123, 0, 0.65);
+  border-left-color: #ff7b00;
+}
+
+.social-toast.is-saliendo {
+  opacity: 0;
+  transform: translateX(1.5rem);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.social-toast__contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.social-toast__titulo {
+  color: #00ffaa;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.social-toast--morado .social-toast__titulo {
+  color: #c9a4ff;
+}
+
+.social-toast--error .social-toast__titulo {
+  color: #ffb347;
+}
+
+.social-toast__mensaje {
+  margin: 0;
+  color: #d9e8e2;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.social-toast__acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.social-toast__boton {
+  border: none;
+  border-radius: 999px;
+  padding: 0.42rem 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.social-toast__boton:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.social-toast__boton:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.social-toast__boton--primario {
+  background: linear-gradient(135deg, #00ffaa, #00c97a);
+  color: #03120c;
+  box-shadow: 0 6px 18px rgba(0, 255, 170, 0.28);
+}
+
+.social-toast__boton--secundario {
+  background: rgba(188, 37, 255, 0.18);
+  border: 1px solid rgba(201, 164, 255, 0.6);
+  color: #f4eaff;
+}
+
+.social-toast__cerrar {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: #9fb8ae;
+  cursor: pointer;
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+}
+
+.social-toast__cerrar:hover,
+.social-toast__cerrar:focus-visible {
+  color: #ffffff;
+}
+
+.social-toast__boton:focus-visible,
+.social-toast__cerrar:focus-visible {
+  outline: 2px solid #ffb347;
+  outline-offset: 2px;
+}
+
+@keyframes social-toast-entrada {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .social-toasts {
+    top: auto;
+    bottom: 1rem;
+    right: 0.75rem;
+    width: calc(100vw - 1.5rem);
+  }
+}

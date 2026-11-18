@@ -2,6 +2,7 @@
 
 > Base: `origin/prueba` (0 detras / 55 delante). PR recomendado: **base = `prueba`** (no toca `main`; no incorpora los 5 commits de `main` ignorados a proposito: `c55e140,c1bbf9a,09252c3,54f5c8a,7d05449`).
 > Esta **no es otra rama nueva**: es la misma `docs/pruebas-manuales-mobile-auth-1j-online` ya publicada; mezclar el PR (base=`prueba`) solo actualiza `prueba`. **`main` queda igual.**
+> Los mensajes son un volcado histórico del log de Git: conservan los caracteres rotos originales, no son textos de UI.
 
 ## Lista de commits (en orden)
 

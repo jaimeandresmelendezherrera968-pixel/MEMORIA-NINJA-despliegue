@@ -149,9 +149,10 @@ export class MultijugadorModal extends BaseModal {
       const panelEspera = document.getElementById('panelEsperandoRivalVerde');
       const codigo = document.getElementById('codigoSalaEsperaVerde')?.textContent;
       if (panelEspera && !panelEspera.hidden && codigo && codigo !== '----') {
-        this.ocultarTodo();
-        this.marcarActivo('btnInvitarAmigosVerdeModal');
-        panelEspera.removeAttribute('hidden');
+        this.cerrar();
+        document.dispatchEvent(
+          new CustomEvent('amigos:abrir-para-invitar', { detail: { codigo } })
+        );
         return;
       }
       alert('Crea una sala primero para poder invitar amigos.');

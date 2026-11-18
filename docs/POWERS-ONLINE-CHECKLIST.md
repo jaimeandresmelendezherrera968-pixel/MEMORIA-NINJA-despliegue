@@ -42,10 +42,11 @@ Fecha: 2026-11-17
 
 ## Tests / verificación
 
-- [x] `npm run check:js` → `Sintaxis OK: 334 archivos JS verificados.`
-- [x] `npm test` → **239/239**, **32 suites** (2026-11-17).
-- [x] `gestorSalas.test.js` → **83 tests** (1v1/2v2, poderes, contrarrestos, vistas, rejoin, abandono y revancha).
-- [x] Casos nuevos: Sello vs Byakugan, Sello sin cartas, doble respuesta, Sustitución durante la ventana, Sustitución caída, Byakugan con <2 cartas, reacción 2v2, rejoin/abandono/revancha con ventana activa.
+- [x] `npm run check:js` → `Sintaxis OK: 348 archivos JS verificados.`
+- [x] `npm test` → **268 tests**, **34 suites** (2026-11-18; 16 de amistades).
+- [x] `gestorSalas.test.js` → **95 tests** (1v1/2v2, poderes, contrarrestos, vistas, rejoin, abandono, revancha, chat, persistencia, espectadores y seguridad Socket.io).
+- [x] Casos nuevos: Sello vs Byakugan, Sello sin cartas, doble respuesta, Sustitución durante la ventana, Sustitución caída, Byakugan con <2 cartas, reacción 2v2, rejoin/abandono/revancha con ventana activa, persistencia solo con sesión, fallo del persistidor, origen rechazado, límite de eventos y espectador sin cartas ocultas.
+- [x] Amistades: búsqueda por nombre/código/ID, solicitudes, cancelación, doble respuesta, disputa de prefijo, presencia, invitaciones a sala, bloqueos, notificaciones, rename y borrado (16 tests entre `amistadService.test.js` y `amistadesE2e.test.js`).
 - [ ] Prueba manual E2E con dos navegadores reales (sigue pendiente).
 
 ## Despliegue (pendiente de confirmar en Render/Vercel)

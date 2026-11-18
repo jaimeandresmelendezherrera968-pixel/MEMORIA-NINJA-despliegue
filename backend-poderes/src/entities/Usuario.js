@@ -10,6 +10,7 @@
 class Usuario {
   #id;
   #usuario;
+  #codigoAmigo;
   #correo;
   #nacimiento;
   #passwordHash;
@@ -25,6 +26,7 @@ class Usuario {
   constructor({
     id,
     usuario,
+    codigoAmigo,
     correo,
     nacimiento,
     passwordHash,
@@ -39,6 +41,7 @@ class Usuario {
   }) {
     this.#id = id;
     this.#usuario = usuario;
+    this.#codigoAmigo = codigoAmigo;
     this.#correo = correo;
     this.#nacimiento = nacimiento ?? null;
     this.#passwordHash = passwordHash;
@@ -61,6 +64,10 @@ class Usuario {
 
   get usuario() {
     return this.#usuario;
+  }
+
+  get codigoAmigo() {
+    return this.#codigoAmigo;
   }
 
   get correo() {
@@ -108,6 +115,10 @@ class Usuario {
     return this.#bloqueadoHasta;
   }
 
+  cambiarUsuario(nuevoUsuario) {
+    this.#usuario = nuevoUsuario;
+  }
+
   /**
    * Único punto de entrada para modificar el progreso de juego.
    * El Service calcula los valores (XP, racha, etc.) y acá solo se
@@ -129,6 +140,7 @@ class Usuario {
     return {
       id: this.#id,
       usuario: this.#usuario,
+      codigoAmigo: this.#codigoAmigo,
       correo: this.#correo,
       nacimiento: this.#nacimiento,
       xp: this.#xp,

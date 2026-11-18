@@ -12,7 +12,10 @@ import { MensajeDomNotificador } from "./infraestructura/notificadores/MensajeDo
 import { AutenticacionService } from "./servicios/AutenticacionService.js";
 import { SesionService } from "./servicios/SesionService.js";
 import { LoginController } from "./controladores/LoginController.js";
+import { instalarAvisoSincronizacion } from "./services/SincronizacionInvitadoService.js";
 import { alternarVisibilidadPassword } from "./utils/TogglePasswordHelper.js";
+
+instalarAvisoSincronizacion();
 
 if (window.location.protocol === "file:") {
   const archivo = window.location.pathname.split("/").pop() || "login.html";

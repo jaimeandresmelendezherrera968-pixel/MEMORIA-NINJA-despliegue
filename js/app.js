@@ -1,7 +1,10 @@
 import { LocalStorageRepository } from './infrastructure/LocalStorageRepository.js';
 import { progresoService } from './services/progresoService.js';
+import { AmistadService } from './services/AmistadService.js';
 import { SalaService } from './services/SalaService.js';
+import { clienteMultijugador } from './multijugador/ClienteMultijugador.js';
 import { ProfileModal } from './ui/ProfileModal.js';
+import { AmigosModal } from './ui/AmigosModal.js';
 import { GameModeModal } from './ui/Gamemodemodal.js';
 import { RankingModal } from './ui/RankingModal.js';
 import { HistoryModal } from './ui/HistoryModal.js';
@@ -24,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // services/progresoService.js, que es el mismo singleton que usan las
   // páginas de juego al cerrar una partida.
   const profileService = progresoService;
+  const amistadService = new AmistadService();
   const salaService = new SalaService(storageRepository);
 
   // OCP/DRY: agregar un modal = agregar una entrada al mapa.
@@ -35,7 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Cada subclase concreta añade su comportamiento específico sin romper el contrato.
   const modales = {
     profileModal: crearModalSiExiste('profileModal', () =>
-      new ProfileModal('profileModal', profileService)
+      new ProfileModal('profileModal', profileService, amistadService)
+    ),
+    amigosModal: crearModalSiExiste('amigosModal', () =>
+      new AmigosModal('amigosModal', amistadService, clienteMultijugador)
     ),
     gameModeModal: crearModalSiExiste('gameModeModal', () =>
       new GameModeModal('gameModeModal')
@@ -62,6 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // El modal de modos de juego inicializa sus tarjetas de opción (composición)
   modales.gameModeModal?.inicializarOpciones();
+
+  document.addEventListener('amigos:abrir-para-invitar', (evento) => {
+    modales.amigosModal?.abrirConCodigo?.(evento.detail?.codigo);
+  });
 
   const menuController = new MenuController(modales);
   menuController.inicializarEventos();

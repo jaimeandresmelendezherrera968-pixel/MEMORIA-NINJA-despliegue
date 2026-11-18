@@ -40,12 +40,13 @@ DELETE FROM usuarios WHERE correo LIKE '%@demo.ninja';
 --    shikamaru y gaara se ajustan DESPUÉS para disparar la auditoría.
 -- ---------------------------------------------------------------------
 INSERT INTO usuarios
-    (id, usuario, correo, nacimiento, password_hash,
+    (id, usuario, codigo_amigo, correo, nacimiento, password_hash,
      xp, victorias, derrotas, racha, puntaje_max,
      correo_verificado, correo_verificado_en)
 SELECT
     gen_random_uuid()::text,
     t.usuario,
+    t.codigo_amigo,
     t.usuario || '@demo.ninja',
     t.nacimiento::date,
     '958d3a0ebc96dbd41e609f9477118d88:940ff65b481a18c29beea02ca28918da4e732195ad46fb517967e59c0aa0a9a01c6d4cedcf956f8e3a9b95dc21f44f0a03ae61af1c5792c384afd1c667934d7b',
@@ -53,14 +54,14 @@ SELECT
     t.verificado,
     CASE WHEN t.verificado THEN now() ELSE NULL END
 FROM (VALUES
-    ('sasuke',    '2001-07-23', 1200,  7, 2, 3, 850, true),
-    ('sakura',    '2001-03-28',  900,  4, 3, 1, 720, true),
-    ('kakashi',   '1990-09-15', 1500, 10, 1, 5, 980, true),
-    ('hinata',    '2001-12-27',  500,  0, 0, 0,   0, false),
-    ('shikamaru', '2001-09-22',  700,  2, 4, 0, 610, false),
-    ('rocklee',   '2001-11-27', 1100,  6, 2, 2, 800, true),
-    ('gaara',     '2001-01-19',  500,  0, 0, 0,   0, true)
-) AS t(usuario, nacimiento, xp, victorias, derrotas, racha, puntaje_max, verificado);
+    ('sasuke',    'NJ-00000001', '2001-07-23', 1200,  7, 2, 3, 850, true),
+    ('sakura',    'NJ-00000002', '2001-03-28',  900,  4, 3, 1, 720, true),
+    ('kakashi',   'NJ-00000003', '1990-09-15', 1500, 10, 1, 5, 980, true),
+    ('hinata',    'NJ-00000004', '2001-12-27',  500,  0, 0, 0,   0, false),
+    ('shikamaru', 'NJ-00000005', '2001-09-22',  700,  2, 4, 0, 610, false),
+    ('rocklee',   'NJ-00000006', '2001-11-27', 1100,  6, 2, 2, 800, true),
+    ('gaara',     'NJ-00000007', '2001-01-19',  500,  0, 0, 0,   0, true)
+) AS t(usuario, codigo_amigo, nacimiento, xp, victorias, derrotas, racha, puntaje_max, verificado);
 
 -- ---------------------------------------------------------------------
 -- 2) jugadores  (tabla legacy, aislada: INSERT directo)
@@ -83,6 +84,24 @@ BEGIN
     SELECT id INTO v_kakashi   FROM usuarios WHERE correo = 'kakashi@demo.ninja';
     SELECT id INTO v_shikamaru FROM usuarios WHERE correo = 'shikamaru@demo.ninja';
     SELECT id INTO v_rocklee   FROM usuarios WHERE correo = 'rocklee@demo.ninja';
+
+    INSERT INTO amistades (id, usuario_id, amigo_id)
+    SELECT gen_random_uuid()::text, LEAST(u1.id, u2.id), GREATEST(u1.id, u2.id)
+      FROM (VALUES
+        ('sasuke@demo.ninja', 'sakura@demo.ninja'),
+        ('sasuke@demo.ninja', 'kakashi@demo.ninja'),
+        ('kakashi@demo.ninja', 'rocklee@demo.ninja')
+      ) AS p(correo_a, correo_b)
+      JOIN usuarios u1 ON u1.correo = p.correo_a
+      JOIN usuarios u2 ON u2.correo = p.correo_b
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO solicitudes_amistad (id, emisor_id, receptor_id, estado, creado_en)
+    SELECT gen_random_uuid()::text, u1.id, u2.id, 'PENDIENTE', now()
+      FROM (VALUES ('hinata@demo.ninja', 'sasuke@demo.ninja')) AS p(correo_a, correo_b)
+      JOIN usuarios u1 ON u1.correo = p.correo_a
+      JOIN usuarios u2 ON u2.correo = p.correo_b
+    ON CONFLICT DO NOTHING;
 
     CALL sp_crear_partida_completa(gen_random_uuid()::text,
         '{"demo":true,"zona":"arena","puntaje":850,"jugadores":{"sasuke":{"nombre":"sasuke","chakra":30,"vida":100}},"eventos":["inicio en arena","puntaje 850"],"poderesActivos":[]}',

@@ -73,6 +73,7 @@ export class GestorPartida {
     constructor() {
         const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
         this.esSalaOnline = !!params?.get("codigo");
+        this.esEspectador = params?.get("espectador") === "1";
         this.mazoOnline = null;
         this.gestorSala = null;
         this.iniciado = false;
@@ -132,6 +133,7 @@ export class GestorPartida {
             notificarPoderAlServidor: (idPoder, esSasuke) =>
                 this.proveedorDatos.notificarPoder(idPoder, esSasuke),
             activarPoderOnline: (idPoder) => {
+                if (this.esEspectador || this.gestorSala?.espectador) return;
                 try {
                     if (this.esSalaOnline) {
                         clienteMultijugador?.activarPoder?.(idPoder);
@@ -167,7 +169,10 @@ export class GestorPartida {
             try {
                 const mod = await import('../multijugador/GestorSalaCliente.js');
                 this.gestorSala = mod.gestorSalaCliente;
-                estadoInicial = await this.gestorSala.iniciar({ codigoSala: opciones.codigoSala });
+                estadoInicial = await this.gestorSala.iniciar({
+                    codigoSala: opciones.codigoSala,
+                    espectador: opciones.espectador ?? this.esEspectador,
+                });
             } catch (error) {
                 this.mostrarErrorConexion(error.message);
                 return;
@@ -418,15 +423,16 @@ export class GestorPartida {
         BoardManager.bloquearTablero(true);
 
         const es2v2 = datos.modo === "2v2" || datos.config?.modo === "2v2";
+        const esEspectador = this.esEspectador || this.gestorSala?.espectador === true;
         const miId = this.gestorSala?.miId;
         const miEquipo = this.gestorSala?.miEquipo;
         const miNombre = this.gestorSala?.miNombre || "Jugador";
         const ganadorEquipo = datos.ganadorEquipo || null;
         const empate = es2v2 ? !ganadorEquipo && !datos.ganadorId : !datos.ganadorId;
         const soyGanador = es2v2 ? ganadorEquipo === miEquipo : datos.ganadorId === miId;
-        const tipo = empate ? "empate" : soyGanador ? "victoria" : "derrota";
-        const titulo = empate ? "EMPATE" : soyGanador ? "¡VICTORIA!" : "DERROTA";
-        const icono = empate ? "🤝" : soyGanador ? "🏆" : "💥";
+        const tipo = esEspectador || empate ? "empate" : soyGanador ? "victoria" : "derrota";
+        const titulo = esEspectador ? "PARTIDA TERMINADA" : empate ? "EMPATE" : soyGanador ? "¡VICTORIA!" : "DERROTA";
+        const icono = esEspectador || empate ? "🤝" : soyGanador ? "🏆" : "💥";
 
         const parejas = datos.parejas || {};
         const parejasEquipos = datos.parejasEquipos || { A: 0, B: 0 };
@@ -465,12 +471,17 @@ export class GestorPartida {
         } else {
             const rivalId = this.gestorSala?.rivalId();
             marcador = [
-                { etiqueta: "TÚ", valor: `+${misParejas}`, detalle: miNombre, ganador: soyGanador && !empate },
                 {
-                    etiqueta: "RIVAL",
+                    etiqueta: esEspectador ? "JUGADOR 1" : "TÚ",
+                    valor: `+${misParejas}`,
+                    detalle: miNombre,
+                    ganador: !esEspectador && soyGanador && !empate,
+                },
+                {
+                    etiqueta: esEspectador ? "JUGADOR 2" : "RIVAL",
                     valor: `+${rivalId ? parejas[rivalId] || 0 : 0}`,
                     detalle: this.gestorSala?.rivalNombre || "Rival",
-                    ganador: !soyGanador && !empate,
+                    ganador: !esEspectador && !soyGanador && !empate,
                 },
             ];
         }
@@ -483,13 +494,13 @@ export class GestorPartida {
             marcador,
             stats: [
                 `Movimientos: ${datos.movimientos ?? 0}`,
-                `Tus parejas: ${misParejas}`,
+                esEspectador ? `Parejas jugador 1: ${misParejas}` : `Tus parejas: ${misParejas}`,
                 ...statsExtra,
                 `Sala: ${datos.codigo || this.gestorSala?.codigoSala || "--"}`,
             ],
             config: datos.config || {},
-            esAnfitrion: this.gestorSala?.esAnfitrion === true,
-            revanchaDisponible: datos.motivo !== "abandono",
+            esAnfitrion: !esEspectador && this.gestorSala?.esAnfitrion === true,
+            revanchaDisponible: !esEspectador && datos.motivo !== "abandono",
         });
 
         this.#guardarHistorialOnline({ datos, es2v2, empate, soyGanador, puntaje: puntajeMio });
@@ -511,6 +522,7 @@ export class GestorPartida {
     }
 
     #guardarHistorialOnline({ datos, es2v2, empate, soyGanador, puntaje }) {
+        if (this.esEspectador || this.gestorSala?.espectador) return;
         if (this.historialOnlineGuardado) return;
         this.historialOnlineGuardado = true;
 

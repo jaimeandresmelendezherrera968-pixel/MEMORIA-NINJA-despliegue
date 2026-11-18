@@ -42,6 +42,17 @@ class CodigoVerificacionRepositorySQL extends CodigoVerificacionRepository {
     ).get(usuarioId, tipo);
   }
 
+  async invalidarActivos({ usuarioId, tipo }, ejecutor) {
+    await this.#preparar(
+      `UPDATE codigos_verificacion
+          SET usado_en = now(), actualizado_en = now()
+        WHERE usuario_id = ?
+          AND tipo = ?
+          AND usado_en IS NULL`,
+      ejecutor
+    ).run(usuarioId, tipo);
+  }
+
   async aumentarIntento(id, ejecutor) {
     const fila = await this.#preparar(
       `UPDATE codigos_verificacion

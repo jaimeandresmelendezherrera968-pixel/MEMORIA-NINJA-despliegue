@@ -1,4 +1,6 @@
 const CLAVE_TOKEN = "memoriaNinjaTokenJugador";
+const CLAVE_ESPECTADOR = "memoriaNinjaEspectador:";
+const TIEMPO_TICKET_ESPECTADOR_MS = 15 * 60 * 1000;
 
 // En local/LAN/túnel el socket va al mismo origen que sirve la página.
 // En producción (Vercel) va directo a Render, porque Vercel no mantiene
@@ -156,11 +158,23 @@ export class ClienteMultijugador {
       return Promise.reject(new Error("Sin conexión con el servidor de salas."));
     }
     return new Promise((resolve, reject) => {
-      const temporizador = setTimeout(() => reject(new Error("El servidor no respondió.")), 8000);
       const respuesta = (valor) => {
         clearTimeout(temporizador);
         resolve(valor);
       };
+      const limpiarAck = () => {
+        try {
+          const acks = this.socket?.acks;
+          if (!acks || typeof acks !== "object") return;
+          for (const id of Object.keys(acks)) {
+            if (acks[id] === respuesta) delete acks[id];
+          }
+        } catch (error) {}
+      };
+      const temporizador = setTimeout(() => {
+        limpiarAck();
+        reject(new Error("El servidor no respondió."));
+      }, 8000);
       if (datos === undefined) this.socket.emit(evento, respuesta);
       else this.socket.emit(evento, datos, respuesta);
     });
@@ -185,6 +199,21 @@ export class ClienteMultijugador {
     return respuesta;
   }
 
+  async invitarAmigo(idAmigo, codigoSala, config = null) {
+    await this.conectar();
+    return this.emitir("amigos:invitar-partida", { idAmigo, codigoSala, config });
+  }
+
+  async responderInvitacion(id, aceptar) {
+    await this.conectar();
+    return this.emitir("amigos:responder-invitacion", { id, aceptar });
+  }
+
+  async cancelarInvitacion(id) {
+    await this.conectar();
+    return this.emitir("amigos:cancelar-invitacion", { id });
+  }
+
   async unirseSala(codigo, nombre, contrasena = null) {
     await this.conectar();
     const respuesta = await this.emitir("unirse-sala", {
@@ -202,6 +231,67 @@ export class ClienteMultijugador {
       codigo,
       nombre: this.nombreLocal(),
     });
+  }
+
+  guardarContrasenaEspectador(codigo, contrasena) {
+    if (!codigo || !contrasena) return;
+    try {
+      const ticket = JSON.stringify({
+        contrasena,
+        expira: Date.now() + TIEMPO_TICKET_ESPECTADOR_MS,
+      });
+      sessionStorage.setItem(`${CLAVE_ESPECTADOR}${String(codigo).toUpperCase()}`, ticket);
+    } catch (error) {}
+  }
+
+  obtenerContrasenaEspectador(codigo) {
+    if (!codigo) return null;
+    const clave = `${CLAVE_ESPECTADOR}${String(codigo).toUpperCase()}`;
+    try {
+      const guardado = sessionStorage.getItem(clave);
+      if (!guardado) return null;
+      if (!guardado.startsWith("{")) return guardado;
+      const ticket = JSON.parse(guardado);
+      if (!ticket?.contrasena || !ticket?.expira || ticket.expira <= Date.now()) {
+        sessionStorage.removeItem(clave);
+        return null;
+      }
+      return ticket.contrasena;
+    } catch (error) {
+      try { sessionStorage.removeItem(clave); } catch (error2) {}
+      return null;
+    }
+  }
+
+  limpiarContrasenaEspectador(codigo) {
+    if (!codigo) return;
+    try {
+      sessionStorage.removeItem(`${CLAVE_ESPECTADOR}${String(codigo).toUpperCase()}`);
+    } catch (error) {}
+  }
+
+  async observarSala(codigo, contrasena = null) {
+    await this.conectar();
+    const contrasenaEfectiva = contrasena ?? this.obtenerContrasenaEspectador(codigo);
+    const respuesta = await this.emitir("unirse-como-espectador", {
+      codigo,
+      contrasena: contrasenaEfectiva,
+      nombre: this.nombreLocal(),
+    });
+    if (respuesta?.exito) {
+      this.codigoSala = String(codigo).toUpperCase();
+      if (contrasenaEfectiva) this.guardarContrasenaEspectador(codigo, contrasenaEfectiva);
+    } else if (respuesta?.error === "Contraseña incorrecta") {
+      this.limpiarContrasenaEspectador(codigo);
+    }
+    return respuesta;
+  }
+
+  salirDeObservacion() {
+    const codigo = this.codigoSala;
+    this.socket?.emit("salir-como-espectador");
+    this.limpiarContrasenaEspectador(codigo);
+    this.codigoSala = null;
   }
 
   async listarSalas() {

@@ -7,8 +7,9 @@
  * negocio (validaciones, hash, unicidad) — eso vive en UsuarioService.
  */
 class UsuarioController {
-  constructor(usuarioService) {
+  constructor(usuarioService, notificador = null) {
     this.usuarioService = usuarioService;
+    this.notificador = notificador;
   }
 
   registrar = async (req, res) => {
@@ -73,6 +74,26 @@ class UsuarioController {
       res.status(201).json({ exito: true, ...resultado });
     } catch (error) {
       res.status(400).json({ exito: false, error: error.message });
+    }
+  };
+
+  cambiarNombre = async (req, res) => {
+    try {
+      const perfil = await this.usuarioService.cambiarNombre(req.usuario.id, req.body?.nombre);
+      await this.notificador?.notificarPerfil?.({
+        id: perfil.id,
+        usuario: perfil.usuario,
+        codigoAmigo: perfil.codigoAmigo,
+      });
+      res.json({ exito: true, perfil });
+    } catch (error) {
+      const estados = { USUARIO_DUPLICADO: 409, VALIDACION: 400, NO_ENCONTRADO: 404 };
+      const estado = estados[error?.codigo] || 500;
+      res.status(estado).json({
+        exito: false,
+        error: error.message,
+        codigo: error?.codigo || "ERROR",
+      });
     }
   };
 

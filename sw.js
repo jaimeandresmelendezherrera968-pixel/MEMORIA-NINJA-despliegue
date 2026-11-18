@@ -1,4 +1,4 @@
-const NOMBRE_CACHE = "memoria-ninja-v1";
+const NOMBRE_CACHE = "memoria-ninja-v2";
 const LIMITE_BYTES = 8 * 1024 * 1024;
 const ARCHIVOS_BASE = [
   "/",
@@ -56,6 +56,13 @@ function esNavegacion(peticion) {
   return peticion.mode === "navigate";
 }
 
+function respuestaSinConexion() {
+  return new Response("Sin conexión", {
+    status: 503,
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
+}
+
 function respondeDesdeCache(peticion, cache) {
   return cache.match(peticion).then((respuesta) => respuesta || cache.match("/login.html"));
 }
@@ -66,17 +73,44 @@ self.addEventListener("fetch", (evento) => {
 
   const url = new URL(request.url);
 
-  if (esNavegacion(request)) {
+  const guardarRespuesta = (respuesta) => {
+    if (!respuesta.ok) return;
+    const copia = respuesta.clone();
+    evento.waitUntil(
+      caches
+        .open(NOMBRE_CACHE)
+        .then((cache) => cache.put(request, copia))
+        .catch(() => undefined)
+    );
+  };
+
+  const responderConRespaldo = (peticion) =>
+    caches
+      .open(NOMBRE_CACHE)
+      .then((cache) => respondeDesdeCache(peticion, cache))
+      .catch(() => null)
+      .then((respuesta) => respuesta || respuestaSinConexion());
+
+  if (esNavegacion(request) && url.origin === self.location.origin) {
     evento.respondWith(
       fetch(request)
         .then((respuesta) => {
-          if (respuesta.ok) {
-            const copia = respuesta.clone();
-            caches.open(NOMBRE_CACHE).then((cache) => cache.put(request, copia));
-          }
+          guardarRespuesta(respuesta);
           return respuesta;
         })
-        .catch(() => caches.open(NOMBRE_CACHE).then((cache) => respondeDesdeCache(request, cache)))
+        .catch(() => responderConRespaldo(request))
+    );
+    return;
+  }
+
+  if (/\.(html|js)$/i.test(url.pathname) && esEstaticoValido(url)) {
+    evento.respondWith(
+      fetch(request)
+        .then((respuesta) => {
+          guardarRespuesta(respuesta);
+          return respuesta;
+        })
+        .catch(() => responderConRespaldo(request))
     );
     return;
   }
@@ -91,7 +125,7 @@ self.addEventListener("fetch", (evento) => {
       const respuesta = await fetch(request);
       const longitud = Number(respuesta.headers.get("content-length") || 0);
       if (respuesta.ok && (!longitud || longitud <= LIMITE_BYTES)) {
-        cache.put(request, respuesta.clone());
+        await cache.put(request, respuesta.clone()).catch(() => undefined);
       }
       return respuesta;
     })

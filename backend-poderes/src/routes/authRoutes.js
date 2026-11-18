@@ -12,6 +12,7 @@ function crearRutasAuth(authController, verificacionController, recuperacionCont
   router.post("/auth/logout", authController.cerrarSesion);
   router.get("/auth/me", authController.obtenerSesionActiva);
 
+  router.post("/auth/verificacion/cambiar-correo", authController.cambiarCorreoPendiente);
   router.post("/auth/verificacion/enviar", verificacionController.enviar);
   router.post("/auth/verificacion/confirmar", verificacionController.confirmar);
 

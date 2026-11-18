@@ -25,18 +25,22 @@ const SmtpNotificadorCorreo = require("./src/infraestructura/SmtpNotificadorCorr
 const BrevoNotificadorCorreo = require("./src/infraestructura/BrevoNotificadorCorreo");
 const PartidaRepositorySQL = require("./src/repositories/PartidaRepositorySQL");
 const UsuarioRepositorySQL = require("./src/repositories/UsuarioRepositorySQL");
+const AmistadRepositorySQL = require("./src/repositories/AmistadRepositorySQL");
 const HistorialPartidaRepositorySQL = require("./src/repositories/HistorialPartidaRepositorySQL");
 const CodigoVerificacionRepositorySQL = require("./src/repositories/CodigoVerificacionRepositorySQL");
 const SesionRepositorySQL = require("./src/repositories/SesionRepositorySQL");
 const UsuarioService = require("./src/services/UsuarioService");
+const AmistadService = require("./src/services/AmistadService");
 const AuthService = require("./src/services/AuthService");
 const VerificacionService = require("./src/services/VerificacionService");
 const RecuperacionService = require("./src/services/RecuperacionService");
 const UsuarioController = require("./src/controllers/UsuarioController");
+const AmistadController = require("./src/controllers/AmistadController");
 const AuthController = require("./src/controllers/AuthController");
 const VerificacionController = require("./src/controllers/VerificacionController");
 const RecuperacionController = require("./src/controllers/RecuperacionController");
 const crearRutasUsuarios = require("./src/routes/usuarioRoutes");
+const crearRutasAmistades = require("./src/routes/amistadRoutes");
 const crearRutasAuth = require("./src/routes/authRoutes");
 const PartidaService = require("./src/services/PartidaService");
 const PartidaController = require("./src/controllers/PartidaController");
@@ -53,6 +57,8 @@ const crearMiddlewaresDeAutorizacion = require("./src/middlewares/AutorizacionMi
 const EstadoController = require("./src/controllers/EstadoController");
 const crearRutasEstado = require("./src/routes/estadoRoutes");
 const crearRutasSalas = require("./src/routes/salasRoutes");
+const NotificadorAmistades = require("./src/servicios/online/NotificadorAmistades");
+const GestorInvitaciones = require("./src/servicios/online/GestorInvitaciones");
 
 /**
  * RAÍZ DE COMPOSICIÓN (Composition Root)
@@ -120,6 +126,7 @@ if (duracionRecordadaMin < duracionSesionMin) {
   );
 }
 const notificador = crearNotificadorCorreo();
+const notificadorAmistades = new NotificadorAmistades();
 
 const partidaRepository = new PartidaRepositorySQL(database);
 const poderFactory = new PoderFactory();
@@ -127,11 +134,18 @@ const poderService = new PoderService(partidaRepository, poderFactory);
 const poderController = new PoderController(poderService);
 
 const usuarioRepository = new UsuarioRepositorySQL(database);
+const amistadRepository = new AmistadRepositorySQL(database);
 const historialRepository = new HistorialPartidaRepositorySQL(database);
 const codigoVerificacionRepository = new CodigoVerificacionRepositorySQL(database);
 const sesionRepository = new SesionRepositorySQL(database);
 
 const usuarioService = new UsuarioService(usuarioRepository, historialRepository, passwordHasher, database);
+const amistadService = new AmistadService(
+  amistadRepository,
+  usuarioRepository,
+  database,
+  notificadorAmistades
+);
 const authService = new AuthService(
   usuarioRepository,
   codigoVerificacionRepository,
@@ -165,7 +179,42 @@ const recuperacionService = new RecuperacionService(
   database
 );
 
-const usuarioController = new UsuarioController(usuarioService);
+const usuarioController = new UsuarioController(usuarioService, notificadorAmistades);
+const amistadController = new AmistadController(amistadService);
+
+const resolverUsuarioPorCookie = (tokenSesion) =>
+  authService.obtenerUsuarioPorToken(tokenSesion).then((resultado) => resultado?.usuario || null);
+
+const persistirResultadoOnline = async (datos) => {
+  if (!datos?.idPartida) return;
+  const es2v2 = datos.modo === "2v2";
+  const empate = es2v2 ? !datos.ganadorEquipo : !datos.ganadorId;
+
+  for (const jugador of datos.jugadores || []) {
+    if (!jugador.idUsuario) continue;
+    const gano = empate
+      ? false
+      : es2v2
+        ? datos.ganadorEquipo === jugador.equipo
+        : datos.ganadorId === jugador.id;
+    const parejas = es2v2
+      ? datos.parejasEquipos?.[jugador.equipo] || 0
+      : datos.parejas?.[jugador.id] || 0;
+
+    await usuarioService.importarProgresoInvitado({
+      idUsuario: jugador.idUsuario,
+      historial: [{
+        idPartida: datos.idPartida,
+        zona: "online",
+        puntaje: parejas * 10,
+        modo: `online-${datos.modo}`,
+        ganador: empate ? "empate" : gano ? jugador.nombre || "Jugador" : "ninguno",
+      }],
+      perfil: null,
+    });
+  }
+};
+
 const authController = new AuthController(
   authService,
   duracionSesionMin,
@@ -250,6 +299,7 @@ app.use("/api/auth", limitadorAuth);
 app.use("/api", crearRutasEstado(estadoController));
 app.use("/api", crearRutasPoderes(poderController, autorizacion));
 app.use("/api", crearRutasUsuarios(usuarioController, autorizacion));
+app.use("/api/amistades", crearRutasAmistades(amistadController, autorizacion));
 app.use("/api", crearRutasAuth(authController, verificacionController, recuperacionController));
 app.use("/api", crearRutasPartidas(partidaController, autorizacion));
 app.use("/api", crearRutasVistas(vistaController, autorizacion));
@@ -319,8 +369,18 @@ async function iniciar() {
   }
 
   const servidorHttp = http.createServer(app);
-  const gestorSalas = new GestorSalas(servidorHttp);
-  
+  const gestorSalas = new GestorSalas(servidorHttp, {
+    resolverUsuarioPorCookie,
+    persistirResultado: persistirResultadoOnline,
+    notificadorAmistades,
+  });
+  notificadorAmistades.usar(gestorSalas.io, amistadRepository);
+  const gestorInvitaciones = new GestorInvitaciones(gestorSalas.io, amistadRepository, {
+    notificador: notificadorAmistades,
+    validarSala: (codigo) => gestorSalas.salas.has(codigo),
+  });
+  gestorSalas.gestorInvitaciones = gestorInvitaciones;
+
   servidorHttp.listen(PUERTO, "0.0.0.0", () => {
     console.log(`Backend de poderes escuchando en el puerto ${PUERTO}`);
     console.log(

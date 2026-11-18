@@ -105,13 +105,20 @@
             <button type="button" class="btn-lobby btn-lobby-primario" id="btnUnirsePorCodigo">UNIRSE / SALAS ABIERTAS</button>
             <button type="button" class="btn-lobby btn-lobby-secundario" id="btnPartidaRapida">PARTIDA RÁPIDA</button>
         </div>
+        <div class="filtros-salas" id="filtrosSalas" role="group" aria-label="Filtrar salas abiertas">
+            <button type="button" class="btn-filtro-sala btn-filtro-sala-activo" data-filtro-modo="todos" aria-pressed="true">TODAS</button>
+            <button type="button" class="btn-filtro-sala" data-filtro-modo="1v1" aria-pressed="false">1 VS 1</button>
+            <button type="button" class="btn-filtro-sala" data-filtro-modo="2v2" aria-pressed="false">2 VS 2</button>
+            <label class="check-filtro-sala"><input type="checkbox" id="filtroSinContrasena"> SIN CONTRASEÑA</label>
+        </div>
         <div id="panelBuscarCodigo" class="panel-buscar-codigo" hidden>
             <div class="buscar-codigo-row">
-                <input type="text" id="inputBuscarCodigo" class="input-lobby" placeholder="INTRODUCE CÓDIGO" maxlength="6" autocomplete="off">
+                <input type="text" id="inputBuscarCodigo" class="input-lobby" placeholder="INTRODUCE CÓDIGO" aria-label="Código de la sala" maxlength="6" autocomplete="off">
                 <button type="button" class="btn-lobby btn-lobby-primario" id="btnBuscarUnirse">UNIRSE</button>
+                <button type="button" class="btn-lobby btn-lobby-secundario" id="btnObservarCodigo">OBSERVAR</button>
                 <button type="button" class="btn-lobby btn-lobby-secundario" id="btnCancelarBuscar">CANCELAR</button>
             </div>
-            <p class="error-codigo" id="errorLobbyCodigo" hidden></p>
+            <p class="error-codigo" id="errorLobbyCodigo" role="alert" hidden></p>
         </div>
         <div id="panelEsperandoRival" class="panel-esperando" hidden>
             <p class="esperando-titulo" id="esperandoTitulo">ESPERANDO RIVAL...</p>
@@ -123,7 +130,7 @@
                 <p class="chat-titulo">CHAT DE SALA</p>
                 <div id="chatMensajes" class="chat-mensajes" role="log" aria-live="polite" aria-label="Mensajes de la sala"></div>
                 <div class="chat-fila">
-                    <input type="text" id="chatTexto" class="input-lobby" maxlength="200" placeholder="ESCRIBE UN MENSAJE" autocomplete="off">
+                    <input type="text" id="chatTexto" class="input-lobby" maxlength="200" placeholder="ESCRIBE UN MENSAJE" aria-label="Mensaje para el chat de la sala" autocomplete="off">
                     <button type="button" class="btn-lobby btn-lobby-secundario" id="btnEnviarChat">ENVIAR</button>
                 </div>
             </div>
@@ -161,15 +168,15 @@
         </div>
         <div id="panelCrearSalaVerde" class="panel-crear-sala" hidden>
             <div class="crear-sala-grid">
-                <div class="crear-sala-fila"><label>MODO</label><div class="radio-grupo"><label><input type="radio" name="modoPartidaVerde" value="1v1" checked> 1 VS 1</label><label><input type="radio" name="modoPartidaVerde" value="2v2"> 2 VS 2</label></div></div>
-                <div class="crear-sala-fila"><label>TIPO DE MAZO</label><div class="radio-grupo"><label><input type="radio" name="tipoMazoVerde" value="mezclar" checked> MEZCLAR ALDEAS / CLANES</label><label><input type="radio" name="tipoMazoVerde" value="aldea"> UNA ALDEA</label></div></div>
-                <div class="crear-sala-fila" id="filaAldeasMezclaVerde"><label>SELECCIONA ALDEAS O CLANES PARA MEZCLAR</label><div class="checkbox-grupo-aldeas"><label><input type="checkbox" class="chk-aldea-verde" value="konoha/hyuga" checked> KONOHA - HYUGA</label><label><input type="checkbox" class="chk-aldea-verde" value="konoha/sarutobi" checked> KONOHA - SARUTOBI</label><label><input type="checkbox" class="chk-aldea-verde" value="konoha/uchiha" checked> KONOHA - UCHIHA</label><label><input type="checkbox" class="chk-aldea-verde" value="konoha/uzumaki" checked> KONOHA - UZUMAKI</label><label><input type="checkbox" class="chk-aldea-verde" value="akatsuki" checked> AKATSUKI / OTROS</label><label><input type="checkbox" class="chk-aldea-verde" value="niebla" checked> NIEBLA</label><label><input type="checkbox" class="chk-aldea-verde" value="nube" checked> NUBE</label><label><input type="checkbox" class="chk-aldea-verde" value="roca" checked> ROCA</label><label><input type="checkbox" class="chk-aldea-verde" value="arena" checked> ARENA</label></div><p class="texto-ayuda">Selecciona al menos una aldea o clan para mezclar.</p></div>
-                <div class="crear-sala-fila" id="filaAldeaVerde" hidden><label for="selectAldeaVerde">ALDEA</label><select id="selectAldeaVerde" class="select-lobby"><option value="konoha">KONOHA</option><option value="uchiha">UCHIHA</option><option value="hyuga">HYUGA</option><option value="sarutobi">SARUTOBI</option><option value="uzumaki">UZUMAKI</option><option value="arena">ARENA</option><option value="niebla">NIEBLA</option><option value="nube">NUBE</option><option value="roca">ROCA</option><option value="otros">OTROS</option></select></div>
+                <div class="crear-sala-fila"><label>MODO</label><div class="radio-grupo" role="group" aria-label="Modo de partida"><label><input type="radio" name="modoPartidaVerde" value="1v1" checked> 1 VS 1</label><label><input type="radio" name="modoPartidaVerde" value="2v2"> 2 VS 2</label></div></div>
+                <div class="crear-sala-fila"><label>TIPO DE MAZO</label><div class="radio-grupo" role="group" aria-label="Tipo de mazo"><label><input type="radio" name="tipoMazoVerde" value="mezclar" checked> MEZCLAR ALDEAS / CLANES</label><label><input type="radio" name="tipoMazoVerde" value="aldea"> UNA ALDEA</label></div></div>
+                <div class="crear-sala-fila crear-sala-fila--ancho" id="filaAldeasMezclaVerde"><label>SELECCIONA ALDEAS O CLANES PARA MEZCLAR</label><div class="checkbox-grupo-aldeas" role="group" aria-label="Aldeas o clanes para mezclar" aria-describedby="ayudaAldeasVerde"><label><input type="checkbox" class="chk-aldea-verde" value="konoha/hyuga" checked> KONOHA - HYUGA</label><label><input type="checkbox" class="chk-aldea-verde" value="konoha/sarutobi" checked> KONOHA - SARUTOBI</label><label><input type="checkbox" class="chk-aldea-verde" value="konoha/uchiha" checked> KONOHA - UCHIHA</label><label><input type="checkbox" class="chk-aldea-verde" value="konoha/uzumaki" checked> KONOHA - UZUMAKI</label><label><input type="checkbox" class="chk-aldea-verde" value="akatsuki" checked> AKATSUKI / OTROS</label><label><input type="checkbox" class="chk-aldea-verde" value="niebla" checked> NIEBLA</label><label><input type="checkbox" class="chk-aldea-verde" value="nube" checked> NUBE</label><label><input type="checkbox" class="chk-aldea-verde" value="roca" checked> ROCA</label><label><input type="checkbox" class="chk-aldea-verde" value="arena" checked> ARENA</label></div><p class="texto-ayuda" id="ayudaAldeasVerde">Selecciona al menos una aldea o clan para mezclar.</p></div>
+                <div class="crear-sala-fila crear-sala-fila--ancho" id="filaAldeaVerde" hidden><label for="selectAldeaVerde">ALDEA</label><select id="selectAldeaVerde" class="select-lobby"><option value="konoha">KONOHA</option><option value="uchiha">UCHIHA</option><option value="hyuga">HYUGA</option><option value="sarutobi">SARUTOBI</option><option value="uzumaki">UZUMAKI</option><option value="arena">ARENA</option><option value="niebla">NIEBLA</option><option value="nube">NUBE</option><option value="roca">ROCA</option><option value="otros">OTROS</option></select></div>
                 <p id="errorCrearSalaVerde" class="error-codigo" hidden></p>
                 <div class="crear-sala-fila"><label for="selectParesVerde">NÚMERO DE PAREJAS</label><select id="selectParesVerde" class="select-lobby"><option value="8">8 PAREJAS (16 CARTAS)</option><option value="10">10 PAREJAS (20 CARTAS)</option><option value="12">12 PAREJAS (24 CARTAS)</option><option value="14">14 PAREJAS (28 CARTAS)</option><option value="16">16 PAREJAS (32 CARTAS)</option></select></div>
-                <div class="crear-sala-fila"><label>SALA</label><div class="radio-grupo"><label><input type="radio" name="tipoSalaVerde" value="publica" checked> PÚBLICA</label><label><input type="radio" name="tipoSalaVerde" value="privada"> PRIVADA</label></div></div>
-                <div class="crear-sala-fila"><label><input type="checkbox" id="chkContrasenaVerde"> PROTEGER CON CONTRASEÑA</label><input type="text" id="inputContrasenaSalaVerde" class="input-lobby" placeholder="CONTRASEÑA" maxlength="12" hidden></div>
-                <div class="crear-sala-acciones"><button type="button" class="btn-lobby btn-lobby-primario" id="btnConfirmarCrearSalaVerde">CREAR SALA</button></div>
+                <div class="crear-sala-fila"><label>SALA</label><div class="radio-grupo" role="group" aria-label="Visibilidad de la sala"><label><input type="radio" name="tipoSalaVerde" value="publica" checked> PÚBLICA</label><label><input type="radio" name="tipoSalaVerde" value="privada"> PRIVADA</label></div></div>
+                <div class="crear-sala-fila crear-sala-fila--pass crear-sala-fila--ancho"><label><input type="checkbox" id="chkContrasenaVerde"> PROTEGER CON CONTRASEÑA</label><input type="text" id="inputContrasenaSalaVerde" class="input-lobby" placeholder="CONTRASEÑA" aria-label="Contraseña de la sala" maxlength="12" hidden></div>
+                <div class="crear-sala-acciones crear-sala-acciones--principal"><button type="button" class="btn-lobby btn-lobby-primario" id="btnConfirmarCrearSalaVerde">CREAR SALA</button></div>
             </div>
         </div>
         <div id="panelEsperandoRivalVerde" class="panel-esperando" hidden>
@@ -182,7 +189,7 @@
                 <p class="chat-titulo">CHAT DE SALA</p>
                 <div id="chatMensajesVerde" class="chat-mensajes" role="log" aria-live="polite" aria-label="Mensajes de la sala"></div>
                 <div class="chat-fila">
-                    <input type="text" id="chatTextoVerde" class="input-lobby" maxlength="200" placeholder="ESCRIBE UN MENSAJE" autocomplete="off">
+                    <input type="text" id="chatTextoVerde" class="input-lobby" maxlength="200" placeholder="ESCRIBE UN MENSAJE" aria-label="Mensaje para el chat de la sala" autocomplete="off">
                     <button type="button" class="btn-lobby btn-lobby-secundario" id="btnEnviarChatVerde">ENVIAR</button>
                 </div>
             </div>
@@ -195,7 +202,7 @@
 <div class="modal-overlay" id="modalContrasenaSala">
     <div class="modal-content-contrasena">
         <h3>CONTRASEÑA DE SALA</h3>
-        <input type="password" id="inputContrasenaUnirse" class="input-lobby" placeholder="CONTRASEÑA">
+        <input type="password" id="inputContrasenaUnirse" class="input-lobby" placeholder="CONTRASEÑA" aria-label="Contraseña de la sala">
         <p class="error-codigo" id="errorContrasenaSala" hidden></p>
         <div class="contrasena-acciones">
             <button type="button" class="btn-lobby btn-lobby-primario" id="btnConfirmarContrasena">UNIRSE</button>
@@ -444,10 +451,11 @@
     </div>
 
         
-        <div class="item" role="button" tabindex="0" aria-label="Amigos - Invitar jugadores">
+        <div class="item" id="btnAmigos" role="button" tabindex="0" aria-label="Amigos - Invitar jugadores">
             <div class="item-icono" aria-hidden="true">👥</div>
             <h3>AMIGOS</h3>
             <p>Invita jugadores</p>
+            <span id="amigosBadge" class="amigos-badge" hidden>0</span>
         </div>
     </div>
 </div>
@@ -573,6 +581,64 @@
     </div>
  
 
+    <div class="modal-overlay" id="amigosModal" aria-hidden="true" aria-labelledby="amigosTitulo">
+        <div class="modal-content-amigos">
+            <button class="cerrar-modal" id="closeAmigosBtn" type="button" aria-label="Cerrar amigos">&times;</button>
+            <div class="amigos-header-box">
+                <div class="amigos-icon" aria-hidden="true">👥</div>
+                <div class="amigos-titulo-texto">
+                    <h2 id="amigosTitulo">AMIGOS</h2>
+                    <p class="sub-verde">SOLICITUDES · ID PÚBLICO · PARTIDAS</p>
+                </div>
+            </div>
+
+            <section class="amigos-seccion">
+                <h3>MI IDENTIDAD</h3>
+                <div class="amigos-perfil-box">
+                    <span class="amigos-fila-nombre" id="amigosMiNombre"></span>
+                    <span class="amigos-fila-codigo" id="amigosMiCodigo"></span>
+                    <button type="button" class="amigos-btn amigos-btn-copiar" id="amigosCopiarCodigo">COPIAR ID</button>
+                </div>
+            </section>
+
+            <section class="amigos-seccion">
+                <h3>BUSCAR JUGADOR</h3>
+                <label class="amigos-label" for="amigosBuscarInput">NOMBRE O ID PÚBLICO</label>
+                <div class="amigos-buscar-row">
+                    <input type="text" id="amigosBuscarInput" placeholder="Nombre o ID tipo NJ-XXXXXXXX" autocomplete="off" spellcheck="false">
+                    <button type="button" class="amigos-btn amigos-btn-buscar" id="amigosBuscarBtn">BUSCAR</button>
+                </div>
+                <ul class="amigos-resultados" id="amigosResultados" role="status" aria-live="polite"></ul>
+            </section>
+
+            <section class="amigos-seccion">
+                <h3>SOLICITUDES RECIBIDAS</h3>
+                <p class="amigos-vacio" id="amigosSolicitudesVacio" hidden>Sin solicitudes pendientes.</p>
+                <ul class="amigos-lista" id="amigosSolicitudes"></ul>
+            </section>
+
+            <section class="amigos-seccion">
+                <h3>SOLICITUDES ENVIADAS</h3>
+                <p class="amigos-vacio" id="amigosEnviadasVacio" hidden>Sin solicitudes enviadas.</p>
+                <ul class="amigos-lista" id="amigosEnviadas"></ul>
+            </section>
+
+            <section class="amigos-seccion">
+                <h3>MIS AMIGOS</h3>
+                <p class="amigos-vacio" id="amigosListaVacio" hidden>Todavía no tenés amigos.</p>
+                <ul class="amigos-lista" id="amigosLista"></ul>
+            </section>
+
+            <section class="amigos-seccion">
+                <h3>BLOQUEADOS</h3>
+                <p class="amigos-vacio" id="amigosBloqueadosVacio" hidden>No bloqueaste a nadie.</p>
+                <ul class="amigos-lista" id="amigosBloqueados"></ul>
+            </section>
+
+            <p class="amigos-aviso" id="amigosAviso" role="status" aria-live="polite" hidden></p>
+        </div>
+    </div>
+
         <!-- VENTANA MODAL DE PERFIL RPG -->
     <div class="modal-overlay" id="profileModal">
         <div class="modal-content-perfil">
@@ -582,6 +648,7 @@
                 <div class="avatar-modal"><img src="assets/img/naruto.png" alt="Naruto"></div>
                 <div class="perfil-info-modal">
                     <h2 id="modalName">Shinobi Player</h2>
+                    <p class="perfil-codigo-publico" id="modalCodigoAmigo" hidden></p>
                     <div class="nivel-badge">NIVEL <span id="modalLevel">1</span></div>
                     <div class="progress-bar-container">
                         <div class="progress-bar" id="modalExpBar" style="width: 65%;"></div>
@@ -609,6 +676,15 @@
                     <span class="stat-val azul-txt" id="statHighScore">0 XP</span>
                 </div>
             </div>
+
+            <form class="cambiar-nombre-form" id="cambiarNombreForm" hidden>
+                <label class="amigos-label" for="cambiarNombreInput">CAMBIAR NOMBRE DE SHINOBI</label>
+                <div class="cambiar-nombre-row">
+                    <input type="text" id="cambiarNombreInput" placeholder="Nuevo nombre" autocomplete="off" maxlength="30">
+                    <button type="submit" class="amigos-btn amigos-btn-enviar" id="cambiarNombreBtn">GUARDAR</button>
+                </div>
+                <p class="amigos-aviso" id="cambiarNombreAviso" role="status" aria-live="polite" hidden></p>
+            </form>
         </div>
     </div>
 

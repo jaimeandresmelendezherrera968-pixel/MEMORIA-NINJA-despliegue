@@ -178,6 +178,34 @@ describe("Autorización e2e (Parte 4 — middleware de sesión)", () => {
     assert.equal(res.status, 200, await res.text());
   });
 
+  it("A1) reenvío explícito invalida el código anterior", async () => {
+    const usuario = "karina";
+    const correo = "karina@test.com";
+    const base = codigosEnLog().length;
+    const registro = await post("/api/auth/registro", {
+      usuario,
+      correo,
+      nacimiento: "2000-01-01",
+      password: "clave123",
+    });
+    assert.equal(registro.status, 201, await registro.text());
+
+    const codigoViejo = await esperarCodigo(base);
+    assert.ok(codigoViejo, "el registro debio imprimir el primer codigo");
+
+    const reenvio = await post("/api/auth/verificacion/enviar", { correo });
+    assert.equal(reenvio.status, 200, await reenvio.text());
+
+    const codigoNuevo = await esperarCodigo(base + 1);
+    assert.ok(codigoNuevo, "el reenvio debio imprimir el segundo codigo");
+
+    const viejo = await post("/api/auth/verificacion/confirmar", { correo, codigo: codigoViejo });
+    assert.equal(viejo.status, 400, await viejo.text());
+
+    const nuevo = await post("/api/auth/verificacion/confirmar", { correo, codigo: codigoNuevo });
+    assert.equal(nuevo.status, 200, await nuevo.text());
+  });
+
   it("G1) historial GET sin sesión -> 401", async () => {
     const res = await fetch(`${BASE}/api/usuarios/${cuentaA.id}/historial`);
     assert.equal(res.status, 401);

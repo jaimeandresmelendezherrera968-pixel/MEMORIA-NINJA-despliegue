@@ -14,6 +14,10 @@ class CodigoVerificacionRepository {
     throw new Error("buscarActivo() no implementado");
   }
 
+  invalidarActivos(datos, ejecutor) {
+    throw new Error("invalidarActivos() no implementado");
+  }
+
   aumentarIntento(id) {
     throw new Error("aumentarIntento() no implementado");
   }

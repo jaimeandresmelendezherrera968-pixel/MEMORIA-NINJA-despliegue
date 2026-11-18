@@ -66,6 +66,59 @@ ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS correo_verificado_en TIMESTAMPTZ;
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS intentos_fallidos   INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS bloqueado_hasta     TIMESTAMPTZ;
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS actualizado_en      TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS codigo_amigo TEXT;
+DO $migracion_usuarios_unicos$
+DECLARE
+  fila RECORD;
+  nuevo_usuario TEXT;
+BEGIN
+  FOR fila IN
+    SELECT id, usuario,
+           row_number() OVER (PARTITION BY lower(usuario) ORDER BY creado_en, id) AS puesto
+      FROM usuarios
+  LOOP
+    IF fila.puesto > 1 THEN
+      nuevo_usuario := left(fila.usuario, 23) || '_' || substr(md5(fila.id::text), 1, 6);
+      WHILE EXISTS (
+        SELECT 1 FROM usuarios
+         WHERE lower(usuario) = lower(nuevo_usuario) AND id <> fila.id
+      ) LOOP
+        nuevo_usuario := left(fila.usuario, 23) || '_' || substr(md5(nuevo_usuario || clock_timestamp()::text), 1, 6);
+      END LOOP;
+      UPDATE usuarios SET usuario = nuevo_usuario, actualizado_en = now() WHERE id = fila.id;
+    END IF;
+  END LOOP;
+END
+$migracion_usuarios_unicos$;
+UPDATE usuarios
+   SET codigo_amigo = 'NJ-' || upper(substr(md5(id || clock_timestamp()::text), 1, 8))
+ WHERE codigo_amigo IS NULL OR codigo_amigo = '';
+DO $migracion_codigos_unicos$
+DECLARE
+  fila RECORD;
+  nuevo_codigo TEXT;
+BEGIN
+  FOR fila IN
+    SELECT id, row_number() OVER (PARTITION BY codigo_amigo ORDER BY id) AS puesto
+      FROM usuarios
+     WHERE codigo_amigo IS NOT NULL
+  LOOP
+    IF fila.puesto > 1 THEN
+      nuevo_codigo := 'NJ-' || upper(substr(md5(fila.id::text || clock_timestamp()::text), 1, 8));
+      WHILE EXISTS (
+        SELECT 1 FROM usuarios
+         WHERE codigo_amigo = nuevo_codigo AND id <> fila.id
+      ) LOOP
+        nuevo_codigo := 'NJ-' || upper(substr(md5(nuevo_codigo || clock_timestamp()::text), 1, 8));
+      END LOOP;
+      UPDATE usuarios SET codigo_amigo = nuevo_codigo, actualizado_en = now() WHERE id = fila.id;
+    END IF;
+  END LOOP;
+END
+$migracion_codigos_unicos$;
+ALTER TABLE usuarios ALTER COLUMN codigo_amigo SET NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_usuarios_codigo_amigo ON usuarios (codigo_amigo);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_usuarios_usuario_lower ON usuarios (lower(usuario));
 
 -- Formato de correo razonable como último muro (constraint CHECK).
 DO $check$
@@ -147,6 +200,35 @@ CREATE TABLE IF NOT EXISTS auditoria_cuentas (
     creado_en      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS amistades (
+    id         TEXT PRIMARY KEY,
+    usuario_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    amigo_id   TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    creado_en  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT ux_amistades_par UNIQUE (usuario_id, amigo_id),
+    CONSTRAINT ck_amistades_usuarios_distintos CHECK (usuario_id <> amigo_id),
+    CONSTRAINT ck_amistades_pares_normalizados CHECK (usuario_id < amigo_id)
+);
+
+CREATE TABLE IF NOT EXISTS solicitudes_amistad (
+    id           TEXT PRIMARY KEY,
+    emisor_id    TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    receptor_id  TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    estado       TEXT NOT NULL DEFAULT 'PENDIENTE'
+                 CHECK (estado IN ('PENDIENTE', 'ACEPTADA', 'RECHAZADA')),
+    creado_en    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    respondido_en TIMESTAMPTZ,
+    CONSTRAINT ck_solicitudes_usuarios_distintos CHECK (emisor_id <> receptor_id)
+);
+
+CREATE TABLE IF NOT EXISTS bloqueos_usuario (
+    usuario_id   TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    bloqueado_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    creado_en    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (usuario_id, bloqueado_id),
+    CONSTRAINT ck_bloqueos_usuarios_distintos CHECK (usuario_id <> bloqueado_id)
+);
+
 -- =====================================================================
 -- 2) ÍNDICES
 -- =====================================================================
@@ -166,6 +248,22 @@ CREATE INDEX IF NOT EXISTS idx_sesiones_usuario
 
 CREATE INDEX IF NOT EXISTS idx_auditoria_usuario
     ON auditoria_cuentas (usuario_id, creado_en DESC);
+
+CREATE INDEX IF NOT EXISTS idx_amistades_amigo
+    ON amistades (amigo_id, creado_en DESC);
+
+CREATE INDEX IF NOT EXISTS idx_solicitudes_receptor
+    ON solicitudes_amistad (receptor_id, estado, creado_en DESC);
+
+CREATE INDEX IF NOT EXISTS idx_solicitudes_emisor
+    ON solicitudes_amistad (emisor_id, estado, creado_en DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_solicitudes_amistad_pendiente
+    ON solicitudes_amistad (LEAST(emisor_id, receptor_id), GREATEST(emisor_id, receptor_id))
+    WHERE estado = 'PENDIENTE';
+
+CREATE INDEX IF NOT EXISTS idx_bloqueos_bloqueado
+    ON bloqueos_usuario (bloqueado_id, creado_en DESC);
 
 -- =====================================================================
 -- 3) FUNCIONES DE TRIGGER
@@ -409,8 +507,9 @@ GROUP BY u.id, u.usuario, u.correo, u.nacimiento, u.creado_en
 ORDER BY total_partidas DESC, u.usuario ASC;
 
 -- Usuarios SIN el password_hash (capa de presentación segura)
-CREATE OR REPLACE VIEW vw_usuarios_seguro AS
-SELECT id, usuario, correo, nacimiento,
+DROP VIEW IF EXISTS vw_usuarios_seguro;
+CREATE VIEW vw_usuarios_seguro AS
+SELECT id, usuario, codigo_amigo, correo, nacimiento,
        correo_verificado, correo_verificado_en, creado_en
 FROM usuarios;
 
