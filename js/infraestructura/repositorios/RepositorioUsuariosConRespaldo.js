@@ -1,4 +1,4 @@
-/*=========================================================
+﻿/*=========================================================
   MEMORIA NINJA
   CAPA: INFRAESTRUCTURA -> Repositorio
   ARCHIVO: infraestructura/repositorios/RepositorioUsuariosConRespaldo.js
@@ -56,9 +56,7 @@ export class RepositorioUsuariosConRespaldo extends IUsuarioLector {
     return this.#conRespaldo("buscarPorCorreo", [correo]);
   }
 
-  buscarPorCredenciales(usuario, password) {
-    return this.#conRespaldo("buscarPorCredenciales", [usuario, password]);
-  }
+  buscarPorCredenciales(usuario, password, recordar = false) { return this.#conRespaldo("buscarPorCredenciales", [usuario, password, recordar]); }
 
   guardar(usuario) {
     return this.#conRespaldo("guardar", [usuario]);

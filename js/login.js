@@ -1,4 +1,4 @@
-/*=========================================================
+﻿/*=========================================================
   MEMORIA NINJA
   COMPOSITION ROOT: login.js
 
@@ -41,7 +41,7 @@ const loginController = new LoginController(
 // Los nombres en window se mantienen por compatibilidad) ---
 async function login() {
   const usuario = document.getElementById("user").value.trim();
-  const password = document.getElementById("pass").value.trim();
+  const password = document.getElementById("pass").value;
   const recordar = document.getElementById("recordarme").checked;
 
   await loginController.manejarEnvio({ usuario, password, recordar });
@@ -80,3 +80,16 @@ document.getElementById("ojoPass")?.addEventListener("click", (evento) =>
   togglePassword("pass", evento.currentTarget)
 );
 document.getElementById("btnInvitado")?.addEventListener("click", jugarComoInvitado);
+
+function ocultarCargando() {
+  document.getElementById("cargandoPagina")?.classList.add("is-oculto");
+}
+
+if (document.readyState === "complete") ocultarCargando();
+else window.addEventListener("load", ocultarCargando);
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}

@@ -16,6 +16,13 @@ export class GestorSalaCliente {
     this.promesaPartida = null;
     this.resolverPartida = null;
     this.partidaTerminada = false;
+    this.version = 0;
+    this.turnoTerminaEn = null;
+    this.terminadaNotificadaPara = null;
+    this.colaIntenciones = [];
+    this.ultimaIntencion = null;
+    this.nonceIntencion = 0;
+    this.intencionPendiente = null; // { nonce, index, turno, version }
   }
 
   get es2v2() {
@@ -81,6 +88,7 @@ export class GestorSalaCliente {
         window.location.reload();
         return;
       }
+      if (estado?.version) this.version = Number(estado.version);
       this.aplicarEstado(estado);
       if (this.resolverPartida) {
         clearTimeout(this.temporizadorInicio);
@@ -91,11 +99,39 @@ export class GestorSalaCliente {
       }
     });
 
+    clienteMultijugador.on("accion-rechazada", (datos) => {
+      const motivo = datos?.motivo || "";
+      // Rollback optimista: quitar pendiente del intento actual (solo si nonce coincide)
+      if (this.intencionPendiente && (datos?.nonce == null || this.intencionPendiente.nonce === datos.nonce)) {
+        BoardManager.quitarPendiente(this.intencionPendiente.index);
+        this.intencionPendiente = null;
+        this.ultimaIntencion = null;
+      }
+      // Encolar intenciones rechazadas temporalmente (tablero bloqueado o jugada en curso)
+      if (motivo === "tablero_bloqueado" || motivo === "jugada_en_curso" || motivo === "poder_en_proceso") {
+        if (this.ultimaIntencion) {
+          this.colaIntenciones.push({ ...this.ultimaIntencion });
+        }
+      }
+      window.dispatchEvent(new CustomEvent("accion-rechazada-online", { detail: datos || {} }));
+    });
+
     clienteMultijugador.on("carta-volteada", (datos) => {
+      if (datos?.version && this.version > 0 && Number(datos.version) < this.version) return;
+      if (datos?.version) this.version = Number(datos.version);
+      // Confirmar solo si el nonce coincide (evitar confirmar accion vieja)
+      if (this.intencionPendiente && this.intencionPendiente.nonce === datos.nonce && this.intencionPendiente.index === datos.index) {
+        this.intencionPendiente = null;
+        this.ultimaIntencion = null;
+      }
+      BoardManager.quitarPendiente(datos.index);
       BoardManager.revelarCartaRemota(datos.index, datos.valor, datos.aldea);
+      if (this.estado) this.renderizarEstado(this.estado);
     });
 
     clienteMultijugador.on("acierto", (datos) => {
+      if (datos?.version && this.version > 0 && Number(datos.version) < this.version) return;
+      if (datos?.version) this.version = Number(datos.version);
       BoardManager.marcarEmparejadas(datos.index1, datos.index2);
       if (this.estado) {
         this.estado.movimientos = datos.movimientos;
@@ -107,49 +143,71 @@ export class GestorSalaCliente {
       }
       this.refrescarMarcadores();
       this.refrescarEquipos();
-      this.actualizarTurno(datos.turno);
-      this.actualizarEstadoJugadoresUI();
-      this.actualizarTiemposUI();
-      this.actualizarPoderesUI();
+      this.renderizarEstado(this.estado);
     });
 
     clienteMultijugador.on("fallo", (datos) => {
+      if (datos?.version && this.version > 0 && Number(datos.version) < this.version) return;
+      if (datos?.version) this.version = Number(datos.version);
       BoardManager.bloquearTablero(true);
+      // Procesar cola de intenciones cuando el tablero se desbloquee
+      setTimeout(() => {
+        BoardManager.bloquearTablero(false);
+        this.procesarColaIntenciones();
+      }, 850);
       BoardManager.ocultarCartasRemotas(datos.index1, datos.index2, 800);
       if (this.estado) this.#aplicarEstadoJugadores(datos);
-      this.actualizarEstadoJugadoresUI();
-      this.actualizarTiemposUI();
+      this.renderizarEstado(this.estado);
       if (datos.sustitucion) {
         window.dispatchEvent(new CustomEvent("sustitucion-usada-online", { detail: datos }));
       }
     });
 
     clienteMultijugador.on("turno-cambiado", (datos) => {
+      if (datos?.turnoTerminaEn) this.turnoTerminaEn = datos.turnoTerminaEn;
+      if (datos?.version && this.version > 0 && Number(datos.version) < this.version) return;
+      if (datos?.version) this.version = Number(datos.version);
       if (this.estado) {
         this.estado.turno = datos.turno;
         this.estado.turnoEquipo = datos.turnoEquipo || this.estado.turnoEquipo;
       }
-      this.actualizarTurno(datos.turno);
-      this.actualizarTiemposUI();
-      this.refrescarEquipos();
+      this.renderizarEstado(this.estado);
     });
 
     clienteMultijugador.on("tiempo-actualizado", (datos) => {
+      if (datos?.turnoTerminaEn) this.turnoTerminaEn = datos.turnoTerminaEn;
+      if (datos?.version && this.version > 0 && Number(datos.version) < this.version) return;
+      if (datos?.version) this.version = Number(datos.version);
       if (!this.estado) return;
       this.estado.tiempos = datos.tiempos || this.estado.tiempos;
-      this.actualizarTiemposUI();
+      this.renderizarEstado(this.estado);
+    });
+
+    clienteMultijugador.on("afk-aviso", (datos) => {
+      if (datos?.jugadorId === this.miId) {
+        window.dispatchEvent(new CustomEvent("afk-aviso-online", { detail: datos }));
+      }
     });
 
     clienteMultijugador.on("partida-terminada", (datos) => {
+      if (datos?.version && this.version > 0 && Number(datos.version) < this.version) return;
+      if (datos?.version) this.version = Number(datos.version);
+      if (this.terminadaNotificadaPara === datos?.idPartida) return;
+      if (datos?.idPartida) this.terminadaNotificadaPara = datos.idPartida;
       if (this.estado) {
         this.estado.estado = "terminada";
         this.#aplicarEstadoJugadores(datos);
       }
       this.partidaTerminada = true;
       BoardManager.bloquearTablero(true);
-      this.actualizarEstadoJugadoresUI();
-      this.actualizarTiemposUI();
+      this.renderizarEstado(this.estado);
       window.dispatchEvent(new CustomEvent("partida-terminada-online", { detail: datos }));
+    });
+
+    clienteMultijugador.on("estado-completo", (estado) => {
+      if (!estado) return;
+      // Snapshot periódico: aplicar estado completo (idempotente)
+      this.renderizarEstado(estado);
     });
 
     clienteMultijugador.on("jugador-desconectado", (datos) => {
@@ -184,6 +242,8 @@ export class GestorSalaCliente {
     });
 
     clienteMultijugador.on("poder-efecto", (datos) => {
+      if (datos?.version && this.version > 0 && Number(datos.version) < this.version) return;
+      if (datos?.version) this.version = Number(datos.version);
       if (this.estado) {
         if (datos?.vida !== undefined) this.estado.vida = datos.vida;
         if (datos?.tipo === "robo") {
@@ -204,12 +264,19 @@ export class GestorSalaCliente {
         for (const carta of datos.cartas || []) {
           BoardManager.revelarTemporal(carta.index, carta.valor, carta.aldea, datos.duracion);
         }
+      } else if (datos?.tipo === "byakugan-revelado") {
+        if (datos.jugadorId !== this.miId) {
+          BoardManager.resaltarIndicesByakugan(datos.indices, datos.duracion);
+        }
       } else if (datos?.tipo === "sello") {
         if (this.estado) this.estado.sello = { index: datos.index, hasta: datos.hasta };
         BoardManager.sellarCarta(datos.index, datos.duracion);
       } else if (datos?.tipo === "sello_expirado") {
         if (this.estado) this.estado.sello = null;
         BoardManager.quitarSello(datos.index);
+      } else if (datos?.tipo === "ventana-contrarresto") {
+        // Mostrar ventana de 3s para que el rival active Byakugan
+        window.dispatchEvent(new CustomEvent("ventana-contrarresto-online", { detail: datos }));
       } else if (datos?.tipo === "mezcla") {
         BoardManager.aplicarMezcla(datos.cartas);
         this.#activarIlusionGenjutsu(datos.duracion);
@@ -225,6 +292,8 @@ export class GestorSalaCliente {
     });
 
     clienteMultijugador.on("estado-poderes", (datos) => {
+      if (datos?.version && this.version > 0 && Number(datos.version) < this.version) return;
+      if (datos?.version) this.version = Number(datos.version);
       if (this.estado && datos) {
         if (datos.poderes) this.estado.poderes = datos.poderes;
         if (datos.chakra !== undefined) this.estado.chakra = datos.chakra;
@@ -266,15 +335,34 @@ export class GestorSalaCliente {
                 BoardManager.revelarCartaRemota(carta.index, carta.valor, carta.aldea);
               }
             }
+            if (this.estado?.estado === "terminada") {
+              window.dispatchEvent(new CustomEvent("partida-terminada-online", { detail: this.estado }));
+            }
           }
         })
-        .catch(() => {});
+        .catch((error) => {
+          window.dispatchEvent(new CustomEvent("sala-error-online", { detail: { mensaje: "No se pudo rehidratar la sala: " + (error?.message || "") } }));
+        });
     });
 
   }
 
   aplicarEstado(estado) {
     if (!estado) return;
+    const versionEntrante = Number(estado.version || 0);
+    if (versionEntrante > 0 && this.version > 0 && versionEntrante < this.version) return;
+    if (versionEntrante > 0) this.version = versionEntrante;
+    // Limpiar estado optimista incompatible con snapshot autoritativo (después de validar versión)
+    if (this.intencionPendiente) {
+      BoardManager.quitarPendiente(this.intencionPendiente.index);
+      this.intencionPendiente = null;
+    }
+    if (estado.turnoTerminaEn) this.turnoTerminaEn = estado.turnoTerminaEn;
+    if (Array.isArray(estado.byakuganReveladas)) {
+      for (const carta of estado.byakuganReveladas) {
+        BoardManager.revelarTemporal(carta.index, carta.valor, carta.aldea, 3000);
+      }
+    }
     this.estado = estado;
     this.codigoSala = estado.codigo || this.codigoSala;
 
@@ -287,7 +375,70 @@ export class GestorSalaCliente {
     this.esMiTurno = this.#esTurnoDeMiEquipo(estado.turnoEquipo, estado.turno);
 
     window.dispatchEvent(new CustomEvent("sala-lista-online", { detail: estado }));
+    this.renderizarEstado(this.estado);
+  }
+
+  renderizarEstado(estado) {
+    if (!estado) return;
+    const versionEntrante = Number(estado.version || 0);
+    if (versionEntrante > 0 && this.version > 0 && versionEntrante < this.version) return;
+    if (versionEntrante > 0) this.version = versionEntrante;
+    // Limpiar estado optimista incompatible con snapshot autoritativo (después de validar versión)
+    if (this.intencionPendiente) {
+      BoardManager.quitarPendiente(this.intencionPendiente.index);
+      this.intencionPendiente = null;
+    }
+    if (estado.turnoTerminaEn) this.turnoTerminaEn = estado.turnoTerminaEn;
+    // Rehidratar sello
+    if (estado.sello && Number.isInteger(estado.sello.index)) {
+      BoardManager.sellarCarta(estado.sello.index, Math.max(0, (estado.sello.hasta || 0) - Date.now()));
+    }
+    // Rehidratar genjutsu (ilusión visual)
+    if (estado.genjutsu && estado.genjutsu.hasta) {
+      const restante = Math.max(0, estado.genjutsu.hasta - Date.now());
+      if (restante > 0) this.#activarIlusionGenjutsu(restante);
+    }
+
+    this.estado = estado;
+    this.codigoSala = estado.codigo || this.codigoSala;
+
+    const yo = estado.jugadores.find((j) => j.id === this.miId);
+    const rival = estado.jugadores.find((j) => j.id !== this.miId);
+    this.miNombre = yo?.nombre || this.miNombre;
+    this.miEquipo = yo?.equipo || this.miEquipo;
+    this.miAsiento = yo?.asiento ?? this.miAsiento;
+    this.rivalNombre = rival?.nombre || this.rivalNombre;
+    this.esMiTurno = this.#esTurnoDeMiEquipo(estado.turnoEquipo, estado.turno);
+
+    // Rehidratar cartas volteadas sin duplicar
+    if (Array.isArray(estado.cartasVolteadas)) {
+      for (const carta of estado.cartasVolteadas) {
+        BoardManager.revelarCartaRemota(carta.index, carta.valor, carta.aldea);
+      }
+    }
+
+    // Rehidratar byakugan se hace en aplicarEstado (una sola vez)
+    // Rehidratar sello
+    if (estado.sello && Number.isInteger(estado.sello.index)) {
+      BoardManager.sellarCarta(estado.sello.index, Math.max(0, (estado.sello.hasta || 0) - Date.now()));
+    }
+
     this.refrescarUI();
+    this.actualizarEstadoJugadoresUI();
+    this.actualizarTiemposUI();
+    this.actualizarPoderesUI();
+    this.refrescarMarcadores();
+    this.refrescarEquipos();
+    this.actualizarTurno(estado.turno);
+
+    if (estado.estado === "terminada") {
+      this.partidaTerminada = true;
+      BoardManager.bloquearTablero(true);
+      if (this.terminadaNotificadaPara !== estado.idPartida) {
+        this.terminadaNotificadaPara = estado.idPartida || null;
+        window.dispatchEvent(new CustomEvent("partida-terminada-online", { detail: estado }));
+      }
+    }
   }
 
   #esTurnoDeMiEquipo(turnoEquipo, turnoId) {
@@ -590,8 +741,38 @@ export class GestorSalaCliente {
   voltearCarta(index) {
     if (!this.estado || this.estado.estado !== "jugando") return false;
     if (!this.esMiTurno) return false;
-    clienteMultijugador.voltearCarta(index);
+    // Evitar doble clic sobre la misma carta ya pendiente
+    if (this.intencionPendiente && this.intencionPendiente.index === index) return false;
+    this.nonceIntencion++;
+    const nonce = this.nonceIntencion;
+    this.intencionPendiente = { nonce, accion: "voltear", index, turno: this.estado.turno, version: this.version };
+    BoardManager.marcarPendiente(index);
+    this.ultimaIntencion = this.intencionPendiente;
+    clienteMultijugador.voltearCarta(index, this.intencionPendiente?.nonce ?? null);
     return true;
+  }
+
+  procesarColaIntenciones() {
+    if (!this.estado || this.estado.estado !== "jugando") {
+      this.colaIntenciones = [];
+      return;
+    }
+    const turnoActual = this.estado.turno;
+    const versionActual = this.version;
+    // Procesar solo UNA intención a la vez (esperar confirmación/rechazo)
+    const intento = this.colaIntenciones.shift();
+    if (!intento) return;
+    // Descartar si el turno o la versión cambió
+    if (intento.turno !== turnoActual) return;
+    if (intento.version > 0 && intento.version < versionActual) return;
+    if (!this.esMiTurno) return;
+    if (intento.accion === "voltear") {
+      this.nonceIntencion++;
+      this.intencionPendiente = { nonce: this.nonceIntencion, ...intento };
+      this.ultimaIntencion = this.intencionPendiente;
+      BoardManager.marcarPendiente(intento.index);
+      clienteMultijugador.voltearCarta(intento.index, this.intencionPendiente.nonce);
+    }
   }
 
   mostrarErrorSala(mensaje) {

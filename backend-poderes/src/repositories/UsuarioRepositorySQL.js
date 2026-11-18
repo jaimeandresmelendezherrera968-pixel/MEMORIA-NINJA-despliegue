@@ -1,18 +1,6 @@
-const UsuarioRepository = require("./UsuarioRepository");
+﻿const UsuarioRepository = require("./UsuarioRepository");
 const Usuario = require("../entities/Usuario");
 
-/**
- * IMPLEMENTACIÓN CONCRETA: UsuarioRepositorySQL
- *
- * Guarda usuarios en la tabla `usuarios` de la base activa. Las columnas
- * relacionales (usuario, correo con UNIQUE) garantizan que no existan
- * duplicados a nivel de base de datos, además de la validación que hace
- * UsuarioService/AuthService antes de insertar.
- *
- * Para desarrollo/offline se puede usar SQLite; en producción PostgreSQL.
- * Ambas capas (DatabaseSqlite y DatabasePostgres) exponen la MISMA
- * interfaz de repositorio: prepare().run/.get/.all y transaccion().
- */
 class UsuarioRepositorySQL extends UsuarioRepository {
   #consultaPorUsuario;
   #consultaPorCorreo;
@@ -29,70 +17,40 @@ class UsuarioRepositorySQL extends UsuarioRepository {
   constructor(database) {
     super();
     this.database = database;
-    // prepare() en el constructor, no como campo de clase: los campos se
-    // inicializan antes del cuerpo del constructor (this.database aún no
-    // existe en ese punto).
     this.#consultaPorUsuario = this.database.db.prepare(
       "SELECT * FROM usuarios WHERE lower(usuario) = lower(?)"
     );
-
     this.#consultaPorCorreo = this.database.db.prepare(
       "SELECT * FROM usuarios WHERE lower(correo) = lower(?)"
     );
-
-    this.#consultaPorId = this.database.db.prepare(
-      "SELECT * FROM usuarios WHERE id = ?"
-    );
-
+    this.#consultaPorId = this.database.db.prepare("SELECT * FROM usuarios WHERE id = ?");
     this.#consultaTodos = this.database.db.prepare(
       "SELECT * FROM usuarios ORDER BY lower(usuario) ASC"
     );
-
     this.#insertaUsuario = this.database.db.prepare(`
       INSERT INTO usuarios (id, usuario, correo, nacimiento, password_hash,
                             xp, victorias, derrotas, racha, puntaje_max)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-
     this.#actualizaPerfil = this.database.db.prepare(`
       UPDATE usuarios
       SET xp = ?, victorias = ?, derrotas = ?, racha = ?, puntaje_max = ?
       WHERE id = ?
     `);
-
-    // ------ Seguridad de cuenta -------------------------------------------------
     this.#marcaCorreoVerificado = this.database.db.prepare(`
-      UPDATE usuarios
-      SET correo_verificado = true, correo_verificado_en = now()
-      WHERE id = ?
+      UPDATE usuarios SET correo_verificado = true, correo_verificado_en = now() WHERE id = ?
     `);
-
-    // Devuelve el contador actualizado para que el Service decida si bloquea.
     this.#sumaIntentoFallido = this.database.db.prepare(`
-      UPDATE usuarios
-      SET intentos_fallidos = intentos_fallidos + 1
-      WHERE id = ?
-      RETURNING intentos_fallidos
+      UPDATE usuarios SET intentos_fallidos = intentos_fallidos + 1 WHERE id = ? RETURNING intentos_fallidos
     `);
-
     this.#marcaBloqueado = this.database.db.prepare(`
-      UPDATE usuarios
-      SET bloqueado_hasta = ?
-      WHERE id = ?
+      UPDATE usuarios SET bloqueado_hasta = ? WHERE id = ?
     `);
-
     this.#limpiaIntentos = this.database.db.prepare(`
-      UPDATE usuarios
-      SET intentos_fallidos = 0, bloqueado_hasta = NULL
-      WHERE id = ?
+      UPDATE usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL WHERE id = ?
     `);
-
-    // El trigger fn_auditar_usuario deja constancia en auditoria_cuentas
-    // del cambio de contraseña (no guarda el hash, solo el CAMBIO).
     this.#actualizaPassword = this.database.db.prepare(`
-      UPDATE usuarios
-      SET password_hash = ?
-      WHERE id = ?
+      UPDATE usuarios SET password_hash = ? WHERE id = ?
     `);
   }
 
@@ -132,12 +90,8 @@ class UsuarioRepositorySQL extends UsuarioRepository {
     return filas.map((fila) => this.#filaAUsuario(fila));
   }
 
-  // Todos los métodos de escritura son async y DEVUELVEN la promesa del
-  // run(): con SQLite (síncrono) el await es inocuo, pero con PostgreSQL
-  // es OBLIGATORIO esperar para que el INSERT/UPDATE termine antes de la
-  // siguiente lectura (sin esto habría condiciones de carrera).
-  async guardar(usuario) {
-    return this.#insertaUsuario.run(
+  async guardar(usuario, ejecutor = null) {
+    const valores = [
       usuario.id,
       usuario.usuario,
       usuario.correo,
@@ -147,8 +101,18 @@ class UsuarioRepositorySQL extends UsuarioRepository {
       usuario.victorias,
       usuario.derrotas,
       usuario.racha,
-      usuario.puntajeMax
-    );
+      usuario.puntajeMax,
+    ];
+    if (ejecutor) {
+      return ejecutor
+        .prepare(
+          `INSERT INTO usuarios (id, usuario, correo, nacimiento, password_hash,
+           xp, victorias, derrotas, racha, puntaje_max)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(...valores);
+    }
+    return this.#insertaUsuario.run(...valores);
   }
 
   async actualizarPerfil(id, perfil) {
@@ -162,12 +126,6 @@ class UsuarioRepositorySQL extends UsuarioRepository {
     );
   }
 
-  /**
-   * Fusiona el progreso del invitado en la cuenta usando la conexión `db`
-   * (la del pool, o el dbCliente de Database.transaccion()): suma XP y
-   * estadísticas; racha y puntajeMax se quedan con el MÁXIMO de los dos.
-   * CASE WHEN en vez de GREATEST para que funcione en PostgreSQL y SQLite.
-   */
   async fusionarPerfilEn(db, id, suma) {
     const sentencia = db.prepare(`
       UPDATE usuarios
@@ -190,26 +148,30 @@ class UsuarioRepositorySQL extends UsuarioRepository {
     );
   }
 
-  // ------ Seguridad de cuenta --------------------------------------------------
-  async marcarCorreoVerificado(id) {
-    return this.#marcaCorreoVerificado.run(id);
-  }
-
+  async marcarCorreoVerificado(id) { return this.#marcaCorreoVerificado.run(id); }
   async sumarIntentoFallido(id) {
     const fila = await this.#sumaIntentoFallido.get(id);
     return fila?.intentos_fallidos ?? 0;
   }
+  async marcarBloqueado(id, hasta) { return this.#marcaBloqueado.run(hasta, id); }
+  async limpiarIntentosFallidos(id) { return this.#limpiaIntentos.run(id); }
+  async actualizarPassword(id, nuevoHash) { return this.#actualizaPassword.run(nuevoHash, id); }
 
-  async marcarBloqueado(id, hasta) {
-    return this.#marcaBloqueado.run(hasta, id);
+  async actualizarPasswordCon(ejecutor, id, nuevoHash) {
+    return ejecutor
+      .prepare(`UPDATE usuarios SET password_hash = ? WHERE id = ?`)
+      .run(nuevoHash, id);
   }
 
-  async limpiarIntentosFallidos(id) {
-    return this.#limpiaIntentos.run(id);
-  }
-
-  async actualizarPassword(id, nuevoHash) {
-    return this.#actualizaPassword.run(nuevoHash, id);
+  async revocarTodasLasSesionesCon(ejecutor, idUsuario) {
+    return ejecutor
+      .prepare(
+        `UPDATE sesiones
+            SET revocada_en = now()
+          WHERE usuario_id = ?
+            AND revocada_en IS NULL`
+      )
+      .run(idUsuario);
   }
 }
 

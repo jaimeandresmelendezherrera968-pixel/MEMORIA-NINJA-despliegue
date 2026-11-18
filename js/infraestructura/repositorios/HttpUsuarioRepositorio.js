@@ -1,4 +1,4 @@
-/*=========================================================
+﻿/*=========================================================
   MEMORIA NINJA
   CAPA: INFRAESTRUCTURA -> Repositorio
   ARCHIVO: infraestructura/repositorios/HttpUsuarioRepositorio.js
@@ -94,7 +94,7 @@ export class HttpUsuarioRepositorio extends IUsuarioLector {
     return this.#aEntidad(usuario);
   }
 
-  async buscarPorCredenciales(usuario, password) {
+  async buscarPorCredenciales(usuario, password, recordar = false) {
     // Login REAL: valida credenciales en el backend, y si son válidas el
     // servidor responde la entidad pública del usuario además de fijar la
     // cookie httpOnly de sesión. Cualquier fallo (401 credenciales, 403
@@ -102,18 +102,15 @@ export class HttpUsuarioRepositorio extends IUsuarioLector {
     // que el servidor envió en body.error.
     const cuerpo = await this.#peticion("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ usuario, password })
+      body: JSON.stringify({ usuario, password, recordar })
     });
     return this.#aEntidad(cuerpo.usuario);
   }
 
-  async guardar(usuario) {
-    // Registro REAL vía /api/auth: el backend crea la cuenta DESACTIVADA
-    // y le envía un código de verificación al correo (MAILER=consola lo
-    // imprime en la consola del servidor). La cuenta solo podrá iniciar
-    // sesión después de confirmar ese código en verificacion.html.
+    async guardar(usuario) {
+    // Registro REAL via /api/auth: devuelve {correoEnviado, aviso,...}
     const datos = usuario.toJSON();
-    await this.#peticion("/auth/registro", {
+    return this.#peticion("/auth/registro", {
       method: "POST",
       body: JSON.stringify({
         usuario: datos.usuario,

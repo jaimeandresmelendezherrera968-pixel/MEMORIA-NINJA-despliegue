@@ -1,9 +1,10 @@
-require("dotenv").config();
+﻿require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
+const { minutosPositivos, resolverMailer, esEntornoProduccion } = require("./src/utils/configuracion");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
 
@@ -78,13 +79,13 @@ const database = new DatabasePostgres();
 const passwordHasher = new PasswordHasher();
 const codigoHasher = new CodigoHasher();
 const codigoGenerador = new CodigoNumericGenerator();
-// Selección del notificador de correo según MAILER (fail-fast si es smtp).
-//   MAILER=consola  -> imprime el código en la consola del servidor (default)
-//   MAILER=ethereal -> Ethereal (demo, URL de vista previa; nunca llega)
-//   MAILER=smtp     -> SMTP real usando las SMTP_* (Render free lo bloquea)
-//   MAILER=brevo    -> API HTTPS de Brevo usando BREVO_* (sí funciona en Render)
+// Seleccion del notificador de correo segun MAILER (fail-fast).
+// Valores validos: consola, ethereal, smtp, brevo (trim + minusculas).
+// En produccion solo smtp/brevo; consola/ethereal quedan reservados a
+// desarrollo/test y hacen fallar el arranque.
 function crearNotificadorCorreo() {
-  const mailer = (process.env.MAILER || "consola").toLowerCase();
+  const enProduccion = esEntornoProduccion();
+  const mailer = resolverMailer(process.env.MAILER, { enProduccion });
 
   if (mailer === "brevo") {
     if (!process.env.BREVO_API_KEY || !process.env.BREVO_SENDER_EMAIL) {
@@ -97,7 +98,7 @@ function crearNotificadorCorreo() {
   if (mailer === "smtp") {
     if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
       throw new Error(
-        "MAILER=smtp requiere SMTP_HOST, SMTP_USER y SMTP_PASS en el .env (en Gmail, una contraseña de aplicación)."
+        "MAILER=smtp requiere SMTP_HOST, SMTP_USER y SMTP_PASS en el .env (en Gmail, una contrasena de aplicacion)."
       );
     }
     return new SmtpNotificadorCorreo();
@@ -108,9 +109,17 @@ function crearNotificadorCorreo() {
   return new ConsolaNotificadorCorreo();
 }
 
+const duracionSesionMin = minutosPositivos(process.env.COOKIE_TTL_MIN, 1440);
+const duracionRecordadaMin = minutosPositivos(
+  process.env.COOKIE_TTL_RECORDAR_MIN,
+  30 * 24 * 60
+);
+if (duracionRecordadaMin < duracionSesionMin) {
+  console.warn(
+    "COOKIE_TTL_RECORDAR_MIN (" + duracionRecordadaMin + ") es menor que COOKIE_TTL_MIN (" + duracionSesionMin + '); "Recordarme" durara menos que una sesion normal.'
+  );
+}
 const notificador = crearNotificadorCorreo();
-
-const duracionSesionMin = Number(process.env.COOKIE_TTL_MIN || 1440);
 
 const partidaRepository = new PartidaRepositorySQL(database);
 const poderFactory = new PoderFactory();
@@ -131,7 +140,9 @@ const authService = new AuthService(
   codigoGenerador,
   codigoHasher,
   notificador,
-  duracionSesionMin
+  duracionSesionMin,
+  duracionRecordadaMin,
+  database
 );
 // Parte 4: middlewares de autorización con el authService real; se inyectan
 // a los routers igual que cualquier otra dependencia.
@@ -155,7 +166,11 @@ const recuperacionService = new RecuperacionService(
 );
 
 const usuarioController = new UsuarioController(usuarioService);
-const authController = new AuthController(authService, duracionSesionMin);
+const authController = new AuthController(
+  authService,
+  duracionSesionMin,
+  duracionRecordadaMin
+);
 const verificacionController = new VerificacionController(verificacionService);
 const recuperacionController = new RecuperacionController(recuperacionService);
 

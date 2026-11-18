@@ -1,4 +1,4 @@
-/*=========================================================
+﻿/*=========================================================
   MEMORIA NINJA
   CAPA: SERVICIOS (lógica de negocio)
   ARCHIVO: servicios/RegistroService.js
@@ -27,7 +27,7 @@ export class RegistroService {
     this.repositorioUsuarios = repositorioUsuarios;
   }
 
-  async registrar({ usuario, nacimiento, correo, pass, confirmarPass }) {
+    async registrar({ usuario, nacimiento, correo, pass, confirmarPass }) {
     if (!usuario || !nacimiento || !correo || !pass || !confirmarPass) {
       throw new Error("Por favor, completa todos los campos.");
     }
@@ -36,12 +36,9 @@ export class RegistroService {
       throw new Error("Las contraseñas no coinciden.");
     }
 
-    if (await this.repositorioUsuarios.buscarPorCorreo(correo)) {
-      throw new Error("Este correo ya está registrado.");
-    }
-
+    // El 409 del backend es autoritativo para duplicados.
     const nuevoUsuario = new Usuario({ usuario, nacimiento, correo, pass });
-    await this.repositorioUsuarios.guardar(nuevoUsuario);
-    return nuevoUsuario;
+    const resultado = await this.repositorioUsuarios.guardar(nuevoUsuario);
+    return resultado ?? nuevoUsuario;
   }
 }

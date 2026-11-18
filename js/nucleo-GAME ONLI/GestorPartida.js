@@ -48,6 +48,10 @@ const PODERES_ONLINE = {
     },
 };
 
+function nombrePoderOnline(id) {
+    return PODERES_ONLINE[id]?.nombre || String(id || "PODER").toUpperCase();
+}
+
 const MODO_PRUEBA_LOCAL = true;
 const MI_PERSONAJE_ES_SASUKE = true;
 
@@ -170,6 +174,7 @@ export class GestorPartida {
             }
             if (!estadoInicial) return;
             this.mazoOnline = estadoInicial.mazo;
+            BoardManager.configurarOnline({ temaReverso: estadoInicial.config?.temaReverso || null });
         }
 
         BoardManager.renderBoard(
@@ -203,7 +208,12 @@ export class GestorPartida {
             });
             document.querySelector('a.boton[href="menu.html"]')
                 ?.addEventListener('click', () => this.gestorSala?.abandonar());
-            console.log(`Partida online iniciada en la sala ${this.gestorSala.codigoSala}.`);
+
+            if (estadoInicial.estado === "terminada") {
+                setTimeout(() => this.mostrarModalFinalOnline(estadoInicial), 0);
+            } else {
+                console.log(`Partida online iniciada en la sala ${this.gestorSala.codigoSala}.`);
+            }
             return;
         }
 
@@ -258,6 +268,12 @@ export class GestorPartida {
             this.mostrarErrorConexion(ev.detail?.mensaje);
         });
 
+        window.addEventListener('accion-rechazada-online', (ev) => {
+            const detalle = ev.detail || {};
+            const mensaje = detalle.mensaje || "Acción no válida";
+            this.vista.mostrarAvisoRapido(mensaje, "info");
+        });
+
         window.addEventListener('poder-activado-online', (ev) => {
             const datos = ev.detail || {};
             const poder = PODERES_ONLINE[datos.poderId];
@@ -283,6 +299,23 @@ export class GestorPartida {
             this.vista.mostrarAvisoRapido(mensaje.toUpperCase(), "error");
         });
 
+        window.addEventListener('ventana-contrarresto-online', (ev) => {
+            const detalle = ev.detail || {};
+            const poder = nombrePoderOnline(detalle.poderId);
+            const contra = nombrePoderOnline(detalle.contrapoderId);
+            const segundos = Math.max(0, Math.round((detalle.duracion || 3000) / 1000));
+            const miEquipo = this.gestorSala?.miEquipo;
+            const puedoContrarrestar = this.gestorSala
+                ? (this.gestorSala.es2v2
+                    ? miEquipo && miEquipo !== detalle.equipo
+                    : this.gestorSala.miId !== detalle.jugadorId)
+                : true;
+            const mensaje = puedoContrarrestar
+                ? `${poder}: ${segundos}s para contrarrestar con ${contra}`
+                : `${poder}: esperando contrarresto con ${contra}`;
+            this.vista.mostrarAvisoRapido(mensaje, "info");
+        });
+
         window.addEventListener('poder-efecto-online', (ev) => {
             const datos = ev.detail || {};
             const miId = this.gestorSala?.miId;
@@ -298,7 +331,9 @@ export class GestorPartida {
             } else if (datos.tipo === 'evadido') {
                 this.vista.mostrarAvisoRapido('SUSTITUCIÓN: poder evadido', "info");
             } else if (datos.tipo === 'contrarresto') {
-                this.vista.mostrarAvisoRapido('BYAKUGAN: Genjutsu anulado', "info");
+                const poder = nombrePoderOnline(datos.poderId);
+                const contra = nombrePoderOnline(datos.contrapoderId);
+                this.vista.mostrarAvisoRapido(`${contra}: ${poder} anulado`, "info");
             } else if (datos.tipo === 'byakugan' && datos.jugadorId === miId) {
                 this.vista.mostrarAvisoRapido('BYAKUGAN: cartas reveladas', "info");
             } else if (datos.tipo === 'sello') {
@@ -408,6 +443,17 @@ export class GestorPartida {
             .map((j) => j.nombre)
             .join(" / ") || `Equipo ${equipo}`;
 
+        // MVP: jugador con mas parejas
+        const parejasArr = Object.entries(parejas || {});
+        const mvpEntry = parejasArr.length ? parejasArr.reduce((a, b) => (b[1] > a[1] ? b : a)) : null;
+        const mvpId = mvpEntry ? mvpEntry[0] : null;
+        const mvpParejas = mvpEntry ? mvpEntry[1] : 0;
+        const mvpNombre = mvpId ? ((jugadores.find((j) => j.id === mvpId)?.nombre) || (mvpId === miId ? miNombre : "Jugador")) : null;
+        const mejorRacha = Object.values(datos.combo || {}).reduce((a, b) => Math.max(a, b || 0), 0);
+        const statsExtra = [];
+        if (mvpNombre) statsExtra.push(`MVP: ${mvpNombre} (${mvpParejas} parejas)`);
+        if (mejorRacha > 0) statsExtra.push(`Mejor racha: x${mejorRacha}`);
+
         let marcador;
         if (es2v2) {
             marcador = ["A", "B"].map((equipo) => ({
@@ -438,6 +484,7 @@ export class GestorPartida {
             stats: [
                 `Movimientos: ${datos.movimientos ?? 0}`,
                 `Tus parejas: ${misParejas}`,
+                ...statsExtra,
                 `Sala: ${datos.codigo || this.gestorSala?.codigoSala || "--"}`,
             ],
             config: datos.config || {},

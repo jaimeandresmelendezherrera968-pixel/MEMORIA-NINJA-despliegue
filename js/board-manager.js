@@ -23,6 +23,8 @@ let onEsMiTurno = null;
 let modoOnline = false;
 let alVoltearOnline = null;
 let temaActual = obtenerTemaAldea("arena");
+let reversoOnline = null;
+let forzarRutaPorAldea = false;
 
 function obtenerCartasOcultas() {
     const tablero = document.getElementById("board");
@@ -120,8 +122,30 @@ export const BoardManager = {
     revelarCartaRemota(index, valor, aldea, emparejada = false) {
         const carta = cartaPorIndice(index);
         if (!carta) return;
+        // Idempotencia: no re-renderizar si ya está volteada o emparejada
+        if (carta.classList.contains("emparejada")) return;
+        if (carta.classList.contains("volteada") && valor) {
+            // Ya revelada: solo actualizar imagen si cambió
+            const front = carta.querySelector("img.front, img.img-card.front");
+            if (front && front.src && !front.src.endsWith(valor + ".png")) {
+                mostrarFrente(carta, valor, aldea);
+            }
+            return;
+        }
         mostrarFrente(carta, valor, aldea);
         if (emparejada) carta.classList.add("emparejada");
+    },
+
+    marcarPendiente(index) {
+        const carta = cartaPorIndice(index);
+        if (carta && !carta.classList.contains("volteada") && !carta.classList.contains("emparejada")) {
+            carta.classList.add("pendiente");
+        }
+    },
+
+    quitarPendiente(index) {
+        const carta = cartaPorIndice(index);
+        if (carta) carta.classList.remove("pendiente");
     },
 
     marcarEmparejadas(index1, index2) {
@@ -158,6 +182,19 @@ export const BoardManager = {
         }, duracion);
     },
 
+    resaltarIndicesByakugan(indices = [], duracion = 3000) {
+        for (const index of indices || []) {
+            const carta = cartaPorIndice(index);
+            if (!carta || carta.classList.contains("emparejada")) continue;
+            carta.classList.add("byakugan-rastro");
+            clearTimeout(carta._byakuganRastroTimeout);
+            carta._byakuganRastroTimeout = setTimeout(() => {
+                carta.classList.remove("byakugan-rastro");
+                carta._byakuganRastroTimeout = null;
+            }, Math.max(0, duracion));
+        }
+    },
+
     sellarCarta(index, duracion = 5000) {
         const carta = cartaPorIndice(index);
         if (!carta || carta.classList.contains("emparejada")) return;
@@ -182,10 +219,12 @@ export const BoardManager = {
     },
 
     aplicarMezcla(cartas) {
+        // Solo anima posiciones; los valores reales los resuelve el servidor al voltear.
+        // No se actualizan data-valor/data-aldea para no filtrar cartas ocultas.
         for (const datos of cartas || []) {
             const carta = cartaPorIndice(datos.index);
-            if (!carta || !datos.valor) continue;
-            setImagenesCarta(carta, datos.valor, datos.aldea || carta.dataset.aldea);
+            if (!carta) continue;
+            carta.classList.add("genjutsu-mezclada");
         }
     },
 
@@ -198,6 +237,11 @@ export const BoardManager = {
         }
     },
 
+    configurarOnline({ temaReverso } = {}) {
+        reversoOnline = temaReverso || null;
+        forzarRutaPorAldea = true;
+    },
+
     renderBoard(callbackResultado, callbackFinal, callbackEsMiTurno, mazoExterno = null) {
         onResultado = callbackResultado || null;
         onPartidaCompletada = callbackFinal || null;
@@ -206,6 +250,8 @@ export const BoardManager = {
         modoOnline = false;
         alVoltearOnline = null;
 
+        forzarRutaPorAldea = false;
+        reversoOnline = null;
         try {
             temaActual = obtenerTemaSeleccionado() || obtenerTemaAldea("arena");
             aplicarTemaAldea(localStorage.getItem("nivelActual"));
@@ -336,7 +382,7 @@ export const BoardManager = {
         if (!valor) return this.obtenerReverso();
         const aldeaFinal = aldea || "arena";
         try {
-            if (temaActual && typeof temaActual.cartas === "string" && aldeaFinal === "arena") {
+            if (!forzarRutaPorAldea && temaActual && typeof temaActual.cartas === "string" && aldeaFinal === "arena") {
                 return `${temaActual.cartas}${valor}.png`;
             }
         } catch (e) {}
@@ -344,6 +390,7 @@ export const BoardManager = {
     },
 
     obtenerReverso() {
+        if (reversoOnline) return reversoOnline;
         try {
             return (temaActual && temaActual.reverso) ? temaActual.reverso : RUTA_BACK_FALLBACK;
         } catch (e) {

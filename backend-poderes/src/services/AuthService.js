@@ -1,21 +1,8 @@
-const crypto = require("crypto");
+﻿const crypto = require("crypto");
 const Usuario = require("../entities/Usuario");
 const { errorConCodigo } = require("../utils/errores");
+const { normalizarUsuario, normalizarCorreo } = require("../utils/normalizar");
 
-/**
- * SERVICIO: AuthService
- *
- * Registro, inicio de sesión y sesiones (login real con cookie httpOnly).
- *
- * >>> SRP <<<
- * Solo lógica de autenticación: validaciones, hash, bloqueos por intentos
- * y creación de sesiones. No sabe de HTTP ni de SQL.
- *
- * >>> DIP <<<
- * Recibe repositorios, hasher, generador y notificador YA ARMADOS desde
- * server.js. El token se guarda HASEADO en la base; la cookie guarda el
- * token en crudo.
- */
 class AuthService {
   static INTENTOS_MAXIMOS = 5;
   static BLOQUEO_MINUTOS = 5;
@@ -28,7 +15,9 @@ class AuthService {
     codigoGenerador,
     codigoHasher,
     notificador,
-    duracionSesionMin = 1440
+    duracionSesionMin = 1440,
+    duracionRecordadaMin = 30 * 24 * 60,
+    database = null
   ) {
     this.usuarioRepository = usuarioRepository;
     this.codigoVerificacionRepository = codigoVerificacionRepository;
@@ -38,96 +27,117 @@ class AuthService {
     this.codigoHasher = codigoHasher;
     this.notificador = notificador;
     this.duracionSesionMin = duracionSesionMin;
+    this.duracionRecordadaMin = duracionRecordadaMin;
+    this.database = database;
   }
 
   #hashearToken(token) {
     return crypto.createHash("sha256").update(token).digest("hex");
   }
 
-  #codigoEnvio(idUsuario) {
+  async #codigoEnvio(idUsuario, ejecutor = null) {
     const codigo = this.codigoGenerador.generar();
-    const vigenciaMs = 10 * 60 * 1000; // 10 minutos
-    return this.codigoVerificacionRepository.guardar({
-      usuarioId: idUsuario,
-      codigoHash: this.codigoHasher.hash(codigo),
-      tipo: "REGISTRO",
-      expiraEn: new Date(Date.now() + vigenciaMs),
-    }).then(() => codigo);
+    const vigenciaMs = 10 * 60 * 1000;
+    await this.codigoVerificacionRepository.guardar(
+      {
+        usuarioId: idUsuario,
+        codigoHash: this.codigoHasher.hash(codigo),
+        tipo: "REGISTRO",
+        expiraEn: new Date(Date.now() + vigenciaMs),
+      },
+      ejecutor
+    );
+    return codigo;
   }
 
-  /**
-   * Registra la cuenta, genera el código de verificación y lo envía.
-   * El correo queda "pendiente de verificar" hasta /auth/verificacion/confirmar.
-   */
   async registrar({ usuario, correo, nacimiento, password }) {
-    this.#validarCamposObligatorios({ usuario, correo, password });
+    const usuarioNormalizado = normalizarUsuario(usuario);
+    const correoNormalizado = normalizarCorreo(correo);
 
-    if (await this.usuarioRepository.buscarPorUsuario(usuario)) {
-      throw new Error("El nombre de usuario ya está en uso");
+    this.#validarCamposObligatorios({
+      usuario: usuarioNormalizado,
+      correo: correoNormalizado,
+      password,
+    });
+
+    if (await this.usuarioRepository.buscarPorUsuario(usuarioNormalizado)) {
+      throw errorConCodigo("El nombre de usuario ya esta en uso", "USUARIO_DUPLICADO");
     }
-    if (await this.usuarioRepository.buscarPorCorreo(correo)) {
-      throw new Error("El correo ya está registrado");
+    if (await this.usuarioRepository.buscarPorCorreo(correoNormalizado)) {
+      throw errorConCodigo("El correo ya esta registrado", "CORREO_DUPLICADO");
     }
 
     const id = crypto.randomUUID();
     const nuevo = new Usuario({
       id,
-      usuario,
-      correo,
+      usuario: usuarioNormalizado,
+      correo: correoNormalizado,
       nacimiento,
       passwordHash: this.passwordHasher.generarHash(password),
     });
+
+    let codigo;
     try {
-      await this.usuarioRepository.guardar(nuevo);
+      const persistir = async (db) => {
+        await this.usuarioRepository.guardar(nuevo, db);
+        return this.#codigoEnvio(id, db);
+      };
+
+      codigo = this.database
+        ? await this.database.transaccion(persistir)
+        : await persistir(null);
     } catch (error) {
-      // Carrera de registros simultáneos: los chequeos de arriba pueden pasar
-      // a la vez y PostgreSQL decide con sus UNIQUE (código 23505).
       if (error && error.code === "23505") {
         const detalle = String(error.detail || "").toLowerCase();
         if (detalle.includes("correo")) {
-          throw new Error("El correo ya está registrado");
+          throw errorConCodigo("El correo ya esta registrado", "CORREO_DUPLICADO");
         }
         if (detalle.includes("usuario")) {
-          throw new Error("El nombre de usuario ya está en uso");
+          throw errorConCodigo("El nombre de usuario ya esta en uso", "USUARIO_DUPLICADO");
         }
-        throw new Error("La cuenta ya existe");
       }
       throw error;
     }
 
-    // Código de verificación de 1 solo uso (el trigger invalida el previo).
-    const codigo = await this.#codigoEnvio(id);
-    await this.notificador.enviar({
-      para: correo,
-      asunto: "Verifica tu correo en Memoria Ninja",
-      texto:
-        `Falta un paso para activar tu cuenta de Memoria Ninja.\n\n` +
-        `Tu código de verificación es: ${codigo}\nVence en 10 minutos.`,
-    });
+    const resultado = {
+      usuario: nuevo.publico(),
+      correo: correoNormalizado,
+      correoEnviado: true,
+      aviso: "Revisa tu correo para verificar tu cuenta.",
+    };
 
-    return { usuario: nuevo.publico() };
+    try {
+      await this.notificador.enviar({
+        para: correoNormalizado,
+        asunto: "Verifica tu correo en Memoria Ninja",
+        texto:
+          "Falta un paso para activar tu cuenta de Memoria Ninja.\n\n" +
+          "Tu codigo de verificacion es: " + codigo + "\nVence en 10 minutos.",
+      });
+    } catch (error) {
+      resultado.correoEnviado = false;
+      resultado.aviso =
+        "La cuenta se creo, pero no pudimos enviar el correo. Reenvia el codigo desde la pantalla de verificacion.";
+      console.error("No se pudo enviar el correo de verificacion:", error.message);
+    }
+
+    return resultado;
   }
 
-  /**
-   * Login: verifica credenciales, controla intentos fallidos y bloqueo,
-   * exige correo verificado y crea la sesión. Devuelve token (para la
-   * cookie) + usuario público.
-   */
-  async iniciarSesion({ usuario, password, ip, userAgent }) {
+  async iniciarSesion({ usuario, password, ip, userAgent, recordar = false }) {
+    const identificador = normalizarUsuario(usuario);
     const encontrado =
-      (await this.usuarioRepository.buscarPorUsuario(usuario)) ||
-      (await this.usuarioRepository.buscarPorCorreo(usuario));
+      (await this.usuarioRepository.buscarPorUsuario(identificador)) ||
+      (await this.usuarioRepository.buscarPorCorreo(identificador));
 
-    // Mensaje idéntico para "no existe" y "contraseña mala": no se filtra
-    // qué usuario está registrado.
     if (!encontrado) {
-      throw errorConCodigo("Usuario o contraseña incorrectos", "CREDENCIALES");
+      throw errorConCodigo("Usuario o contrasena incorrectos", "CREDENCIALES");
     }
 
     const bloqueado = encontrado.bloqueadoHasta && new Date(encontrado.bloqueadoHasta) > new Date();
     if (bloqueado) {
       throw errorConCodigo(
-        "Cuenta temporalmente bloqueada por muchos intentos. Intenta más tarde.",
+        "Cuenta temporalmente bloqueada por muchos intentos. Intenta mas tarde.",
         "BLOQUEADA"
       );
     }
@@ -139,16 +149,16 @@ class AuthService {
         const hasta = new Date(Date.now() + AuthService.BLOQUEO_MINUTOS * 60 * 1000);
         await this.usuarioRepository.marcarBloqueado(encontrado.id, hasta);
         throw errorConCodigo(
-          "Cuenta temporalmente bloqueada por muchos intentos. Intenta más tarde.",
+          "Cuenta temporalmente bloqueada por muchos intentos. Intenta mas tarde.",
           "BLOQUEADA"
         );
       }
-      throw errorConCodigo("Usuario o contraseña incorrectos", "CREDENCIALES");
+      throw errorConCodigo("Usuario o contrasena incorrectos", "CREDENCIALES");
     }
 
     if (!encontrado.correoVerificado) {
       throw errorConCodigo(
-        "Verifica tu correo antes de iniciar sesión. Revisa la bandeja de entrada.",
+        "Verifica tu correo antes de iniciar sesion. Revisa la bandeja de entrada.",
         "CORREO_SIN_VERIFICAR"
       );
     }
@@ -156,7 +166,8 @@ class AuthService {
     await this.usuarioRepository.limpiarIntentosFallidos(encontrado.id);
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expiraEn = new Date(Date.now() + this.duracionSesionMin * 60 * 1000);
+    const duracionMin = recordar ? this.duracionRecordadaMin : this.duracionSesionMin;
+    const expiraEn = new Date(Date.now() + duracionMin * 60 * 1000);
     await this.sesionRepository.crear({
       usuarioId: encontrado.id,
       tokenHash: this.#hashearToken(token),
@@ -165,13 +176,14 @@ class AuthService {
       expiraEn,
     });
 
-    return { usuario: encontrado.publico(), token, expiraEn };
+    return {
+      usuario: encontrado.publico(),
+      token,
+      expiraEn,
+      recordar: Boolean(recordar),
+    };
   }
 
-  /**
-   * Recupera la sesión por el token de la cookie (haseado antes de
-   * consultar). Devuelve null si no existe, está revocada o vencida.
-   */
   async obtenerUsuarioPorToken(token) {
     if (!token) return null;
     const encontrado = await this.sesionRepository.buscarPorTokenHash(this.#hashearToken(token));
@@ -192,13 +204,16 @@ class AuthService {
 
   #validarCamposObligatorios({ usuario, correo, password }) {
     if (!usuario || String(usuario).trim() === "") {
-      throw new Error("El nombre de usuario es obligatorio");
+      throw errorConCodigo("El nombre de usuario es obligatorio", "VALIDACION");
     }
     if (!correo || String(correo).trim() === "" || !String(correo).includes("@")) {
-      throw new Error("Debes ingresar un correo válido");
+      throw errorConCodigo("Debes ingresar un correo valido", "VALIDACION");
     }
-    if (!password || String(password).length < 6) {
-      throw new Error("La contraseña debe tener al menos 6 caracteres");
+    if (!password || String(password).length < 8) {
+      throw errorConCodigo(
+        "La contrasena debe tener al menos 8 caracteres",
+        "VALIDACION"
+      );
     }
   }
 }

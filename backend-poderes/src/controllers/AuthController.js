@@ -9,9 +9,10 @@ const NOMBRE_COOKIE = "memoria_ninja_sesion";
  * AQUÍ (afuerzas de HTTP), el Service nunca las ve.
  */
 class AuthController {
-  constructor(authService, duracionSesionMin = 1440) {
+  constructor(authService, duracionSesionMin = 1440, duracionRecordadaMin = 30 * 24 * 60) {
     this.authService = authService;
     this.duracionSesionMin = duracionSesionMin;
+    this.duracionRecordadaMin = duracionRecordadaMin;
   }
 
   registrar = async (req, res) => {
@@ -21,27 +22,49 @@ class AuthController {
       res.status(201).json({
         exito: true,
         usuario: resultado.usuario,
-        aviso: "Revisa tu correo para verificar tu cuenta.",
+        correo: resultado.correo,
+        correoEnviado: resultado.correoEnviado !== false,
+        aviso: resultado.aviso || "Revisa tu correo para verificar tu cuenta.",
       });
     } catch (error) {
-      res.status(400).json({ exito: false, error: error.message });
+      const duplicado =
+        error.codigo === "CORREO_DUPLICADO" ||
+        error.codigo === "USUARIO_DUPLICADO" ||
+        error.codigo === "CUENTA_DUPLICADA";
+      const validacion = error.codigo === "VALIDACION";
+
+      if (duplicado) {
+        return res.status(409).json({ exito: false, error: error.message });
+      }
+      if (validacion) {
+        return res.status(400).json({ exito: false, error: error.message });
+      }
+
+      console.error("Error inesperado en registro:", error);
+      res.status(500).json({ exito: false, error: "No se pudo completar el registro" });
     }
   };
 
   iniciarSesion = async (req, res) => {
     try {
-      const { usuario, password } = req.body;
+      const { usuario, password, recordar } = req.body;
       const resultado = await this.authService.iniciarSesion({
         usuario,
         password,
+        recordar: recordar === true || recordar === "true",
         ip: req.ip,
         userAgent: req.headers["user-agent"],
       });
 
-      res.cookie(NOMBRE_COOKIE, resultado.token, this.#opcionesCookie(req));
-      res.json({ exito: true, usuario: resultado.usuario });
+      res.cookie(NOMBRE_COOKIE, resultado.token, this.#opcionesCookie(req, resultado.recordar));
+      res.json({ exito: true, usuario: resultado.usuario, recordar: resultado.recordar });
     } catch (error) {
-      res.status(this.#statusDe(error)).json({ exito: false, error: error.message });
+      const status = this.#statusDe(error);
+      if (status === 500) {
+        console.error("Error inesperado en login:", error);
+        return res.status(500).json({ exito: false, error: "No se pudo iniciar sesion" });
+      }
+      res.status(status).json({ exito: false, error: error.message });
     }
   };
 
@@ -62,21 +85,34 @@ class AuthController {
     res.clearCookie(NOMBRE_COOKIE, {
       path: "/",
       sameSite: "lax",
-      secure: Boolean(req?.secure) || process.env.COOKIE_SECURE === "1",
+      secure: this.#cookieSegura(req),
     });
     res.json({ exito: true });
   };
 
-  #opcionesCookie(req) {
-    return {
+  #cookieSegura(req) {
+    return (
+      Boolean(req?.secure) ||
+      process.env.COOKIE_SECURE === "1" ||
+      process.env.NODE_ENV === "production"
+    );
+  }
+
+  #opcionesCookie(req, recordar = false) {
+    const opciones = {
       httpOnly: true,
       sameSite: "lax",
-      // Parte 4: solo producción con HTTPS (COOKIE_SECURE=1 en .env); en
+      // Solo producción con HTTPS (COOKIE_SECURE=1 o NODE_ENV=production); en
       // local (http) false, o el navegador ni siquiera guarda la cookie.
-      secure: Boolean(req?.secure) || process.env.COOKIE_SECURE === "1",
+      secure: this.#cookieSegura(req),
       path: "/",
-      maxAge: this.duracionSesionMin * 60 * 1000,
     };
+    // "Recordarme" => cookie persistente 30 días. Sin marcar, cookie de
+    // sesión (se borra al cerrar el navegador).
+    if (recordar) {
+      opciones.maxAge = this.duracionRecordadaMin * 60 * 1000;
+    }
+    return opciones;
   }
 
   #statusDe(error) {
@@ -87,8 +123,10 @@ class AuthController {
         return 403;
       case "BLOQUEADA":
         return 423;
+      case "VALIDACION":
+        return 400;
       default:
-        return 401;
+        return 500;
     }
   }
 }

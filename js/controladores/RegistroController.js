@@ -1,4 +1,4 @@
-import { FormularioControllerBase } from "./FormularioControllerBase.js";
+﻿import { FormularioControllerBase } from "./FormularioControllerBase.js";
 
 export class RegistroController extends FormularioControllerBase {
 
@@ -29,14 +29,21 @@ export class RegistroController extends FormularioControllerBase {
                 );
             }
 
-            await this.registroService.registrar(
+            const resultado = await this.registroService.registrar(
                 datosFormulario
             );
 
-            this.notificador.mostrar(
-                "Registro exitoso. Revisa tu correo para el código de verificación.",
-                "exito"
-            );
+            if (resultado && resultado.correoEnviado === false) {
+                this.notificador.mostrar(
+                    resultado.aviso || "Cuenta creada, pero no pudimos enviar el correo; reenvia el codigo desde verificacion.",
+                    "error"
+                );
+            } else {
+                this.notificador.mostrar(
+                    "Registro exitoso. Revisa tu correo para el código de verificación.",
+                    "exito"
+                );
+            }
 
             return true;
 

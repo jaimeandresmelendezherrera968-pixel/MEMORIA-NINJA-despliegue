@@ -670,4 +670,3 @@ export class AkatsukiController {
             "menu.html";
     }
 }
-

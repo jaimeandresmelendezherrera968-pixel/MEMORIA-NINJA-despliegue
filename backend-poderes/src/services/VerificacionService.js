@@ -1,15 +1,7 @@
-const { errorConCodigo } = require("../utils/errores");
+﻿const { errorConCodigo } = require("../utils/errores");
 const { plantillaCodigo } = require("../utils/plantillaCorreo");
+const { normalizarCorreo } = require("../utils/normalizar");
 
-/**
- * SERVICIO: VerificacionService
- *
- * Envío y confirmación de códigos de verificación de correo (registro).
- *
- * La confirmación es ACID: corre dentro de DatabasePostgres.transaccion()
- * y la función fn_confirmar_codigo bloquea la fila con FOR UPDATE, así el
- * mismo código jamás se usa dos veces aunque lleguen dos peticiones juntas.
- */
 class VerificacionService {
   static INTENTOS_MAXIMOS = 5;
   static VIGENCIA_MIN = 10;
@@ -30,15 +22,14 @@ class VerificacionService {
     this.database = database;
   }
 
-  /**
-   * Genera un nuevo código REGISTRO y lo envía al correo de la cuenta.
-   * El trigger fn_invalidar_codigo_previo deja sin efecto cualquier
-   * código anterior del mismo tipo (siempre UNO vigente).
-   */
   async enviar({ correo }) {
-    const usuario = await this.usuarioRepository.buscarPorCorreo(correo);
+    const correoNormalizado = normalizarCorreo(correo);
+    const usuario = await this.usuarioRepository.buscarPorCorreo(correoNormalizado);
     if (!usuario) {
       throw errorConCodigo("No encontramos una cuenta con ese correo.", "NO_CUENTA");
+    }
+    if (usuario.correoVerificado) {
+      return { aviso: "Tu correo ya esta verificado. Ya puedes iniciar sesion." };
     }
 
     const codigo = this.codigoGenerador.generar();
@@ -51,32 +42,32 @@ class VerificacionService {
 
     await this.notificador.enviar({
       para: usuario.correo,
-      asunto: "Tu código de verificación de Memoria Ninja",
+      asunto: "Tu codigo de verificacion de Memoria Ninja",
       texto:
-        `Revisa la bandeja de entrada.\n\n` +
-        `Tu código de verificación es: ${codigo}\nVence en ${VerificacionService.VIGENCIA_MIN} minutos.`,
+        "Revisa la bandeja de entrada.\n\n" +
+        "Tu codigo de verificacion es: " + codigo + "\nVence en " + VerificacionService.VIGENCIA_MIN + " minutos.",
       html: plantillaCodigo({
         titulo: "Verifica tu correo",
-        subtitulo: "Usa este código para activar tu cuenta de Memoria Ninja.",
+        subtitulo: "Usa este codigo para activar tu cuenta de Memoria Ninja.",
         codigo,
         vigenciaMin: VerificacionService.VIGENCIA_MIN,
       }),
     });
 
-    return { aviso: "Código enviado. Revisa tu correo." };
+    return { aviso: "Codigo enviado. Revisa tu correo." };
   }
 
-  /**
-   * Confirma el código. Flujo atómico:
-   *   1) toma la transacción,
-   *   2) cuenta intentos sobre el código activo (máx. 5),
-   *   3) llama a fn_confirmar_codigo (FOR UPDATE) que consume el código
-   *      y marca el correo como verificado — todo o nada.
-   */
   async confirmar({ correo, codigo }) {
-    const usuario = await this.usuarioRepository.buscarPorCorreo(correo);
+    const correoNormalizado = normalizarCorreo(correo);
+    const usuario = await this.usuarioRepository.buscarPorCorreo(correoNormalizado);
     if (!usuario) {
       throw errorConCodigo("No encontramos una cuenta con ese correo.", "NO_CUENTA");
+    }
+    if (usuario.correoVerificado) {
+      return {
+        aviso: "Tu correo ya esta verificado. Ya puedes iniciar sesion.",
+        correoVerificado: true,
+      };
     }
 
     const codigoHash = this.codigoHasher.hash(codigo);
@@ -87,12 +78,12 @@ class VerificacionService {
         db
       );
       if (!activo) {
-        throw errorConCodigo("El código venció. Vuelve a solicitar uno nuevo.", "CODIGO_INVALIDO");
+        throw errorConCodigo("El codigo vencio. Vuelve a solicitar uno nuevo.", "CODIGO_INVALIDO");
       }
 
       const intentos = await this.codigoVerificacionRepository.aumentarIntento(activo.id, db);
       if (intentos > VerificacionService.INTENTOS_MAXIMOS) {
-        throw errorConCodigo("Demasiados intentos. Solicita un código nuevo.", "CODIGO_INVALIDO");
+        throw errorConCodigo("Demasiados intentos. Solicita un codigo nuevo.", "CODIGO_INVALIDO");
       }
 
       const estado = await this.codigoVerificacionRepository.confirmarCon(db, {
@@ -101,12 +92,12 @@ class VerificacionService {
         tipo: "REGISTRO",
       });
       if (estado !== "OK") {
-        throw errorConCodigo("Código incorrecto o vencido.", "CODIGO_INVALIDO");
+        throw errorConCodigo("Codigo incorrecto o vencido.", "CODIGO_INVALIDO");
       }
     });
 
     return {
-      aviso: "Correo verificado. Ya puedes iniciar sesión.",
+      aviso: "Correo verificado. Ya puedes iniciar sesion.",
       correoVerificado: true,
     };
   }

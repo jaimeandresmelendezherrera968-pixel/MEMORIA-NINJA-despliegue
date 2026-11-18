@@ -20,9 +20,36 @@ const ALIAS_ALDEAS = {
   konoha: "konoha/uchiha",
   otros: "akatsuki",
 };
+function rngConSemilla(semilla) {
+  let estado = semilla >>> 0;
+  return function() {
+    estado = (estado + 0x6D2B79F5) >>> 0;
+    let t = estado;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const REVERSOS_ALDEA = {
+  akatsuki: "assets/cartas niveles/carta akatsuki.png",
+  arena: "assets/cartas niveles/carta arena.png",
+  niebla: "assets/cartas niveles/carta niebla.png",
+  nube: "assets/cartas niveles/carta nube.png",
+  roca: "assets/cartas niveles/carta roca.png",
+  "konoha/hyuga": "assets/cartas niveles/carta hyuga.png",
+  "konoha/sarutobi": "assets/cartas niveles/carta sarutobi.png",
+  "konoha/uchiha": "assets/cartas niveles/carta uchiha.png",
+  "konoha/uzumaki": "assets/cartas niveles/carta uzumaki.png",
+};
+const REVERSO_NEUTRAL = "assets/cartas niveles/carta arena.png";
 const VALORES_CARTA = ["1", "2", "3", "4", "5", "6", "7", "8"];
 const USOS_PODER_INICIAL = 2;
 const PODERES = ["sustitucion", "byakugan", "robo", "genjutsu", "sello", "bomba"];
+const CONTRARRESTOS = {
+  genjutsu:   { ventanaMs: 3000, permitidos: ["byakugan"] },
+  byakugan:   { ventanaMs: 3000, permitidos: ["sello"] },
+  bomba:      { ventanaMs: 3000, permitidos: ["sello"] },
+};
 const MODOS = new Set(["1v1", "2v2"]);
 const CHAKRA_INICIAL = 100;
 const CHAKRA_MAXIMO = 100;
@@ -31,7 +58,7 @@ const VIDA_MAXIMA = 100;
 const CHAKRA_POR_ACIERTO = 5;
 const CHAKRA_BASE_COMBO = 3;
 const VIDA_PERDIDA_POR_ERROR = 5;
-const TIEMPO_INICIAL = 180;
+const TIEMPO_INICIAL = 20;
 const COSTOS_PODER = {
   sustitucion: 25,
   byakugan: 30,
@@ -41,6 +68,35 @@ const COSTOS_PODER = {
   bomba: 50,
 };
 
+function hashEstado(sala) {
+  const base = JSON.stringify({
+    estado: sala.estado,
+    version: sala.version || 0,
+    turno: sala.turno,
+    turnoEquipo: sala.turnoEquipo,
+    movimientos: sala.movimientos,
+    parejas: sala.parejas,
+    parejasEquipos: sala.parejasEquipos,
+    cartas: (sala.mazo || []).map((c) => (c.emparejada ? 1 : 0)).join(""),
+    volteadas: (sala.cartasVolteadas || []).map((c) => c.index).join(","),
+    chakra: sala.chakra,
+    vida: sala.vida,
+    combo: sala.combo,
+    aciertos: sala.aciertos,
+    errores: sala.errores,
+    tiempos: sala.tiempos,
+    bloqueada: !!sala.bloqueada,
+    poderEnProceso: sala.poderEnProceso,
+    ganadorId: sala.ganadorId,
+    ganadorEquipo: sala.ganadorEquipo,
+    motivo: sala.motivo,
+  });
+  let h = 0;
+  for (let i = 0; i < base.length; i++) {
+    h = (Math.imul(31, h) + base.charCodeAt(i)) | 0;
+  }
+  return (h >>> 0).toString(16);
+}
 class GestorSalas {
   constructor(httpServer, opciones = {}) {
     this.io = new Server(httpServer, {
@@ -71,13 +127,14 @@ class GestorSalas {
     this.duracionByakuganMs = opciones.duracionByakuganMs ?? 3000;
     this.duracionSelloMs = opciones.duracionSelloMs ?? 5000;
     this.duracionGenjutsuMs = opciones.duracionGenjutsuMs ?? 5000;
+    this.intervaloSnapshotMs = opciones.intervaloSnapshotMs ?? 5000;
     this.inicializar();
   }
 
   generarCodigo() {
     let codigo;
     do {
-      codigo = crypto.randomInt(1_000_000_000, 10_000_000_000).toString();
+      codigo = crypto.randomInt(100000, 1000000).toString();
     } while (this.salas.has(codigo));
     return codigo;
   }
@@ -96,7 +153,15 @@ class GestorSalas {
     const mezclarAldeas = config.mezclarAldeas !== false;
     const solicitadas = Number(config.pares) || 8;
     const pares = mezclarAldeas ? Math.min(Math.max(solicitadas, 8), 16) : 8;
-    return { ...config, modo, mezclarAldeas, pares };
+
+    let temaReverso = REVERSO_NEUTRAL;
+    if (!mezclarAldeas) {
+      const solicitada = ALIAS_ALDEAS[config.aldea] || config.aldea;
+      const aldea = ALDEAS_MEZCLADAS.includes(solicitada) ? solicitada : "arena";
+      temaReverso = REVERSOS_ALDEA[aldea] || REVERSO_NEUTRAL;
+    }
+
+    return { ...config, modo, mezclarAldeas, pares, temaReverso };
   }
 
   capacidadDeSala(sala) {
@@ -127,6 +192,8 @@ class GestorSalas {
     const mezclarAldeas = config.mezclarAldeas !== false;
     const solicitadas = Number(config.pares) || 8;
     const pares = Math.min(Math.max(solicitadas, 8), 16);
+    const semilla = Number(config.semilla) || Math.floor(Math.random() * 0x7fffffff);
+    const rng = rngConSemilla(semilla);
 
     let combinaciones;
     if (mezclarAldeas) {
@@ -142,7 +209,7 @@ class GestorSalas {
       combinaciones = VALORES_CARTA.map((valor) => ({ aldea, valor }));
     }
 
-    combinaciones.sort(() => Math.random() - 0.5);
+    combinaciones.sort(() => rng() - 0.5);
     const elegidas = combinaciones.slice(0, Math.min(pares, combinaciones.length));
 
     const cartas = [];
@@ -151,7 +218,7 @@ class GestorSalas {
       cartas.push({ parId, valor, aldea, emparejada: false });
       cartas.push({ parId, valor, aldea, emparejada: false });
     });
-    cartas.sort(() => Math.random() - 0.5);
+    cartas.sort(() => rng() - 0.5);
     return cartas;
   }
 
@@ -184,6 +251,7 @@ class GestorSalas {
       codigo: sala.codigo,
       idPartida: sala.idPartida || null,
       estado: sala.estado,
+      version: sala.version || 0,
       config: sala.config,
       modo: sala.config?.modo || "1v1",
       capacidad: this.capacidadDeSala(sala),
@@ -216,9 +284,51 @@ class GestorSalas {
       aciertos: sala.aciertos ? { ...sala.aciertos } : {},
       errores: sala.errores ? { ...sala.errores } : {},
       tiempos: sala.tiempos ? { ...sala.tiempos } : {},
+      turnoTerminaEn: sala.turnoTerminaEn || null,
       sello: this.selloActivo(sala) ? { index: sala.efectos.sello.index, hasta: sala.efectos.sello.hasta } : null,
       sustitucionArmada: sala.defensas?.sustitucion ? { ...sala.defensas.sustitucion } : {},
+      bloqueada: !!sala.bloqueada,
+      poderEnProceso: sala.poderEnProceso ? { ...sala.poderEnProceso } : null,
+      byakugan: sala.efectos?.byakugan ? { ...sala.efectos.byakugan } : {},
+      genjutsu: sala.efectos?.genjutsu ? (({ original, ...resto }) => resto)(sala.efectos.genjutsu) : null,
+      accionPendiente: sala.accionPendiente ? {
+        idAccion: sala.accionPendiente.idAccion,
+        poderId: sala.accionPendiente.poderId,
+        atacanteId: sala.accionPendiente.atacanteId,
+        objetivoId: sala.accionPendiente.objetivoId,
+        estado: sala.accionPendiente.estado,
+        venceEn: sala.accionPendiente.venceEn,
+      } : null,
+      ganadorId: sala.ganadorId || null,
+      ganadorEquipo: sala.ganadorEquipo || null,
+      motivo: sala.motivo || null,
+      hash: hashEstado(sala),
     };
+  }
+
+  vistaEstadoPara(sala, jugadorId) {
+    const base = this.vistaEstado(sala);
+    // Filter byakugan: only show requesting player's own byakugan data
+    if (base.byakugan) {
+      const filtrado = {};
+      if (base.byakugan[jugadorId]) {
+        filtrado[jugadorId] = { ...base.byakugan[jugadorId] };
+      }
+      base.byakugan = filtrado;
+    }
+    // Filter genjutsu: never send original (card values of shuffled positions)
+    if (base.genjutsu && base.genjutsu.original) {
+      const { original, ...resto } = base.genjutsu;
+      base.genjutsu = resto;
+    }
+    // Add byakugan-revealed cards for this player (rejoin rehydration)
+    const efectoByakugan = sala.efectos?.byakugan?.[jugadorId];
+    if (efectoByakugan && Date.now() < efectoByakugan.hasta && Array.isArray(efectoByakugan.cartas)) {
+      base.byakuganReveladas = efectoByakugan.cartas.map((c) => ({ index: c.index, valor: c.valor, aldea: c.aldea }));
+    } else {
+      base.byakuganReveladas = [];
+    }
+    return base;
   }
 
   poderesPublicos(sala) {
@@ -227,6 +337,38 @@ class GestorSalas {
       resultado[jugador.id] = { ...(sala.poderes[jugador.id] || {}) };
     }
     return resultado;
+  }
+
+  emitirEstadoPoderes(sala) {
+    if (!sala || sala.estado !== "jugando") return;
+    for (const jugador of sala.jugadores) {
+      const socket = this.io.sockets.sockets.get(jugador.socketId);
+      if (!socket) continue;
+      // Byakugan filtrado: solo datos del jugador solicitante
+      const byakuganFiltrado = {};
+      if (sala.efectos?.byakugan?.[jugador.id]) {
+        byakuganFiltrado[jugador.id] = { ...sala.efectos.byakugan[jugador.id] };
+        delete byakuganFiltrado[jugador.id].cartas;
+      }
+      socket.emit("estado-poderes", {
+        version: sala.version || 0,
+        hash: hashEstado(sala),
+        poderes: this.poderesPublicos(sala),
+        chakra: sala.chakra ? { ...sala.chakra } : {},
+        vida: sala.vida ? { ...sala.vida } : {},
+        combo: sala.combo ? { ...sala.combo } : {},
+        aciertos: sala.aciertos ? { ...sala.aciertos } : {},
+        errores: sala.errores ? { ...sala.errores } : {},
+        tiempos: sala.tiempos ? { ...sala.tiempos } : {},
+        turnoTerminaEn: sala.turnoTerminaEn,
+        bloqueada: !!sala.bloqueada,
+        poderEnProceso: sala.poderEnProceso ? { ...sala.poderEnProceso } : null,
+        byakugan: byakuganFiltrado,
+        genjutsu: sala.efectos?.genjutsu ? (({ original, ...resto }) => resto)(sala.efectos.genjutsu) : null,
+        sello: this.selloActivo(sala) ? { index: sala.efectos.sello.index, hasta: sala.efectos.sello.hasta } : null,
+        sustitucionArmada: sala.defensas?.sustitucion ? { ...sala.defensas.sustitucion } : {},
+      });
+    }
   }
 
   vistaPublica(sala) {
@@ -253,7 +395,7 @@ class GestorSalas {
       jugador.abandonado = false;
     });
 
-    sala.mazo = this.generarMazo(sala.config || {});
+    sala.mazo = this.generarMazo({ ...(sala.config || {}), semilla: sala.seed });
     sala.cartasVolteadas = [];
     sala.movimientos = 0;
     sala.bloqueada = false;
@@ -268,6 +410,7 @@ class GestorSalas {
     sala.tiempos = {};
     sala.defensas = { sustitucion: {} };
     sala.efectos = { byakugan: {}, sello: null, genjutsu: null };
+    sala.accionPendiente = null;
     sala.poderEnProceso = null;
     for (const jugador of sala.jugadores) {
       sala.parejas[jugador.id] = 0;
@@ -284,17 +427,58 @@ class GestorSalas {
     sala.turno = sala.jugadores[0]?.id || null;
     sala.turnoEquipo = sala.jugadores[0]?.equipo || null;
     sala.idPartida = crypto.randomUUID();
+    sala.turnoTerminaEn = null;
+    sala.seed = Number(sala.config?.semilla) || Math.floor(Math.random() * 0x7fffffff);
+    if (!sala.config) sala.config = {};
+    sala.config.semilla = sala.seed;
+    sala.ganadorId = null;
+    sala.ganadorEquipo = null;
     sala.motivo = null;
     sala.estado = "jugando";
+    sala.version = (sala.version || 0) + 1;
+    this.limpiarTimersReaccion(sala);
+    this.limpiarTimersPoderes(sala);
+    sala.timersPoderes = [];
     this.limpiarTemporizadorLimpieza(sala);
+    this.limpiarSnapshot(sala);
   }
 
   iniciarPartida(sala, codigo) {
     this.inicializarEstadoSala(sala);
-    this.salas.set(codigo, sala);
-    this.io.to(codigo).emit("partida-iniciada", this.vistaEstado(sala));
+    if (sala.turno) sala.turnoTerminaEn = Date.now() + (sala.tiempos[sala.turno] || TIEMPO_INICIAL) * 1000;
+    sala.version = (sala.version || 0) + 1; this.salas.set(codigo, sala);
+    for (const jugador of sala.jugadores) {
+      const socket = this.io.sockets.sockets.get(jugador.socketId);
+      if (socket) socket.emit("partida-iniciada", this.vistaEstadoPara(sala, jugador.id));
+    }
     this.iniciarTemporizador(sala);
+    this.iniciarSnapshot(sala, codigo);
     this.io.emit("lista-salas-actualizada", this.obtenerListaSalasPublicas());
+  }
+
+  iniciarSnapshot(sala, codigo) {
+    this.limpiarSnapshot(sala);
+    sala.temporizadorSnapshot = setInterval(() => this.emitirSnapshot(codigo), this.intervaloSnapshotMs);
+    sala.temporizadorSnapshot.unref?.();
+  }
+
+  limpiarSnapshot(sala) {
+    if (sala?.temporizadorSnapshot) {
+      clearInterval(sala.temporizadorSnapshot);
+      sala.temporizadorSnapshot = null;
+    }
+  }
+
+  emitirSnapshot(codigo) {
+    const sala = this.salas.get(codigo);
+    if (!sala || sala.estado !== "jugando") {
+      if (sala) this.limpiarSnapshot(sala);
+      return;
+    }
+    for (const jugador of sala.jugadores) {
+      const socket = this.io.sockets.sockets.get(jugador.socketId);
+      if (socket) socket.emit("estado-completo", this.vistaEstadoPara(sala, jugador.id));
+    }
   }
 
   iniciarTemporizador(sala) {
@@ -313,16 +497,27 @@ class GestorSalas {
     if (sala.config?.modo === "2v2") return;
 
     const turno = sala.turno;
-    if (!turno || typeof sala.tiempos?.[turno] !== "number") return;
+    if (!turno) return;
+    if (!sala.turnoTerminaEn) sala.turnoTerminaEn = Date.now() + (sala.tiempos?.[turno] || TIEMPO_INICIAL) * 1000;
 
-    sala.tiempos[turno] = Math.max(0, sala.tiempos[turno] - 1);
-    this.salas.set(codigo, sala);
+    const restanteMs = sala.turnoTerminaEn - Date.now();
+    const restanteSeg = Math.max(0, Math.ceil(restanteMs / 1000));
+    if (typeof sala.tiempos?.[turno] === "number") sala.tiempos[turno] = restanteSeg;
+
+    sala.version = (sala.version || 0) + 1; this.salas.set(codigo, sala);
     this.io.to(codigo).emit("tiempo-actualizado", {
+      version: sala.version || 0,
+      hash: hashEstado(sala),
+      turnoTerminaEn: sala.turnoTerminaEn,
       turno,
       tiempos: { ...sala.tiempos },
     });
+    // AFK warning at 10s remaining
+    if (restanteSeg === 10) {
+      this.io.to(codigo).emit("afk-aviso", { jugadorId: turno, segundos: 10 });
+    }
 
-    if (sala.tiempos[turno] <= 0) {
+    if (restanteMs <= 0) {
       const ganador = this.otroJugador(sala, turno)?.id || null;
       this.terminarPartida(sala, ganador, "tiempo");
     }
@@ -378,6 +573,9 @@ class GestorSalas {
     if (!sala || sala.estado === "terminada") return;
     this.limpiarTemporizadorAbandono(sala);
     this.limpiarTemporizadorPartida(sala);
+    this.limpiarSnapshot(sala);
+    this.limpiarTimersReaccion(sala);
+    this.limpiarTimersPoderes(sala);
     sala.estado = "terminada";
     sala.motivo = motivo;
 
@@ -399,6 +597,11 @@ class GestorSalas {
       perdedorEquipo = perdedorId ? this.equipoDeJugador(sala, perdedorId) : null;
     }
 
+    sala.ganadorId = ganadorId;
+    sala.ganadorEquipo = ganadorEquipo;
+    sala.version = (sala.version || 0) + 1;
+    this.salas.set(sala.codigo, sala);
+
     const parejasEquipos = { A: sala.parejasEquipos?.A || 0, B: sala.parejasEquipos?.B || 0 };
     const puntaje = es2v2
       ? ganadorEquipo
@@ -409,6 +612,8 @@ class GestorSalas {
         : 0;
 
     this.io.to(sala.codigo).emit("partida-terminada", {
+      version: sala.version || 0,
+      hash: hashEstado(sala),
       codigo: sala.codigo,
       idPartida: sala.idPartida,
       modo: sala.config?.modo || "1v1",
@@ -464,12 +669,20 @@ class GestorSalas {
       const siguiente = disponibles[0] || this.jugadoresDeEquipo(sala, equipo)[0] || null;
       sala.turnoEquipo = siguiente?.equipo || equipo;
       sala.turno = siguiente?.id || null;
+      if (siguiente) {
+        sala.tiempos[siguiente.id] = TIEMPO_INICIAL;
+        sala.turnoTerminaEn = Date.now() + TIEMPO_INICIAL * 1000;
+      }
       return;
     }
 
     const siguiente = this.otroJugador(sala, sala.turno);
     sala.turno = siguiente?.id || null;
     sala.turnoEquipo = siguiente?.equipo || null;
+    if (siguiente) {
+      sala.tiempos[siguiente.id] = TIEMPO_INICIAL;
+      sala.turnoTerminaEn = Date.now() + TIEMPO_INICIAL * 1000;
+    }
   }
 
   sacarDeSala(socket, motivo = "salida") {
@@ -498,7 +711,7 @@ class GestorSalas {
     } else {
       if (sala.creador === jugador.id) sala.creador = sala.jugadores[0].id;
       if (sala.estado !== "terminada") sala.estado = "esperando";
-      this.salas.set(codigo, sala);
+      sala.version = (sala.version || 0) + 1; this.salas.set(codigo, sala);
       this.io.to(codigo).emit("sala-actualizada", this.vistaPublica(sala));
     }
     this.io.emit("lista-salas-actualizada", this.obtenerListaSalasPublicas());
@@ -552,7 +765,7 @@ class GestorSalas {
             config,
             temporizadorAbandono: null,
           };
-          this.salas.set(codigo, sala);
+          sala.version = (sala.version || 0) + 1; this.salas.set(codigo, sala);
           socket.join(codigo);
           socket.data.codigoSala = codigo;
           callback({ exito: true, codigo, sala: this.vistaPublica(sala) });
@@ -603,7 +816,7 @@ class GestorSalas {
           });
           socket.join(codigo);
           socket.data.codigoSala = codigo;
-          this.salas.set(codigo, sala);
+          sala.version = (sala.version || 0) + 1; this.salas.set(codigo, sala);
           callback({ exito: true, codigo, sala: this.vistaPublica(sala) });
           this.io.to(codigo).emit("sala-actualizada", this.vistaPublica(sala));
 
@@ -651,37 +864,102 @@ class GestorSalas {
           jugador.abandonado = false;
           socket.join(codigo);
           socket.data.codigoSala = codigo;
-          this.salas.set(codigo, sala);
+          sala.version = (sala.version || 0) + 1; this.salas.set(codigo, sala);
           this.io.to(codigo).emit("jugador-reconectado", {
             codigo,
             jugadorId: jugador.id,
             nombre: jugador.nombre,
           });
-          callback({ exito: true, estado: this.vistaEstado(sala) });
+          callback({ exito: true, estado: this.vistaEstadoPara(sala, jugador.id) });
         } catch (error) {
           callback({ exito: false, error: "Error al reincorporarse" });
         }
       });
 
+      socket.on("chat-mensaje", (datos = {}, callback = () => {}) => {
+        try {
+          if (typeof datos === "function") callback = datos;
+          const sala = this.salas.get(socket.data.codigoSala);
+          if (!sala) return callback({ exito: false, error: "Sala no encontrada" });
+          const jugador = this.jugadorPorSocket(sala, socket.id);
+          if (!jugador || jugador.abandonado) {
+            return callback({ exito: false, error: "No perteneces a la sala" });
+          }
+          const texto = String(datos?.texto || "")
+            .replace(/[<>\x00-\x1f]/g, "")
+            .trim()
+            .slice(0, 200);
+          if (!texto) return callback({ exito: false, error: "Mensaje vacío" });
+          const ahora = Date.now();
+          if (ahora - (jugador.ultimoChatEn || 0) < 1000) {
+            return callback({ exito: false, error: "Espera un segundo antes de escribir" });
+          }
+          jugador.ultimoChatEn = ahora;
+          const mensaje = {
+            codigo: sala.codigo,
+            jugadorId: jugador.id,
+            nombre: jugador.nombre,
+            texto,
+            momento: new Date(ahora).toISOString(),
+          };
+          this.io.to(sala.codigo).emit("chat-mensaje", mensaje);
+          callback({ exito: true, mensaje });
+        } catch (error) {
+          callback({ exito: false, error: "No se pudo enviar el mensaje" });
+        }
+      });
+
       socket.on("voltear-carta", (datos = {}) => {
+        const nonce = datos?.nonce ?? null;
         const sala = this.salas.get(socket.data.codigoSala);
-        if (!sala || sala.estado !== "jugando") return;
-        if (sala.poderEnProceso) return;
+        if (!sala || sala.estado !== "jugando") {
+          socket.emit("accion-rechazada", { motivo: "partida_no_activa", mensaje: "La partida no está activa", nonce });
+          return;
+        }
+        if (sala.poderEnProceso) {
+          socket.emit("accion-rechazada", { motivo: "poder_en_proceso", mensaje: "Hay un poder en proceso", nonce });
+          return;
+        }
         const index = Number(datos.index);
-        if (this.selloActivo(sala) && sala.efectos.sello.index === index) return;
+        if (this.selloActivo(sala) && sala.efectos.sello.index === index) {
+          socket.emit("accion-rechazada", { motivo: "carta_sellada", mensaje: "Esa carta está sellada", nonce });
+          return;
+        }
         const jugador = this.jugadorPorSocket(sala, socket.id);
-        if (!jugador || jugador.abandonado) return;
+        if (!jugador || jugador.abandonado) {
+          socket.emit("accion-rechazada", { motivo: "jugador_invalido", mensaje: "No puedes voltear cartas", nonce });
+          return;
+        }
 
         const es2v2 = sala.config?.modo === "2v2";
         const tieneTurno = es2v2
           ? jugador.equipo === sala.turnoEquipo
           : sala.turno === jugador.id;
-        if (!tieneTurno) return;
-        if (sala.bloqueada || !Number.isInteger(index) || !sala.mazo[index]) return;
+        if (!tieneTurno) {
+          socket.emit("accion-rechazada", { motivo: "sin_turno", mensaje: "No es tu turno", nonce });
+          return;
+        }
+        if (sala.bloqueada) {
+          socket.emit("accion-rechazada", { motivo: "tablero_bloqueado", mensaje: "Espera a que termine la jugada", nonce });
+          return;
+        }
+        if (!Number.isInteger(index) || !sala.mazo[index]) {
+          socket.emit("accion-rechazada", { motivo: "indice_invalido", mensaje: "Carta inválida", nonce });
+          return;
+        }
         const carta = sala.mazo[index];
-        if (carta.emparejada) return;
-        if (sala.cartasVolteadas.length >= 2) return;
-        if (sala.cartasVolteadas.some((c) => c.index === index)) return;
+        if (carta.emparejada) {
+          socket.emit("accion-rechazada", { motivo: "ya_emparejada", mensaje: "Esa carta ya está emparejada", nonce });
+          return;
+        }
+        if (sala.cartasVolteadas.length >= 2) {
+          socket.emit("accion-rechazada", { motivo: "jugada_en_curso", mensaje: "Ya hay dos cartas volteadas", nonce });
+          return;
+        }
+        if (sala.cartasVolteadas.some((c) => c.index === index)) {
+          socket.emit("accion-rechazada", { motivo: "ya_volteada", mensaje: "Esa carta ya está volteada", nonce });
+          return;
+        }
 
         sala.cartasVolteadas.push({
           index,
@@ -690,8 +968,11 @@ class GestorSalas {
           jugadorId: jugador.id,
           equipo: jugador.equipo,
         });
-        this.salas.set(sala.codigo, sala);
+        sala.version = (sala.version || 0) + 1; this.salas.set(sala.codigo, sala);
         this.io.to(sala.codigo).emit("carta-volteada", {
+          version: sala.version || 0,
+          hash: hashEstado(sala),
+          nonce,
           jugadorId: jugador.id,
           equipo: jugador.equipo,
           index,
@@ -734,24 +1015,27 @@ class GestorSalas {
 
           const es2v2 = sala.config?.modo === "2v2";
           const tieneTurno = es2v2 ? jugador.equipo === sala.turnoEquipo : sala.turno === jugador.id;
-          if (!tieneTurno) {
+          const accionReaccion = this.puedeReaccionar(sala, jugador.id, poderId);
+          const esReaccion = !!accionReaccion
+            && (CONTRARRESTOS[accionReaccion.poderId]?.permitidos || []).includes(poderId);
+          if (!tieneTurno && !esReaccion) {
             socket.emit("poder-rechazado", { motivo: "sin_turno", mensaje: "No es tu turno" });
             return;
           }
-          if (sala.poderEnProceso) {
+          if (sala.poderEnProceso && !esReaccion) {
             socket.emit("poder-rechazado", { motivo: "en_proceso", mensaje: "Hay un poder en proceso" });
             return;
           }
           if (!sala.efectos) sala.efectos = { byakugan: {}, sello: null, genjutsu: null };
-          if (poderId === "byakugan" && this.indicesDisponibles(sala).length < 2) {
+          if (!esReaccion && poderId === "byakugan" && this.indicesDisponibles(sala).length < 2) {
             socket.emit("poder-rechazado", { motivo: "sin_cartas", mensaje: "No hay cartas disponibles" });
             return;
           }
-          if (poderId === "sello" && this.selloActivo(sala)) {
+          if (poderId === "sello" && !esReaccion && this.selloActivo(sala)) {
             socket.emit("poder-rechazado", { motivo: "sello_activo", mensaje: "Ya hay un sello activo" });
             return;
           }
-          if (poderId === "sello" && this.indicesDisponibles(sala, { excluirSelladas: true }).length === 0) {
+          if (poderId === "sello" && !esReaccion && this.indicesDisponibles(sala, { excluirSelladas: true }).length === 0) {
             socket.emit("poder-rechazado", { motivo: "sin_cartas", mensaje: "No hay cartas disponibles" });
             return;
           }
@@ -761,6 +1045,12 @@ class GestorSalas {
           }
           if (sala.poderes[jugador.id][poderId] <= 0) {
             socket.emit("poder-rechazado", { motivo: "sin_usos", mensaje: "Sin usos" });
+            return;
+          }
+
+          // Una reacción no abre otra acción: solo resuelve la pendiente
+          if (!esReaccion && CONTRARRESTOS[poderId] && sala.accionPendiente && ["anunciada", "ventana"].includes(sala.accionPendiente.estado)) {
+            socket.emit("poder-rechazado", { motivo: "accion_pendiente", mensaje: "Ya hay una accion pendiente" });
             return;
           }
 
@@ -774,9 +1064,22 @@ class GestorSalas {
           if (costo > 0) sala.chakra[jugador.id] -= costo;
 
           sala.poderEnProceso = { jugadorId: jugador.id, poderId, equipo: jugador.equipo, hasta: Date.now() + 900 };
-          this.salas.set(sala.codigo, sala);
+          sala.version = (sala.version || 0) + 1; this.salas.set(sala.codigo, sala);
+
+          if (poderId === "sustitucion" || poderId === "robo") {
+            this.registrarTimerPoder(sala, () => {
+              const actual = this.salas.get(sala.codigo);
+              if (!actual || actual.estado !== "jugando") return;
+              if (actual.poderEnProceso?.jugadorId !== jugador.id || actual.poderEnProceso?.poderId !== poderId) return;
+              actual.poderEnProceso = null;
+              actual.version = (actual.version || 0) + 1;
+              this.salas.set(actual.codigo, actual);
+              this.emitirEstadoPoderes(actual);
+            }, 900);
+          }
 
           this.io.to(sala.codigo).emit("poder-activado", {
+            version: sala.version || 0,
             jugadorId: jugador.id,
             nombre: jugador.nombre,
             equipo: jugador.equipo,
@@ -784,11 +1087,12 @@ class GestorSalas {
             usosRestantes: sala.poderes[jugador.id][poderId],
             chakra: sala.chakra[jugador.id],
           });
+          this.emitirEstadoPoderes(sala);
 
           if (poderId === "sustitucion") {
             sala.defensas.sustitucion[jugador.id] = { activa: true, desde: Date.now() };
-            this.salas.set(sala.codigo, sala);
             this.io.to(sala.codigo).emit("poder-efecto", {
+        version: sala.version || 0,
               tipo: "defensa",
               poderId,
               jugadorId: jugador.id,
@@ -796,13 +1100,14 @@ class GestorSalas {
               defensa: "sustitucion",
               activa: true,
             });
-            setTimeout(() => {
+            this.registrarTimerPoder(sala, () => {
               const actual = this.salas.get(sala.codigo);
-              if (!actual) return;
+              if (!actual || actual.estado !== "jugando") return;
               if (actual.defensas?.sustitucion?.[jugador.id]?.activa) {
                 actual.defensas.sustitucion[jugador.id] = { activa: false };
-                this.salas.set(actual.codigo, actual);
+                actual.version = (actual.version || 0) + 1; this.salas.set(actual.codigo, actual);
                 this.io.to(actual.codigo).emit("poder-efecto", {
+        version: actual.version || 0,
                   tipo: "defensa_expira",
                   poderId: "sustitucion",
                   jugadorId: jugador.id,
@@ -811,42 +1116,107 @@ class GestorSalas {
                   activa: false,
                 });
               }
-            }, 8000).unref?.();
+            }, 8000);
           } else if (poderId === "bomba") {
             const rivalJugadores = sala.jugadores.filter((j) => j.id !== jugador.id);
             const objetivo = es2v2
               ? sala.jugadores.find((j) => j.equipo !== jugador.equipo && !j.abandonado)
               : rivalJugadores[0];
             if (objetivo) {
-              let danio = 20;
-              let consumidoSustitucion = false;
-              if (sala.defensas?.sustitucion?.[objetivo.id]?.activa) {
-                danio = 10;
-                consumidoSustitucion = true;
-                sala.defensas.sustitucion[objetivo.id] = { activa: false };
+              // Compute damage but DON'T apply yet (deferred to window expiry)
+              const danioBase = 20;
+
+              // Create generic action
+              const accion = this.crearAccion(sala, "bomba", jugador.id, objetivo.id, {
+                objetivoId: objetivo.id,
+                objetivoEquipo: objetivo.equipo,
+                danioBase,
+              });
+              if (!accion) {
+                this.revertirConsumoPoder(sala, jugador.id, poderId, COSTOS_PODER[poderId] || 0);
+                socket.emit("poder-rechazado", { motivo: "accion_pendiente", mensaje: "Ya hay una accion pendiente" });
+                return;
               }
-              sala.vida[objetivo.id] = Math.max(
-                0,
-                (typeof sala.vida[objetivo.id] === "number" ? sala.vida[objetivo.id] : VIDA_INICIAL) - danio,
-              );
-              this.salas.set(sala.codigo, sala);
-              this.io.to(sala.codigo).emit("poder-efecto", {
-                tipo: "danio",
+
+              // Open reaction window for Sello
+              this.abrirVentana(sala, accion);
+
+              sala.poderEnProceso = { jugadorId: jugador.id, poderId, equipo: jugador.equipo, hasta: accion.venceEn };
+
+              this.io.to(sala.codigo).emit("poder-activado", {
+                version: sala.version || 0,
+                jugadorId: jugador.id,
+                nombre: jugador.nombre,
+                equipo: jugador.equipo,
                 poderId,
+                usosRestantes: sala.poderes[jugador.id][poderId],
+                chakra: sala.chakra[jugador.id],
+              });
+              this.emitirEstadoPoderes(sala);
+
+              this.io.to(sala.codigo).emit("poder-efecto", {
+                version: sala.version || 0,
+                tipo: "ventana-contrarresto",
+                poderId: "bomba",
+                contrapoderId: "sello",
+                idAccion: accion.idAccion,
                 jugadorId: jugador.id,
                 equipo: jugador.equipo,
                 objetivoId: objetivo.id,
                 objetivoEquipo: objetivo.equipo,
-                danio,
-                consumidoSustitucion,
-                vida: { ...sala.vida },
+                danio: danioBase,
+                duracion: accion.ventanaMs,
+                venceEn: accion.venceEn,
               });
-              if (sala.vida[objetivo.id] <= 0) {
-                const ganador = es2v2 ? jugador.equipo : jugador.id;
-                this.terminarPartida(sala, ganador, "vida");
-              }
-            }
-          } else if (poderId === "robo") {
+
+              // After window expires, apply or cancel
+              this.programarExpiracionAccion(sala, accion, () => {
+                const actual = this.salas.get(sala.codigo);
+                if (!actual || !actual.accionPendiente || actual.accionPendiente.idAccion !== accion.idAccion) return;
+                if (actual.accionPendiente.estado !== "ventana") return;
+
+                const payload = accion.payload;
+                const objetivoActual = actual.jugadores.find((j) => j.id === payload.objetivoId);
+                if (!objetivoActual || objetivoActual.abandonado) {
+                  actual.poderEnProceso = null;
+                  this.resolverAccion(actual, accion.idAccion, false);
+                  return;
+                }
+
+                // Apply damage (recompute sustitucion at resolution time)
+                let consumidoSustitucion = false;
+                const sustitucionActivaAhora = !!actual.defensas?.sustitucion?.[payload.objetivoId]?.activa;
+                let danioFinal = payload.danioBase ?? 20;
+                if (sustitucionActivaAhora) {
+                  danioFinal = 10;
+                  consumidoSustitucion = true;
+                  actual.defensas.sustitucion[payload.objetivoId] = { activa: false };
+                }
+                actual.vida[payload.objetivoId] = Math.max(0,
+                  (typeof actual.vida[payload.objetivoId] === "number" ? actual.vida[payload.objetivoId] : VIDA_INICIAL) - danioFinal
+                );
+                actual.poderEnProceso = null;
+                this.resolverAccion(actual, accion.idAccion, false);
+                this.io.to(actual.codigo).emit("poder-efecto", {
+                  version: actual.version || 0,
+                  tipo: "danio",
+                  idAccion: accion.idAccion,
+                  poderId: "bomba",
+                  jugadorId: jugador.id,
+                  equipo: jugador.equipo,
+                  objetivoId: payload.objetivoId,
+                  objetivoEquipo: payload.objetivoEquipo,
+                  danio: danioFinal,
+                  consumidoSustitucion,
+                  vida: { ...actual.vida },
+                });
+                if (actual.vida[payload.objetivoId] <= 0) {
+                  const ganador = es2v2 ? jugador.equipo : jugador.id;
+                  this.terminarPartida(actual, ganador, "vida");
+                }
+              });
+          }
+        } else if (poderId === "robo") {
             const rivalJugadores = sala.jugadores.filter((j) => j.id !== jugador.id);
             const objetivo = es2v2
               ? sala.jugadores.find((j) => j.equipo !== jugador.equipo && !j.abandonado)
@@ -854,8 +1224,9 @@ class GestorSalas {
             if (objetivo) {
               if (sala.defensas?.sustitucion?.[objetivo.id]?.activa) {
                 sala.defensas.sustitucion[objetivo.id] = { activa: false };
-                this.salas.set(sala.codigo, sala);
+                sala.version = (sala.version || 0) + 1; this.salas.set(sala.codigo, sala);
                 this.io.to(sala.codigo).emit("poder-efecto", {
+        version: sala.version || 0,
                   tipo: "evadido",
                   poderId,
                   jugadorId: jugador.id,
@@ -870,8 +1241,9 @@ class GestorSalas {
                   sala.chakra[objetivo.id] -= robado;
                   sala.chakra[jugador.id] = (sala.chakra[jugador.id] || 0) + robado;
                 }
-                this.salas.set(sala.codigo, sala);
+                sala.version = (sala.version || 0) + 1; this.salas.set(sala.codigo, sala);
                 this.io.to(sala.codigo).emit("poder-efecto", {
+        version: sala.version || 0,
                   tipo: "robo",
                   poderId,
                   jugadorId: jugador.id,
@@ -885,50 +1257,151 @@ class GestorSalas {
               }
             }
           } else if (poderId === "byakugan") {
+            const rivalJugadores = sala.jugadores.filter((j) => j.id !== jugador.id);
+            const objetivo = es2v2
+              ? sala.jugadores.find((j) => j.equipo !== jugador.equipo && !j.abandonado)
+              : rivalJugadores[0];
+            // Check if reacting to genjutsu window
+            const accionGenjutsu = this.puedeReaccionar(sala, jugador.id, "byakugan");
+            if (accionGenjutsu && accionGenjutsu.poderId === "genjutsu") {
+              // Counter genjutsu: resolver (idempotente), don't reveal cards
+              sala.poderEnProceso = null;
+              const resuelta = this.resolverAccion(sala, accionGenjutsu.idAccion, true);
+              if (resuelta) {
+                this.emitirEstadoPoderes(sala);
+                this.io.to(sala.codigo).emit("poder-efecto", {
+                  version: sala.version || 0,
+                  tipo: "contrarresto",
+                  idAccion: accionGenjutsu.idAccion,
+                  poderId: "genjutsu",
+                  contrapoderId: "byakugan",
+                  contrarrestadoPor: jugador.id,
+                  jugadorId: accionGenjutsu.atacanteId,
+                  objetivoId: jugador.id,
+                  equipo: jugador.equipo,
+                  mensaje: "Byakugan detecto el Genjutsu",
+                });
+              }
+              return; // Don't apply byakugan reveal
+            }
+
+            // Normal byakugan: ventana de 3s para Sello
             const indices = this.elegirIndices(sala, 2);
-            if (indices) {
-              sala.efectos.byakugan[jugador.id] = { hasta: Date.now() + this.duracionByakuganMs };
+            if (!indices) {
+              socket.emit("poder-rechazado", { motivo: "sin_cartas", mensaje: "No hay cartas disponibles" });
+              return;
+            }
+
+            // Crear acción genérica
+            const accion = this.crearAccion(sala, "byakugan", jugador.id, objetivo?.id || rivalJugadores[0]?.id || null, { indices });
+            if (!accion) {
+              this.revertirConsumoPoder(sala, jugador.id, poderId, COSTOS_PODER[poderId] || 0);
+              socket.emit("poder-rechazado", { motivo: "accion_pendiente", mensaje: "Ya hay una accion pendiente" });
+              return;
+            }
+
+            // Abrir ventana para Sello
+            this.abrirVentana(sala, accion);
+
+            sala.poderEnProceso = { jugadorId: jugador.id, poderId, equipo: jugador.equipo, hasta: accion.venceEn };
+
+            this.io.to(sala.codigo).emit("poder-activado", {
+              version: sala.version || 0,
+              jugadorId: jugador.id,
+              nombre: jugador.nombre,
+              equipo: jugador.equipo,
+              poderId,
+              usosRestantes: sala.poderes[jugador.id][poderId],
+              chakra: sala.chakra[jugador.id],
+            });
+            this.emitirEstadoPoderes(sala);
+
+            this.io.to(sala.codigo).emit("poder-efecto", {
+              version: sala.version || 0,
+              tipo: "ventana-contrarresto",
+              poderId: "byakugan",
+              contrapoderId: "sello",
+              idAccion: accion.idAccion,
+              jugadorId: jugador.id,
+              equipo: jugador.equipo,
+              objetivoId: objetivo?.id || rivalJugadores[0]?.id || null,
+              duracion: accion.ventanaMs,
+              venceEn: accion.venceEn,
+            });
+
+            // After window expires, reveal or cancel
+            this.programarExpiracionAccion(sala, accion, () => {
+              const actual = this.salas.get(sala.codigo);
+              if (!actual || !actual.accionPendiente || actual.accionPendiente.idAccion !== accion.idAccion) return;
+              if (actual.accionPendiente.estado !== "ventana") return;
+
+              // Reveal cards to caster
               const cartas = indices.map((index) => ({
                 index,
                 valor: sala.mazo[index].valor,
                 aldea: sala.mazo[index].aldea,
               }));
-              this.salas.set(sala.codigo, sala);
-              socket.emit("poder-efecto", {
-                tipo: "byakugan",
-                poderId,
-                jugadorId: jugador.id,
-                equipo: jugador.equipo,
-                cartas,
-                duracion: this.duracionByakuganMs,
-              });
-
-              const genjutsu = sala.efectos.genjutsu;
-              if (genjutsu && Date.now() < genjutsu.hasta && genjutsu.jugadorId !== jugador.id) {
-                const restauradas = this.restaurarCartas(sala, genjutsu.original);
-                sala.efectos.genjutsu = null;
-                this.salas.set(sala.codigo, sala);
-                this.io.to(sala.codigo).emit("poder-efecto", {
-                  tipo: "contrarresto",
-                  poderId: "genjutsu",
-                  jugadorId: genjutsu.jugadorId,
-                  objetivoId: jugador.id,
+              actual.efectos.byakugan[jugador.id] = { hasta: Date.now() + this.duracionByakuganMs, cartas: indices.map((i) => ({ index: i, valor: sala.mazo[i].valor, aldea: sala.mazo[i].aldea })) };
+              actual.poderEnProceso = null;
+              this.resolverAccion(actual, accion.idAccion, false);
+              // Reveal only to caster
+              const socket = this.io.sockets.sockets.get(jugador.socketId);
+              if (socket) {
+                socket.emit("poder-efecto", {
+                  version: actual.version || 0,
+                  tipo: "byakugan",
+                  idAccion: accion.idAccion,
+                  poderId,
+                  jugadorId: jugador.id,
                   equipo: jugador.equipo,
-                  cartas: restauradas,
-                  mensaje: "Byakugan detectó el Genjutsu",
+                  cartas,
+                  duracion: this.duracionByakuganMs,
                 });
               }
-            }
+              this.io.to(actual.codigo).emit("poder-efecto", {
+                version: actual.version || 0,
+                  tipo: "byakugan-revelado",
+                  idAccion: accion.idAccion,
+                  poderId,
+                  jugadorId: jugador.id,
+                  equipo: jugador.equipo,
+                  indices,
+                  duracion: this.duracionByakuganMs,
+              });
+            });
           } else if (poderId === "sello") {
             const rivalJugadores = sala.jugadores.filter((j) => j.id !== jugador.id);
             const objetivo = es2v2
               ? sala.jugadores.find((j) => j.equipo !== jugador.equipo && !j.abandonado)
               : rivalJugadores[0];
+            // Modo contraataque: reaccionar a una ventana activa (bomba o byakugan)
+            const ventana = this.puedeReaccionar(sala, jugador.id, "sello");
+            if (ventana && (ventana.poderId === "bomba" || ventana.poderId === "byakugan")) {
+              // Contrarrestar: resolver (idempotente), no crear sello de carta
+              sala.poderEnProceso = null;
+              const resuelta = this.resolverAccion(sala, ventana.idAccion, true);
+              if (!resuelta) return;
+              this.emitirEstadoPoderes(sala);
+              this.io.to(sala.codigo).emit("poder-efecto", {
+                version: sala.version || 0,
+                tipo: "contrarresto",
+                idAccion: ventana.idAccion,
+                poderId: ventana.poderId,
+                contrapoderId: "sello",
+                contrarrestadoPor: jugador.id,
+                jugadorId: ventana.atacanteId,
+                objetivoId: jugador.id,
+                equipo: jugador.equipo,
+                mensaje: "Sello contrarresto " + (ventana.poderId === "bomba" ? "la Bomba" : "el Byakugan"),
+              });
+              return; // No crear sello de carta
+            }
             if (objetivo) {
               if (sala.defensas?.sustitucion?.[objetivo.id]?.activa) {
                 sala.defensas.sustitucion[objetivo.id] = { activa: false };
-                this.salas.set(sala.codigo, sala);
+                sala.version = (sala.version || 0) + 1; this.salas.set(sala.codigo, sala);
                 this.io.to(sala.codigo).emit("poder-efecto", {
+        version: sala.version || 0,
                   tipo: "evadido",
                   poderId,
                   jugadorId: jugador.id,
@@ -943,8 +1416,9 @@ class GestorSalas {
                   const index = indices[0];
                   const hasta = Date.now() + this.duracionSelloMs;
                   sala.efectos.sello = { index, hasta, jugadorId: jugador.id, objetivoId: objetivo.id };
-                  this.salas.set(sala.codigo, sala);
+                  sala.version = (sala.version || 0) + 1; this.salas.set(sala.codigo, sala);
                   this.io.to(sala.codigo).emit("poder-efecto", {
+        version: sala.version || 0,
                     tipo: "sello",
                     poderId,
                     jugadorId: jugador.id,
@@ -955,18 +1429,19 @@ class GestorSalas {
                     hasta,
                     duracion: this.duracionSelloMs,
                   });
-                  const temporizador = setTimeout(() => {
+                  this.registrarTimerPoder(sala, () => {
                     const actual = this.salas.get(sala.codigo);
-                    if (!actual || actual.efectos?.sello?.index !== index) return;
+                    if (!actual || actual.estado !== "jugando") return;
+                    if (actual.efectos?.sello?.index !== index) return;
                     actual.efectos.sello = null;
-                    this.salas.set(actual.codigo, actual);
+                    actual.version = (actual.version || 0) + 1; this.salas.set(actual.codigo, actual);
                     this.io.to(actual.codigo).emit("poder-efecto", {
+                      version: actual.version || 0,
                       tipo: "sello_expirado",
                       poderId: "sello",
                       index,
                     });
                   }, this.duracionSelloMs);
-                  temporizador.unref?.();
                 }
               }
             }
@@ -975,67 +1450,118 @@ class GestorSalas {
             const objetivo = es2v2
               ? sala.jugadores.find((j) => j.equipo !== jugador.equipo && !j.abandonado)
               : rivalJugadores[0];
+
+            // Instant counter if byakugan already active
             if (objetivo && this.byakuganActivo(sala, objetivo.id)) {
-              this.salas.set(sala.codigo, sala);
+              sala.version = (sala.version || 0) + 1; this.salas.set(sala.codigo, sala);
               this.io.to(sala.codigo).emit("poder-efecto", {
+                version: sala.version || 0,
                 tipo: "contrarresto",
                 poderId,
+                contrapoderId: "byakugan",
+                contrarrestadoPor: objetivo.id,
                 jugadorId: jugador.id,
                 equipo: jugador.equipo,
                 objetivoId: objetivo.id,
                 objetivoEquipo: objetivo.equipo,
-                mensaje: "Byakugan detectó el Genjutsu",
+                mensaje: "Byakugan detecto el Genjutsu",
               });
-            } else {
-              const mezcla = this.mezclarTresCartas(sala);
+              return;
+            }
+
+            // Choose indices but DON'T shuffle yet
+            const indices = this.elegirIndices(sala, 3);
+            if (!indices) {
+              socket.emit("poder-rechazado", { motivo: "sin_cartas", mensaje: "No hay cartas disponibles" });
+              return;
+            }
+
+            // Create generic action
+            const accion = this.crearAccion(sala, "genjutsu", jugador.id, objetivo?.id || null, { indices });
+            if (!accion) {
+              this.revertirConsumoPoder(sala, jugador.id, poderId, COSTOS_PODER[poderId] || 0);
+              socket.emit("poder-rechazado", { motivo: "accion_pendiente", mensaje: "Ya hay una accion pendiente" });
+              return;
+            }
+
+            // Open reaction window
+            this.abrirVentana(sala, accion);
+
+            sala.poderEnProceso = { jugadorId: jugador.id, poderId, equipo: jugador.equipo, hasta: accion.venceEn };
+
+            this.io.to(sala.codigo).emit("poder-activado", {
+              version: sala.version || 0,
+              jugadorId: jugador.id,
+              nombre: jugador.nombre,
+              equipo: jugador.equipo,
+              poderId,
+              usosRestantes: sala.poderes[jugador.id][poderId],
+              chakra: sala.chakra[jugador.id],
+            });
+            this.emitirEstadoPoderes(sala);
+
+            this.io.to(sala.codigo).emit("poder-efecto", {
+              version: sala.version || 0,
+              tipo: "ventana-contrarresto",
+              idAccion: accion.idAccion,
+              poderId: "genjutsu",
+              contrapoderId: "byakugan",
+              jugadorId: jugador.id,
+              equipo: jugador.equipo,
+              objetivoId: objetivo?.id || null,
+              objetivoEquipo: objetivo?.equipo || null,
+              duracion: accion.ventanaMs,
+              venceEn: accion.venceEn,
+            });
+
+            // After window expires, apply or cancel
+            this.programarExpiracionAccion(sala, accion, () => {
+              const actual = this.salas.get(sala.codigo);
+              if (!actual || !actual.accionPendiente || actual.accionPendiente.idAccion !== accion.idAccion) return;
+              if (actual.accionPendiente.estado !== "ventana") return;
+
+              // Apply shuffle now
+              const mezcla = this.mezclarTresCartasConIndices(actual, accion.payload.indices);
               if (mezcla) {
                 const efecto = {
-                  jugadorId: jugador.id,
-                  objetivoId: objetivo?.id || null,
+                  jugadorId: accion.atacanteId,
+                  objetivoId: accion.objetivoId,
                   hasta: Date.now() + this.duracionGenjutsuMs,
                   original: mezcla.original,
                 };
-                sala.efectos.genjutsu = efecto;
-                this.salas.set(sala.codigo, sala);
-                this.io.to(sala.codigo).emit("poder-efecto", {
+                actual.efectos.genjutsu = efecto;
+                actual.poderEnProceso = null;
+                this.resolverAccion(actual, accion.idAccion, false);
+                this.io.to(actual.codigo).emit("poder-efecto", {
+                  version: actual.version || 0,
                   tipo: "mezcla",
-                  poderId,
-                  jugadorId: jugador.id,
+                  idAccion: accion.idAccion,
+                  poderId: "genjutsu",
+                  jugadorId: accion.atacanteId,
                   equipo: jugador.equipo,
-                  objetivoId: objetivo?.id || null,
-                  cartas: mezcla.cartas,
+                  objetivoId: accion.objetivoId,
+                  cartas: mezcla.cartas.map((c) => ({ index: c.index })),
                   duracion: this.duracionGenjutsuMs,
                 });
-                const temporizador = setTimeout(() => {
-                  const actual = this.salas.get(sala.codigo);
-                  if (!actual || actual.efectos?.genjutsu !== efecto) return;
-                  actual.efectos.genjutsu = null;
-                  this.salas.set(actual.codigo, actual);
-                  this.io.to(actual.codigo).emit("poder-efecto", {
+                // Timer for genjutsu expiry
+                this.registrarTimerPoder(actual, () => {
+                  const a = this.salas.get(actual.codigo);
+                  if (!a || a.estado !== "jugando") return;
+                  if (a.efectos?.genjutsu?.jugadorId !== accion.atacanteId) return;
+                  a.efectos.genjutsu = null;
+                  a.version = (a.version || 0) + 1; this.salas.set(a.codigo, a);
+                  this.io.to(a.codigo).emit("poder-efecto", {
+                    version: a.version || 0,
                     tipo: "genjutsu_expirado",
                     poderId: "genjutsu",
                   });
                 }, this.duracionGenjutsuMs);
-                temporizador.unref?.();
+              } else {
+                actual.poderEnProceso = null;
+                this.resolverAccion(actual, accion.idAccion, false);
               }
-            }
-          } else {
-            this.io.to(sala.codigo).emit("poder-efecto", {
-              tipo: "generico",
-              poderId,
-              jugadorId: jugador.id,
-              equipo: jugador.equipo,
             });
           }
-
-          setTimeout(() => {
-            const actual = this.salas.get(sala.codigo);
-            if (!actual) return;
-            if (actual.poderEnProceso?.jugadorId === jugador.id) {
-              actual.poderEnProceso = null;
-              this.salas.set(actual.codigo, actual);
-            }
-          }, 1000).unref?.();
         } catch (error) {
           socket.emit("poder-rechazado", { motivo: "error", mensaje: "No se pudo activar el poder" });
         }
@@ -1064,7 +1590,7 @@ class GestorSalas {
           });
           sala.config = config;
           this.iniciarPartida(sala, sala.codigo);
-          callback({ exito: true, estado: this.vistaEstado(sala) });
+          callback({ exito: true, estado: this.vistaEstadoPara(sala, token) });
         } catch (error) {
           callback({ exito: false, error: "No se pudo iniciar la revancha" });
         }
@@ -1147,7 +1673,7 @@ class GestorSalas {
             config: this.normalizarConfig({ mezclarAldeas: true, pares: modo === "2v2" ? 12 : 10, modo }),
             temporizadorAbandono: null,
           };
-          this.salas.set(codigo, sala);
+          sala.version = (sala.version || 0) + 1; this.salas.set(codigo, sala);
           sockets.forEach((sock) => sock.join(codigo));
           sockets.forEach((sock, indice) => {
             sock.data.codigoSala = codigo;
@@ -1229,7 +1755,7 @@ class GestorSalas {
         } else {
           if (sala.creador === jugador.id) sala.creador = sala.jugadores[0].id;
           if (sala.estado !== "terminada") sala.estado = "esperando";
-          this.salas.set(codigo, sala);
+          sala.version = (sala.version || 0) + 1; this.salas.set(codigo, sala);
           this.io.to(codigo).emit("sala-actualizada", this.vistaPublica(sala));
         }
         this.io.emit("lista-salas-actualizada", this.obtenerListaSalasPublicas());
@@ -1257,6 +1783,116 @@ class GestorSalas {
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
     return indices.slice(0, cantidad);
+  }
+
+  puedeReaccionar(sala, jugadorId, poderId) {
+    const accion = sala?.accionPendiente;
+    if (!accion) return null;
+    if (accion.estado !== "ventana") return null;
+    if (Date.now() >= accion.venceEn) return null;
+    if (!this.esObjetivoOCompanero(sala, jugadorId, accion.objetivoId)) return null;
+    if (!Array.isArray(accion.contraataquesPermitidos)) return null;
+    if (!accion.contraataquesPermitidos.includes(poderId)) return null;
+    return accion;
+  }
+
+  crearAccion(sala, poderId, atacanteId, objetivoId, payload = {}) {
+    if (!sala) return null;
+    // Bloquear si ya hay acción en estado "anunciada" o "ventana"
+    if (sala.accionPendiente && ["anunciada", "ventana"].includes(sala.accionPendiente.estado)) {
+      return null;
+    }
+    const contrarrestos = CONTRARRESTOS[poderId];
+    const accion = {
+      idAccion: crypto.randomUUID(),
+      poderId,
+      atacanteId,
+      objetivoId,
+      estado: "anunciada",
+      venceEn: null,
+      contraataquesPermitidos: contrarrestos ? contrarrestos.permitidos : [],
+      ventanaMs: contrarrestos ? contrarrestos.ventanaMs : 0,
+      payload: payload || {},
+      timer: null,
+    };
+    sala.accionPendiente = accion;
+    return accion;
+  }
+
+  abrirVentana(sala, accion) {
+    if (!accion || accion.estado !== "anunciada") return false;
+    accion.estado = "ventana";
+    accion.venceEn = Date.now() + accion.ventanaMs;
+    sala.accionPendiente = accion;
+    return true;
+  }
+
+  programarExpiracionAccion(sala, accion, alExpirar) {
+    if (!accion || accion.estado !== "ventana" || typeof alExpirar !== "function") return false;
+    accion.resolver = alExpirar;
+    accion.timer = setTimeout(() => alExpirar(), accion.ventanaMs);
+    accion.timer.unref?.();
+    return true;
+  }
+
+  resolverAccion(sala, idAccion, contrarrestada) {
+    const accion = sala?.accionPendiente;
+    if (!accion || accion.idAccion !== idAccion) return null;
+    if (accion.estado !== "ventana") return null; // idempotencia
+    accion.estado = contrarrestada ? "contrarrestada" : "resuelta";
+    if (accion.timer) {
+      clearTimeout(accion.timer);
+      accion.timer = null;
+    }
+    sala.accionPendiente = null;
+    sala.version = (sala.version || 0) + 1;
+    this.salas.set(sala.codigo, sala);
+    return accion;
+  }
+
+  revertirConsumoPoder(sala, jugadorId, poderId, costo) {
+    if (!sala || !jugadorId || !poderId) return;
+    if (sala.poderes?.[jugadorId]?.[poderId] !== undefined) sala.poderes[jugadorId][poderId] += 1;
+    if (costo > 0 && typeof sala.chakra?.[jugadorId] === "number") sala.chakra[jugadorId] += costo;
+    sala.poderEnProceso = null;
+    sala.version = (sala.version || 0) + 1;
+    this.salas.set(sala.codigo, sala);
+    this.emitirEstadoPoderes(sala);
+  }
+
+  registrarTimerPoder(sala, callback, ms) {
+    if (!sala) return;
+    if (!Array.isArray(sala.timersPoderes)) sala.timersPoderes = [];
+    const timer = setTimeout(() => {
+      sala.timersPoderes = sala.timersPoderes.filter((t) => t !== timer);
+      callback();
+    }, ms);
+    timer.unref?.();
+    sala.timersPoderes.push(timer);
+  }
+
+  limpiarTimersPoderes(sala) {
+    if (!Array.isArray(sala.timersPoderes)) return;
+    for (const timer of sala.timersPoderes) clearTimeout(timer);
+    sala.timersPoderes = [];
+  }
+
+  limpiarTimersReaccion(sala) {
+    if (sala?.accionPendiente?.timer) {
+      clearTimeout(sala.accionPendiente.timer);
+      sala.accionPendiente.timer = null;
+    }
+    sala.accionPendiente = null;
+  }
+
+  esObjetivoOCompanero(sala, jugadorId, objetivoId) {
+    if (jugadorId === objetivoId) return true;
+    if (sala?.config?.modo === "2v2") {
+      const jugador = sala.jugadores.find((j) => j.id === jugadorId);
+      const objetivo = sala.jugadores.find((j) => j.id === objetivoId);
+      return !!jugador && !!objetivo && jugador.equipo === objetivo.equipo;
+    }
+    return false;
   }
 
   selloActivo(sala) {
@@ -1291,10 +1927,37 @@ class GestorSalas {
       original,
       cartas: indices.map((index) => ({
         index,
-        valor: sala.mazo[index].valor,
-        aldea: sala.mazo[index].aldea,
       })),
     };
+  }
+
+  mezclarTresCartasConIndices(sala, indices) {
+    if (!indices || indices.length < 3) return null;
+    const original = indices.map((index) => {
+      const carta = sala.mazo[index];
+      return { index, valor: carta.valor, aldea: carta.aldea, parId: carta.parId };
+    });
+    const mezcladas = original.map((carta) => ({ ...carta }));
+    for (let i = mezcladas.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [mezcladas[i], mezcladas[j]] = [mezcladas[j], mezcladas[i]];
+    }
+    mezcladas.forEach((carta, posicion) => {
+      const destino = sala.mazo[indices[posicion]];
+      destino.valor = carta.valor;
+      destino.aldea = carta.aldea;
+      destino.parId = carta.parId;
+    });
+    return {
+      indices,
+      original,
+      cartas: indices.map((index) => ({ index })),
+    };
+  }
+
+  restaurarCartasDesdePendiente(sala, pendiente) {
+    // The shuffle hasn't been applied yet (it's pending), so nothing to restore
+    return [];
   }
 
   restaurarCartas(sala, original) {
@@ -1324,8 +1987,11 @@ class GestorSalas {
       this.acreditarAcierto(sala, actorId, equipo);
       sala.turno = actorId;
       sala.turnoEquipo = equipo;
-      this.salas.set(sala.codigo, sala);
+      sala.version = (sala.version || 0) + 1; this.salas.set(sala.codigo, sala);
+      this.emitirEstadoPoderes(sala);
       this.io.to(sala.codigo).emit("acierto", {
+        version: sala.version || 0,
+        hash: hashEstado(sala),
         index1: c1.index,
         index2: c2.index,
         jugadorId: actorId,
@@ -1360,8 +2026,11 @@ class GestorSalas {
     }
 
     sala.bloqueada = true;
-    this.salas.set(sala.codigo, sala);
+    sala.version = (sala.version || 0) + 1; this.salas.set(sala.codigo, sala);
+    this.emitirEstadoPoderes(sala);
     this.io.to(sala.codigo).emit("fallo", {
+      version: sala.version || 0,
+      hash: hashEstado(sala),
       index1: c1.index,
       index2: c2.index,
       jugadorId: actorId,
@@ -1382,13 +2051,18 @@ class GestorSalas {
       actual.cartasVolteadas = [];
       actual.bloqueada = false;
       if (debeTerminar) {
-        const ganador = this.otroJugador(actual, actorId)?.id || null;
+        const ganador = actual.config?.modo === "2v2"
+          ? this.otroEquipo(equipo)
+          : this.otroJugador(actual, actorId)?.id || null;
         this.terminarPartida(actual, ganador, "vida");
         return;
       }
       if (!sustitucionActiva) this.siguienteTurno(actual);
-      this.salas.set(actual.codigo, actual);
+      actual.version = (actual.version || 0) + 1; this.salas.set(actual.codigo, actual);
       this.io.to(actual.codigo).emit("turno-cambiado", {
+        version: actual.version || 0,
+        hash: hashEstado(actual),
+        turnoTerminaEn: actual.turnoTerminaEn,
         turno: actual.turno,
         turnoEquipo: actual.turnoEquipo,
         sustitucion: sustitucionActiva,
@@ -1406,6 +2080,21 @@ class GestorSalas {
     this.sumarChakra(sala, jugadorId, CHAKRA_POR_ACIERTO);
     if (sala.combo[jugadorId] >= 2) {
       this.sumarChakra(sala, jugadorId, CHAKRA_BASE_COMBO * sala.combo[jugadorId]);
+    }
+    // Comeback: chakra extra si va perdiendo por 2+ parejas
+    const es2v2 = sala.config?.modo === "2v2";
+    let misParejas, rivalParejas;
+    if (es2v2) {
+      const otroEquipo = equipo === "A" ? "B" : "A";
+      misParejas = sala.parejasEquipos[equipo] || 0;
+      rivalParejas = sala.parejasEquipos[otroEquipo] || 0;
+    } else {
+      const rival = sala.jugadores.find((j) => j.id !== jugadorId);
+      misParejas = sala.parejas[jugadorId] || 0;
+      rivalParejas = rival ? (sala.parejas[rival.id] || 0) : 0;
+    }
+    if (rivalParejas - misParejas >= 2) {
+      this.sumarChakra(sala, jugadorId, 5);
     }
   }
 

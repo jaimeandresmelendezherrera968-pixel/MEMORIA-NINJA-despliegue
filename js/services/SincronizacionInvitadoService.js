@@ -25,6 +25,9 @@ export class SincronizacionInvitadoService {
   constructor() {
     this.sincronizando = false;
     this.registrarEventosOnline();
+    if (typeof navigator === "undefined" || navigator.onLine !== false) {
+      this.sincronizarAutomatico();
+    }
   }
 
   registrarEventosOnline() {

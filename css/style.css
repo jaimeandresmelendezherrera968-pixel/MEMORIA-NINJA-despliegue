@@ -55,7 +55,7 @@ body {
   overflow: hidden;
 }
 
-/* Registro: mÃ¡s campos â€” sin transform que desborde; se compacta por altura (abajo) */
+/* Registro: más campos — sin transform que desborde; se compacta por altura (abajo) */
 .login-contenedor.registro {
   transform: none;
 }
@@ -115,7 +115,7 @@ button {
   cursor: pointer;
 }
 
-/* BotÃ³n secundario: entrar como invitado (sin cuenta) */
+/* Botón secundario: entrar como invitado (sin cuenta) */
 .btn-invitado {
   background: rgba(0, 0, 0, 0.45);
   border: 2px solid rgba(255, 255, 255, 0.5);
@@ -131,7 +131,7 @@ button {
 }
 
 /* ===========================
-   RECORDAR SESIÃ“N
+   RECORDAR SESIÓN
 =========================== */
 
 .recordar-sesion {
@@ -195,7 +195,7 @@ button {
   transform: translateY(-50%) scale(1.15);
 }
 
-/* cuando estÃ¡ activo */
+/* cuando está activo */
 .ojo.activo {
   opacity: 1; 
 }
@@ -209,7 +209,7 @@ button {
   to { transform: translateY(-50%) rotate(360deg); }
 }
 /* ===========================
-   TÃ‰RMINOS Y POLÃTICA
+   TÉRMINOS Y POLÍTICA
 =========================== */
 
 .aceptacion{
@@ -324,7 +324,7 @@ button {
 .login-contenedor p { margin: clamp(2px, 0.6vh, 8px) 0; font-size: clamp(12px, 1.7vh, 15px); }
 .login-contenedor a { font-size: inherit; }
 
-/* Registro: formulario largo â€” compacto para caber sin scroll de pÃ¡gina */
+/* Registro: formulario largo — compacto para caber sin scroll de página */
 .login-contenedor.registro { width: min(360px, 94vw); gap: clamp(1px, 0.55vh, 6px); }
 .login-contenedor.registro h1 { font-size: clamp(22px, 4vh, 36px); margin: 2px 0; }
 .login-contenedor.registro input { padding: clamp(7px, 1.25vh, 12px); margin: clamp(2px, 0.55vh, 6px) 0; }
@@ -332,7 +332,7 @@ button {
 .login-contenedor.registro > img { max-height: clamp(40px, 9vh, 90px); }
 .login-contenedor.registro p { margin: 2px 0; font-size: clamp(11px, 1.5vh, 14px); }
 
-/* Alturas acotadas (mÃ³vil horizontal / pantallas bajas): encaje sin scroll */
+/* Alturas acotadas (móvil horizontal / pantallas bajas): encaje sin scroll */
 @media (max-height: 740px) {
   .login-contenedor { padding: clamp(8px, 1.8vh, 16px) clamp(12px, 2.5vw, 20px); gap: clamp(1px, 0.5vh, 4px); }
   .login-contenedor h1 { font-size: clamp(20px, 4.8vh, 30px); }
