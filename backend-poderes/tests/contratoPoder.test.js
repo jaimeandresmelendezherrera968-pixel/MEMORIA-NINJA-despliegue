@@ -27,6 +27,11 @@ for (const idPoder of fabrica.idsDisponibles()) {
       assert.ok(poder.costoChakra > 0);
     });
 
+    it("tiene 2 usos permitidos, igual que el modo online", () => {
+      const poder = fabrica.crear(idPoder);
+      assert.equal(poder.usosPermitidos, 2);
+    });
+
     it("activar() existe, es una función, y se puede llamar con la firma estándar", () => {
       const jugador = new Jugador("j1", "Jugador 1");
       const rival = new Jugador("j2", "Jugador 2");

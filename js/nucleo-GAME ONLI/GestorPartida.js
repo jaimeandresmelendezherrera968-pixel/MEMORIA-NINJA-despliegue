@@ -308,21 +308,24 @@ export class GestorPartida {
             const detalle = ev.detail || {};
             const poder = nombrePoderOnline(detalle.poderId);
             const contra = nombrePoderOnline(detalle.contrapoderId);
-            const segundos = Math.max(0, Math.round((detalle.duracion || 3000) / 1000));
             const miEquipo = this.gestorSala?.miEquipo;
             const puedoContrarrestar = this.gestorSala
                 ? (this.gestorSala.es2v2
                     ? miEquipo && miEquipo !== detalle.equipo
                     : this.gestorSala.miId !== detalle.jugadorId)
                 : true;
-            const mensaje = puedoContrarrestar
-                ? `${poder}: ${segundos}s para contrarrestar con ${contra}`
-                : `${poder}: esperando contrarresto con ${contra}`;
-            this.vista.mostrarAvisoRapido(mensaje, "info");
+            this.vista.mostrarVentanaContrarresto({
+                poder,
+                contra,
+                puedoContrarrestar,
+                venceEn: detalle.venceEn,
+                duracion: detalle.duracion || 3000,
+            });
         });
 
         window.addEventListener('poder-efecto-online', (ev) => {
             const datos = ev.detail || {};
+            if (datos.tipo !== 'ventana-contrarresto') this.vista.detenerVentanaContrarresto();
             const miId = this.gestorSala?.miId;
             if (datos.tipo === 'danio') {
                 this.vista.mostrarImpactoBomba({
@@ -338,7 +341,7 @@ export class GestorPartida {
             } else if (datos.tipo === 'contrarresto') {
                 const poder = nombrePoderOnline(datos.poderId);
                 const contra = nombrePoderOnline(datos.contrapoderId);
-                this.vista.mostrarAvisoRapido(`${contra}: ${poder} anulado`, "info");
+                this.vista.mostrarAvisoRapido(`CONTRARRESTADO: ${contra} anuló ${poder}`, "info");
             } else if (datos.tipo === 'byakugan' && datos.jugadorId === miId) {
                 this.vista.mostrarAvisoRapido('BYAKUGAN: cartas reveladas', "info");
             } else if (datos.tipo === 'sello') {

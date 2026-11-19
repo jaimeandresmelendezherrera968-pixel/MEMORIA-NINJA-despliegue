@@ -70,4 +70,98 @@ describe("PoderService con un repositorio inventado para el test (DIP en acción
     assert.equal(resultado.exito, false);
     assert.equal(resultado.motivo, "chakra_insuficiente");
   });
+
+  it("Bomba mitiga a 10 y consume la Sustitución pasiva del rival", async () => {
+    const repositorio = new RepositorioDeJuguete();
+    const poderService = new PoderService(repositorio, new PoderFactory());
+
+    const naruto = new Jugador("naruto", "Naruto");
+    const sasuke = new Jugador("sasuke", "Sasuke");
+    naruto.ganarChakra(100);
+    // Defensa armada sin marcar el poder activo: puede haber otro poder
+    // activo del rival y la Sustitución debe seguir mitigando igual.
+    sasuke.activarSustitucion(8);
+    repositorio.guardar("p1", new Partida("p1", naruto, sasuke));
+
+    const resultado = await poderService.activarPoder({
+      idPartida: "p1",
+      idJugador: "naruto",
+      idPoder: "bomba",
+    });
+
+    assert.equal(resultado.exito, true);
+    assert.equal(resultado.resultado.vidaRestada, 10);
+    assert.equal(sasuke.vida, 90);
+    assert.equal(sasuke.tieneSustitucionActiva, false);
+    assert.equal(naruto.chakra, 50);
+  });
+
+  it("Robo se evada con Sustitución activa y no transfiere chakra", async () => {
+    const repositorio = new RepositorioDeJuguete();
+    const poderService = new PoderService(repositorio, new PoderFactory());
+
+    const naruto = new Jugador("naruto", "Naruto");
+    const sasuke = new Jugador("sasuke", "Sasuke");
+    naruto.ganarChakra(100);
+    sasuke.ganarChakra(50);
+    sasuke.activarSustitucion(8);
+    repositorio.guardar("p1", new Partida("p1", naruto, sasuke));
+
+    const resultado = await poderService.activarPoder({
+      idPartida: "p1",
+      idJugador: "naruto",
+      idPoder: "robo",
+    });
+
+    assert.equal(resultado.exito, true);
+    assert.equal(resultado.resultado.tipo, "evadido");
+    assert.equal(naruto.chakra, 70); // paga el costo, no roba nada
+    assert.equal(sasuke.chakra, 50);
+    assert.equal(sasuke.tieneSustitucionActiva, false);
+  });
+
+  it("respeta los usos permitidos de cada poder y se agota al tercer intento", async () => {
+    const repositorio = new RepositorioDeJuguete();
+    const poderService = new PoderService(repositorio, new PoderFactory());
+
+    const naruto = new Jugador("naruto", "Naruto");
+    const sasuke = new Jugador("sasuke", "Sasuke");
+    naruto.ganarChakra(100); // tope de chakra; 20 por Byakugan alcanza para 2 usos
+    repositorio.guardar("p1", new Partida("p1", naruto, sasuke));
+
+    const activar = () =>
+      poderService.activarPoder({ idPartida: "p1", idJugador: "naruto", idPoder: "byakugan" });
+
+    assert.equal((await activar()).exito, true);
+    assert.equal((await activar()).exito, true);
+    const tercero = await activar();
+
+    assert.equal(tercero.exito, false);
+    assert.equal(tercero.motivo, "sin_usos");
+    assert.equal(naruto.chakra, 60); // el intento fallido no cobra chakra
+  });
+
+  it("la cuenta de usos es independiente por jugador", async () => {
+    const repositorio = new RepositorioDeJuguete();
+    const poderService = new PoderService(repositorio, new PoderFactory());
+
+    const naruto = new Jugador("naruto", "Naruto");
+    const sasuke = new Jugador("sasuke", "Sasuke");
+    naruto.ganarChakra(100);
+    sasuke.ganarChakra(100);
+    repositorio.guardar("p1", new Partida("p1", naruto, sasuke));
+
+    const datos = { idPartida: "p1", idPoder: "sello" };
+    assert.equal((await poderService.activarPoder({ ...datos, idJugador: "naruto" })).exito, true);
+    assert.equal((await poderService.activarPoder({ ...datos, idJugador: "sasuke" })).exito, true);
+  });
+
+  it("la Sustitución expira al cumplirse su duración", async () => {
+    const jugador = new Jugador("j1", "Jugador 1");
+    jugador.activarSustitucion(8);
+    assert.equal(jugador.tieneSustitucionActiva, true);
+
+    jugador.activarSustitucion(0);
+    assert.equal(jugador.tieneSustitucionActiva, false);
+  });
 });

@@ -93,8 +93,8 @@ npm run seed:demo  # llena PGDATABASE con datos demo (7 cuentas @demo.ninja / cl
 - Tres implementaciones de repositorio: `PartidaRepositoryMemoria` (en memoria), `PartidaRepositoryArchivo` (en archivo) y `PartidaRepositorySQL` (PostgreSQL, default en producción) — todas pasan los mismos tests de contrato (prueba de LSP)
 - Los tests son basados en contratos: la misma batería corre contra varias implementaciones
 - `PartidaRepositoryArchivo` escribe un snapshot JSON por partida en `backend-poderes/data/` (ignorado por git vía `data/*.json`). `obtener()` revisa primero el caché en memoria y, si falla, **relee el archivo JSON del disco** y reconstruye la entidad `Partida` (igual que el repo SQL) — las partidas sobreviven un reinicio del servidor. Verificado por los tests de "persistencia REAL en disco"
-- Bug conocido de código muerto: `BombaPoder.activar()` chequea `rival.tieneSustitucionActiva === true`, pero `Jugador` nunca setea esa propiedad — la rama "−10 si Sustitución activa" nunca corre
-- `Poder.usosPermitidos` está definido en la clase base pero nunca se aplica en ningún lado
+- La defensa pasiva de Sustitución (8 s) ya está implementada en `Jugador` (`activarSustitucion`/`tieneSustitucionActiva`/`consumirSustitucion`): Bomba mitiga a 10 y consume la defensa, Robo y Sello se evadan. Antes `BombaPoder` chequeaba una propiedad que nadie seteaba (rama muerta)
+- `Poder.usosPermitidos` ahora se aplica: `Partida.usosPoderes` lleva la cuenta por jugador/poder y `PoderService` descuenta el uso al activar (2 usos, igual que el modo online); ambos repositorios persisten el contador
 
 ## Sistema de experiencia / perfil (XP)
 

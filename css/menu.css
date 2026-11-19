@@ -4267,7 +4267,8 @@ body{
         width:100%;
         height:100dvh;
         min-height:0;
-        overflow:hidden!important;
+        overflow-x:hidden;
+        overflow-y:auto;
     }
 
     body{
@@ -4283,7 +4284,7 @@ body{
         display:grid;
         grid-template-rows:auto minmax(0,1fr) auto;
         gap:clamp(3px,.8vh,8px);
-        overflow:hidden;
+        overflow-y:auto;
     }
 
     #contenido-principal .header{
@@ -4479,7 +4480,8 @@ body{
         width:100%;
         height:100dvh;
         min-height:0;
-        overflow:hidden!important;
+        overflow-x:hidden;
+        overflow-y:auto;
     }
 
     body{
@@ -4499,7 +4501,7 @@ body{
         display:grid;
         grid-template-rows:auto minmax(0,1fr) auto;
         gap:6px;
-        overflow:hidden;
+        overflow-y:auto;
     }
 
     #contenido-principal .header{

@@ -40,10 +40,19 @@ class PoderService {
       // No importa cuál de los 6 poderes sea: siempre se llama igual.
       const poder = this.poderFactory.crear(idPoder);
 
+      if (partida.usosDisponibles(jugador.id, poder.id, poder.usosPermitidos) <= 0) {
+        partida.registrarEvento(`${jugador.nombre} intentó usar ${poder.nombre} sin usos disponibles`);
+        return { exito: false, motivo: "sin_usos" };
+      }
+
       if (!jugador.tieneChakraPara(poder.costoChakra)) {
         partida.registrarEvento(`${jugador.nombre} intentó usar ${poder.nombre} sin chakra suficiente`);
         return { exito: false, motivo: "chakra_insuficiente" };
       }
+
+      // Igual que el chakra: el uso se paga al activar, también si el poder
+      // termina contrarrestado por el rival.
+      partida.consumirUso(jugador.id, poder.id, poder.usosPermitidos);
 
       // Contraataque: si el rival tiene el poder contrario listo, se bloquea
       const poderRivalActivo = partida.poderActivoDe(rival.id);

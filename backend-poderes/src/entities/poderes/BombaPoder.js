@@ -6,13 +6,14 @@ const Poder = require("./Poder");
  */
 class BombaPoder extends Poder {
   constructor() {
-    super({ id: "bomba", nombre: "Bomba Explosiva", costoChakra: 50, usosPermitidos: 1 });
+    super({ id: "bomba", nombre: "Bomba Explosiva", costoChakra: 50, usosPermitidos: 2 });
   }
 
   activar({ jugador, rival, registrarEvento }) {
     jugador.gastarChakra(this.costoChakra);
     const rivalMitigaConSustitucion = rival.tieneSustitucionActiva === true;
     const danio = rivalMitigaConSustitucion ? 10 : 20;
+    if (rivalMitigaConSustitucion) rival.consumirSustitucion();
     rival.recibirDanio(danio);
     registrarEvento(`${jugador.nombre} activó Bomba Explosiva (-${danio} vida a ${rival.nombre})`);
     return { tipo: "danio", vidaRestada: danio };

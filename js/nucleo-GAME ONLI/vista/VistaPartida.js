@@ -201,6 +201,57 @@ export class VistaPartida {
         }, 1200);
     }
 
+    /**
+     * Ventana de reacción online. El servidor marca venceEn; el reloj local
+     * solo pinta la cuenta regresiva para que el jugador sepa cuánto queda.
+     * El texto accesible es estático: el lector de pantalla anuncia la ventana
+     * una sola vez, no una vez por décima de segundo.
+     */
+    mostrarVentanaContrarresto({ poder = "PODER", contra = "CONTRARRESTO", venceEn = null, duracion = 3000, puedoContrarrestar = true } = {}) {
+        this.detenerVentanaContrarresto();
+
+        const aviso = document.createElement("div");
+        aviso.className = "aviso-rapido-central aviso-contrarresto";
+        aviso.setAttribute("role", "status");
+        aviso.setAttribute("aria-live", "polite");
+
+        const accesible = document.createElement("span");
+        accesible.className = "sr-only";
+        accesible.textContent = puedoContrarrestar
+            ? `Ventana abierta: ${poder}. Contrarresta con ${contra}.`
+            : `${poder}: esperando contrarresto con ${contra}.`;
+
+        const cuenta = document.createElement("span");
+        cuenta.setAttribute("aria-hidden", "true");
+        aviso.append(accesible, cuenta);
+        document.body.appendChild(aviso);
+
+        const vencimiento = Number(venceEn) > 0
+            ? Number(venceEn)
+            : Date.now() + Math.max(0, Number(duracion) || 3000);
+
+        const actualizar = () => {
+            const restanteMs = Math.max(0, vencimiento - Date.now());
+            cuenta.textContent = puedoContrarrestar
+                ? `⚡ ${poder}: ${(restanteMs / 1000).toFixed(1)}s · ¡CONTRARRESTA CON ${contra}!`
+                : `⚡ ${poder}: esperando contrarresto con ${contra}`;
+            if (restanteMs === 0) this.detenerVentanaContrarresto();
+        };
+
+        this._ventanaContrarresto = aviso;
+        this._ventanaContrarrestoTimer = setInterval(actualizar, 100);
+        actualizar();
+    }
+
+    detenerVentanaContrarresto() {
+        if (this._ventanaContrarrestoTimer) {
+            clearInterval(this._ventanaContrarrestoTimer);
+            this._ventanaContrarrestoTimer = null;
+        }
+        this._ventanaContrarresto?.remove();
+        this._ventanaContrarresto = null;
+    }
+
     mostrarBannerPoder({ poder = "", titulo = "", detalle = "", icono = "", deRival = false, duracion = 1700 } = {}) {
         const banner = this.bannerPoder;
         if (!banner) return;

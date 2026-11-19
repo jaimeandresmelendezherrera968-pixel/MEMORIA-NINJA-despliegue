@@ -6,7 +6,7 @@ const Poder = require("./Poder");
  */
 class ByakuganPoder extends Poder {
   constructor() {
-    super({ id: "byakugan", nombre: "Byakugan", costoChakra: 20, usosPermitidos: 1 });
+    super({ id: "byakugan", nombre: "Byakugan", costoChakra: 20, usosPermitidos: 2 });
   }
 
   activar({ jugador, rival, tablero, registrarEvento }) {

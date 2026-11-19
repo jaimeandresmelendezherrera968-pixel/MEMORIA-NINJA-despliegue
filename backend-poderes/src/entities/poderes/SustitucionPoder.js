@@ -6,11 +6,12 @@ const Poder = require("./Poder");
  */
 class SustitucionPoder extends Poder {
   constructor() {
-    super({ id: "sustitucion", nombre: "Jutsu de Sustitución", costoChakra: 25, usosPermitidos: 1 });
+    super({ id: "sustitucion", nombre: "Jutsu de Sustitución", costoChakra: 25, usosPermitidos: 2 });
   }
 
   activar({ jugador, registrarEvento }) {
     jugador.gastarChakra(this.costoChakra);
+    jugador.activarSustitucion(8);
     registrarEvento(`${jugador.nombre} activó Sustitución (defensa armada por 8s)`);
     return { tipo: "defensa", duracionSegundos: 8 };
   }

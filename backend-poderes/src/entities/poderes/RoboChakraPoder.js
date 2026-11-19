@@ -6,11 +6,16 @@ const Poder = require("./Poder");
  */
 class RoboChakraPoder extends Poder {
   constructor() {
-    super({ id: "robo", nombre: "Robo de Chakra", costoChakra: 30, usosPermitidos: 1 });
+    super({ id: "robo", nombre: "Robo de Chakra", costoChakra: 30, usosPermitidos: 2 });
   }
 
   activar({ jugador, rival, registrarEvento }) {
     jugador.gastarChakra(this.costoChakra);
+    if (rival.tieneSustitucionActiva) {
+      rival.consumirSustitucion();
+      registrarEvento(`${rival.nombre} evadió el Robo de Chakra con Sustitución`);
+      return { tipo: "evadido", chakraRobado: 0 };
+    }
     const robado = Math.min(20, rival.chakra);
     rival.gastarChakra(robado);
     jugador.ganarChakra(robado);

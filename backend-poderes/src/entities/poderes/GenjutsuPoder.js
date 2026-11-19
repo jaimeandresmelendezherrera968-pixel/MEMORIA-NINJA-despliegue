@@ -6,7 +6,7 @@ const Poder = require("./Poder");
  */
 class GenjutsuPoder extends Poder {
   constructor() {
-    super({ id: "genjutsu", nombre: "Genjutsu", costoChakra: 35, usosPermitidos: 1 });
+    super({ id: "genjutsu", nombre: "Genjutsu", costoChakra: 35, usosPermitidos: 2 });
   }
 
   activar({ jugador, rival, tablero, registrarEvento }) {

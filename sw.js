@@ -1,4 +1,4 @@
-const NOMBRE_CACHE = "memoria-ninja-v2";
+const NOMBRE_CACHE = "memoria-ninja-v3";
 const LIMITE_BYTES = 8 * 1024 * 1024;
 const ARCHIVOS_BASE = [
   "/",
@@ -47,7 +47,9 @@ function esEstaticoValido(url) {
   if (url.origin !== self.location.origin) return false;
   if (url.pathname.startsWith("/api/")) return false;
   if (url.pathname.startsWith("/socket.io/")) return false;
-  return /\.(html|css|js|json|png|jpe?g|gif|svg|webp|woff2?|mp3|ogg|m4a|mp4|webm)$/i.test(
+  // Los videos NO se cachean: el navegador los pide con rangos (HTTP 206)
+  // y una respuesta parcial guardada se reproduce como un frame congelado.
+  return /\.(html|css|js|json|png|jpe?g|gif|svg|webp|woff2?|mp3|ogg|m4a)$/i.test(
     url.pathname
   );
 }
@@ -70,6 +72,9 @@ function respondeDesdeCache(peticion, cache) {
 self.addEventListener("fetch", (evento) => {
   const { request } = evento;
   if (request.method !== "GET") return;
+
+  // Peticiones Range de video/audio van siempre a la red, sin caché.
+  if (request.headers.has("range")) return;
 
   const url = new URL(request.url);
 

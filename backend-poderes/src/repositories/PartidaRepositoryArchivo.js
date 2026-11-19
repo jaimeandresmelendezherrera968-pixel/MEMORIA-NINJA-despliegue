@@ -63,6 +63,7 @@ class PartidaRepositoryArchivo extends PartidaRepository {
           { id: poder.id },
         ])
       ),
+      usosPoderes: partida.usosPoderes || {},
     };
     fs.writeFileSync(this.#rutaDe(idPartida), JSON.stringify(foto, null, 2));
   }
@@ -104,6 +105,7 @@ class PartidaRepositoryArchivo extends PartidaRepository {
     const partida = new Partida(estado.id, jugadores[0], jugadores[1]);
     partida.eventos = estado.eventos || [];
     partida.poderesActivos = estado.poderesActivos || {};
+    partida.usosPoderes = estado.usosPoderes || {};
     partida.tablero = new Tablero();
     return partida;
   }

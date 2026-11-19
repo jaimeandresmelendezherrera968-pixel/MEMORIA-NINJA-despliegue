@@ -13,6 +13,7 @@ class Jugador {
   #vida;
   #chakraMaximo = 100;
   #vidaMaxima = 100;
+  #sustitucionActivaHasta = 0;
 
   constructor(id, nombre) {
     this.id = id;
@@ -50,6 +51,23 @@ class Jugador {
 
   estaDerrotado() {
     return this.#vida <= 0;
+  }
+
+  /**
+   * La Sustitución es una defensa pasiva con vencimiento por tiempo.
+   * Se guarda el instante exacto en que expira (en vez de un setTimeout)
+   * para no dejar timers colgando y para que la lectura sea determinista.
+   */
+  activarSustitucion(duracionSegundos = 8) {
+    this.#sustitucionActivaHasta = Date.now() + Math.max(0, duracionSegundos) * 1000;
+  }
+
+  get tieneSustitucionActiva() {
+    return Date.now() < this.#sustitucionActivaHasta;
+  }
+
+  consumirSustitucion() {
+    this.#sustitucionActivaHasta = 0;
   }
 }
 

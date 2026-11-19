@@ -20,7 +20,7 @@
  * resta vida, etc. Es el mismo método, comportamientos distintos.
  */
 class Poder {
-  constructor({ id, nombre, costoChakra, usosPermitidos = 1 }) {
+  constructor({ id, nombre, costoChakra, usosPermitidos = 2 }) {
     if (new.target === Poder) {
       throw new Error("Poder es abstracta: no se puede instanciar directamente, solo sus hijos concretos");
     }
