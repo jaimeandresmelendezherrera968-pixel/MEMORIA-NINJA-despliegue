@@ -179,7 +179,6 @@ export class GestorPartida {
             }
             if (!estadoInicial) return;
             this.mazoOnline = estadoInicial.mazo;
-            BoardManager.configurarOnline({ temaReverso: estadoInicial.config?.temaReverso || null });
         }
 
         BoardManager.renderBoard(
@@ -195,7 +194,8 @@ export class GestorPartida {
                 if (esSalaOnline && this.gestorSala) return this.gestorSala.esMiTurno;
                 return this.gestorTurno.esMiTurno();
             },
-            esSalaOnline ? this.mazoOnline : opciones.mazo || this.mazoExterno
+            esSalaOnline ? this.mazoOnline : opciones.mazo || this.mazoExterno,
+            esSalaOnline ? { temaReverso: estadoInicial.config?.temaReverso || null } : null
         );
 
         if (esSalaOnline) {
@@ -254,6 +254,7 @@ export class GestorPartida {
         this.eventosOnlineActivos = true;
 
         window.addEventListener('partida-terminada-online', (ev) => {
+            this.vista.limpiarVentanaBloqueo();
             this.mostrarModalFinalOnline(ev.detail || {});
         });
 
@@ -307,25 +308,28 @@ export class GestorPartida {
         window.addEventListener('ventana-contrarresto-online', (ev) => {
             const detalle = ev.detail || {};
             const poder = nombrePoderOnline(detalle.poderId);
-            const contra = nombrePoderOnline(detalle.contrapoderId);
+            const permitidos = Array.isArray(detalle.contrapoderesPermitidos) && detalle.contrapoderesPermitidos.length
+                ? detalle.contrapoderesPermitidos
+                : detalle.contrapoderId ? [detalle.contrapoderId] : [];
+            const duracionMs = Number(detalle.duracion)
+                || Number(detalle.ventanaContrarrestoMs)
+                || Number(this.gestorSala?.estado?.ventanaContrarrestoMs)
+                || 5000;
+            const segundos = Math.max(1, Math.round(duracionMs / 1000));
             const miEquipo = this.gestorSala?.miEquipo;
-            const puedoContrarrestar = this.gestorSala
-                ? (this.gestorSala.es2v2
-                    ? miEquipo && miEquipo !== detalle.equipo
-                    : this.gestorSala.miId !== detalle.jugadorId)
-                : true;
-            this.vista.mostrarVentanaContrarresto({
+            const esMiObjetivo = detalle.objetivoId === this.gestorSala?.miId
+                || (this.gestorSala?.es2v2 && !!detalle.objetivoEquipo && detalle.objetivoEquipo === miEquipo);
+            const puedoContrarrestar = detalle.puedoContrarrestar ?? (this.gestorSala ? esMiObjetivo : true);
+            this.vista.mostrarVentanaBloqueo({
                 poder,
-                contra,
-                puedoContrarrestar,
-                venceEn: detalle.venceEn,
-                duracion: detalle.duracion || 3000,
+                contrapoderes: permitidos.map(nombrePoderOnline),
+                segundos,
+                puedo: !!puedoContrarrestar,
             });
         });
 
         window.addEventListener('poder-efecto-online', (ev) => {
             const datos = ev.detail || {};
-            if (datos.tipo !== 'ventana-contrarresto') this.vista.detenerVentanaContrarresto();
             const miId = this.gestorSala?.miId;
             if (datos.tipo === 'danio') {
                 this.vista.mostrarImpactoBomba({
@@ -341,7 +345,13 @@ export class GestorPartida {
             } else if (datos.tipo === 'contrarresto') {
                 const poder = nombrePoderOnline(datos.poderId);
                 const contra = nombrePoderOnline(datos.contrapoderId);
-                this.vista.mostrarAvisoRapido(`CONTRARRESTADO: ${contra} anuló ${poder}`, "info");
+                const esMio = datos.contrarrestadoPor === miId;
+                const por = esMio
+                    ? "POR TI"
+                    : this.gestorSala?.miEquipo && datos.equipo === this.gestorSala.miEquipo
+                        ? "POR TU EQUIPO"
+                        : "POR EL RIVAL";
+                this.vista.mostrarContrarresto({ poder, contra, por, esMio });
             } else if (datos.tipo === 'byakugan' && datos.jugadorId === miId) {
                 this.vista.mostrarAvisoRapido('BYAKUGAN: cartas reveladas', "info");
             } else if (datos.tipo === 'sello') {

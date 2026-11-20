@@ -228,12 +228,28 @@ export const BoardManager = {
     },
 
     aplicarMezcla(cartas) {
-        // Solo anima posiciones; los valores reales los resuelve el servidor al voltear.
-        // No se actualizan data-valor/data-aldea para no filtrar cartas ocultas.
-        for (const datos of cartas || []) {
-            const carta = cartaPorIndice(datos.index);
+        const tablero = document.getElementById("board");
+        if (!tablero) return;
+        const movimientos = (Array.isArray(cartas) ? cartas : [])
+            .filter(movimiento => Number.isInteger(movimiento?.index) && Number.isInteger(movimiento?.destino));
+        if (!movimientos.length) return;
+        const clave = JSON.stringify(movimientos);
+        if (tablero.dataset.mezclaAplicada === clave) return;
+        for (const { index, destino } of movimientos) {
+            const origen = tablero.querySelector(`.card[data-index="${index}"]`);
+            const reemplazo = tablero.querySelector(`.card[data-index="${destino}"]`);
+            if (!origen || !reemplazo || origen === reemplazo) continue;
+            const marcador = document.createComment("mezcla");
+            origen.parentNode.insertBefore(marcador, origen);
+            reemplazo.parentNode.replaceChild(origen, reemplazo);
+            marcador.parentNode.replaceChild(reemplazo, marcador);
+        }
+        tablero.dataset.mezclaAplicada = clave;
+        for (const movimiento of movimientos) {
+            const carta = tablero.querySelector(`.card[data-index="${movimiento.destino}"]`);
             if (!carta) continue;
             carta.classList.add("genjutsu-mezclada");
+            setTimeout(() => carta.classList.remove("genjutsu-mezclada"), 900);
         }
     },
 
@@ -251,7 +267,7 @@ export const BoardManager = {
         forzarRutaPorAldea = true;
     },
 
-    renderBoard(callbackResultado, callbackFinal, callbackEsMiTurno, mazoExterno = null) {
+    renderBoard(callbackResultado, callbackFinal, callbackEsMiTurno, mazoExterno = null, configOnline = null) {
         onResultado = callbackResultado || null;
         onPartidaCompletada = callbackFinal || null;
         onEsMiTurno = callbackEsMiTurno || null;
@@ -259,8 +275,8 @@ export const BoardManager = {
         modoOnline = false;
         alVoltearOnline = null;
 
-        forzarRutaPorAldea = false;
-        reversoOnline = null;
+        forzarRutaPorAldea = !!configOnline;
+        reversoOnline = configOnline?.temaReverso || null;
         try {
             temaActual = obtenerTemaSeleccionado() || obtenerTemaAldea("arena");
             aplicarTemaAldea(localStorage.getItem("nivelActual"));
@@ -271,6 +287,7 @@ export const BoardManager = {
         const tablero = document.getElementById('board');
         if (!tablero) return;
         tablero.innerHTML = '';
+        delete tablero.dataset.mezclaAplicada;
 
         cartasVolteadas = [];
         movimientos = 0;

@@ -1,5 +1,13 @@
 import { clienteMultijugador } from "./ClienteMultijugador.js";
 import { BoardManager } from "../board-manager.js";
+import {
+  reproducirAcierto,
+  reproducirContrarresto,
+  reproducirDanio,
+  reproducirError,
+  reproducirPoder,
+  reproducirVentana,
+} from "../services/ConfiguracionAudio.js";
 
 export class GestorSalaCliente {
   constructor() {
@@ -24,6 +32,8 @@ export class GestorSalaCliente {
     this.nonceIntencion = 0;
     this.intencionPendiente = null; // { nonce, index, turno, version }
     this.espectador = false;
+    this.reaccionActiva = null;
+    this.reaccionTimer = null;
   }
 
   get es2v2() {
@@ -150,6 +160,7 @@ export class GestorSalaCliente {
     clienteMultijugador.on("acierto", (datos) => {
       if (datos?.version && this.version > 0 && Number(datos.version) < this.version) return;
       if (datos?.version) this.version = Number(datos.version);
+      reproducirAcierto();
       BoardManager.marcarEmparejadas(datos.index1, datos.index2);
       if (this.estado) {
         this.estado.movimientos = datos.movimientos;
@@ -167,12 +178,8 @@ export class GestorSalaCliente {
     clienteMultijugador.on("fallo", (datos) => {
       if (datos?.version && this.version > 0 && Number(datos.version) < this.version) return;
       if (datos?.version) this.version = Number(datos.version);
+      reproducirError();
       BoardManager.bloquearTablero(true);
-      // Procesar cola de intenciones cuando el tablero se desbloquee
-      setTimeout(() => {
-        if (!this.partidaTerminada && !this.espectador) BoardManager.bloquearTablero(false);
-        this.procesarColaIntenciones();
-      }, 850);
       BoardManager.ocultarCartasRemotas(datos.index1, datos.index2, 800);
       if (this.estado) this.#aplicarEstadoJugadores(datos);
       this.renderizarEstado(this.estado);
@@ -190,6 +197,7 @@ export class GestorSalaCliente {
         this.estado.turnoEquipo = datos.turnoEquipo || this.estado.turnoEquipo;
       }
       this.renderizarEstado(this.estado);
+      this.procesarColaIntenciones();
     });
 
     clienteMultijugador.on("tiempo-actualizado", (datos) => {
@@ -217,6 +225,7 @@ export class GestorSalaCliente {
         this.#aplicarEstadoJugadores(datos);
       }
       this.partidaTerminada = true;
+      this.#limpiarReaccion();
       if (this.espectador) clienteMultijugador.limpiarContrasenaEspectador(this.codigoSala);
       BoardManager.bloquearTablero(true);
       this.renderizarEstado(this.estado);
@@ -240,6 +249,7 @@ export class GestorSalaCliente {
     });
 
     clienteMultijugador.on("poder-activado", (datos) => {
+      if (datos?.poderId) reproducirPoder(datos.poderId);
       if (this.estado) {
         if (datos?.jugadorId && datos.poderId) {
           if (!this.estado.poderes) this.estado.poderes = {};
@@ -263,6 +273,7 @@ export class GestorSalaCliente {
     clienteMultijugador.on("poder-efecto", (datos) => {
       if (datos?.version && this.version > 0 && Number(datos.version) < this.version) return;
       if (datos?.version) this.version = Number(datos.version);
+      if (datos?.tipo === "danio") reproducirDanio();
       if (this.estado) {
         if (datos?.vida !== undefined) this.estado.vida = datos.vida;
         if (datos?.tipo === "robo") {
@@ -280,8 +291,11 @@ export class GestorSalaCliente {
         }
       }
       if (datos?.tipo === "byakugan") {
-        for (const carta of datos.cartas || []) {
-          BoardManager.revelarTemporal(carta.index, carta.valor, carta.aldea, datos.duracion);
+        if (datos.jugadorId === this.miId) {
+          const duracion = datos.duracion || this.estado?.duracionByakuganMs || 5000;
+          for (const carta of datos.cartas || []) {
+            BoardManager.revelarTemporal(carta.index, carta.valor, carta.aldea, duracion);
+          }
         }
       } else if (datos?.tipo === "byakugan-revelado") {
         if (datos.jugadorId !== this.miId) {
@@ -294,15 +308,42 @@ export class GestorSalaCliente {
         if (this.estado) this.estado.sello = null;
         BoardManager.quitarSello(datos.index);
       } else if (datos?.tipo === "ventana-contrarresto") {
-        // Mostrar ventana de 3s para que el rival active Byakugan
-        window.dispatchEvent(new CustomEvent("ventana-contrarresto-online", { detail: datos }));
+        const permitidos = Array.isArray(datos.contrapoderesPermitidos) && datos.contrapoderesPermitidos.length
+          ? [...datos.contrapoderesPermitidos]
+          : datos.contrapoderId ? [datos.contrapoderId] : [];
+        const esMiObjetivo = datos.objetivoId === this.miId
+          || (this.es2v2 && !!datos.objetivoEquipo && datos.objetivoEquipo === this.miEquipo);
+        if (!this.espectador && esMiObjetivo && permitidos.length) {
+          this.#limpiarReaccion();
+          const duracion = Number(datos.duracion)
+            || Number(datos.ventanaContrarrestoMs)
+            || Number(this.estado?.ventanaContrarrestoMs)
+            || 5000;
+          this.reaccionActiva = {
+            permitidos,
+            duracion,
+            venceEn: datos.venceEn || Date.now() + duracion,
+          };
+          document.body.classList.add("contrarresto-disponible");
+          document.documentElement.style.setProperty("--ventana-contrarresto-ms", `${duracion}ms`);
+          reproducirVentana();
+          const restante = Math.max(0, this.reaccionActiva.venceEn - Date.now());
+          this.reaccionTimer = setTimeout(() => this.#limpiarReaccion(), restante);
+          this.reaccionTimer?.unref?.();
+        }
+        this.actualizarPoderesUI();
+        window.dispatchEvent(new CustomEvent("ventana-contrarresto-online", {
+          detail: { ...datos, contrapoderesPermitidos: permitidos, puedoContrarrestar: esMiObjetivo },
+        }));
       } else if (datos?.tipo === "mezcla") {
-        BoardManager.aplicarMezcla(datos.cartas);
+        BoardManager.aplicarMezcla(datos.movimientos || datos.cartas);
         this.#activarIlusionGenjutsu(datos.duracion);
       } else if (datos?.tipo === "genjutsu_expirado") {
         this.#desactivarIlusionGenjutsu();
       } else if (datos?.tipo === "contrarresto") {
-        if (datos.cartas) BoardManager.aplicarMezcla(datos.cartas);
+        reproducirContrarresto();
+        this.#limpiarReaccion();
+        if (datos.movimientos || datos.cartas) BoardManager.aplicarMezcla(datos.movimientos || datos.cartas);
         this.#desactivarIlusionGenjutsu();
       }
       this.actualizarEstadoJugadoresUI();
@@ -324,6 +365,12 @@ export class GestorSalaCliente {
         if (datos.sustitucionArmada) {
           if (!this.estado.sustitucionArmada) this.estado.sustitucionArmada = {};
           Object.assign(this.estado.sustitucionArmada, datos.sustitucionArmada);
+        }
+        if (Array.isArray(datos.byakuganReveladas) && datos.byakuganReveladas.length) {
+          const duracion = Number(datos.duracionByakuganMs) || 5000;
+          for (const carta of datos.byakuganReveladas) {
+            BoardManager.revelarTemporal(carta.index, carta.valor, carta.aldea, duracion);
+          }
         }
       }
       this.actualizarEstadoJugadoresUI();
@@ -380,18 +427,19 @@ export class GestorSalaCliente {
     }
     if (estado.turnoTerminaEn) this.turnoTerminaEn = estado.turnoTerminaEn;
     if (Array.isArray(estado.byakuganReveladas)) {
+      const duracion = Number(estado.duracionByakuganMs) || 5000;
       for (const carta of estado.byakuganReveladas) {
-        BoardManager.revelarTemporal(carta.index, carta.valor, carta.aldea, 3000);
+        BoardManager.revelarTemporal(carta.index, carta.valor, carta.aldea, duracion);
       }
     }
     this.estado = estado;
     this.codigoSala = estado.codigo || this.codigoSala;
 
-    const yo = estado.jugadores.find((j) => j.id === this.miId);
-    const rival = estado.jugadores.find((j) => j.id !== this.miId);
+    const { yo, rival } = this.#lados(estado);
+    if (this.espectador) this.miId = yo?.id || null;
     this.miNombre = yo?.nombre || "Jugador";
-    this.miEquipo = yo?.equipo || null;
-    this.miAsiento = yo?.asiento ?? null;
+    this.miEquipo = yo?.equipo || this.miEquipo;
+    this.miAsiento = yo?.asiento ?? this.miAsiento;
     this.rivalNombre = rival?.nombre || "Rival";
     this.esMiTurno = this.#esTurnoDeMiEquipo(estado.turnoEquipo, estado.turno);
 
@@ -414,17 +462,22 @@ export class GestorSalaCliente {
     if (estado.sello && Number.isInteger(estado.sello.index)) {
       BoardManager.sellarCarta(estado.sello.index, Math.max(0, (estado.sello.hasta || 0) - Date.now()));
     }
-    // Rehidratar genjutsu (ilusión visual)
-    if (estado.genjutsu && estado.genjutsu.hasta) {
-      const restante = Math.max(0, estado.genjutsu.hasta - Date.now());
-      if (restante > 0) this.#activarIlusionGenjutsu(restante);
+    // Rehidratar genjutsu (mezcla persistente + ilusión visual)
+    if (estado.genjutsu) {
+      if (Array.isArray(estado.genjutsu.movimientos)) {
+        BoardManager.aplicarMezcla(estado.genjutsu.movimientos);
+      }
+      if (estado.genjutsu.hasta) {
+        const restante = Math.max(0, estado.genjutsu.hasta - Date.now());
+        if (restante > 0) this.#activarIlusionGenjutsu(restante);
+      }
     }
 
     this.estado = estado;
     this.codigoSala = estado.codigo || this.codigoSala;
 
-    const yo = estado.jugadores.find((j) => j.id === this.miId);
-    const rival = estado.jugadores.find((j) => j.id !== this.miId);
+    const { yo, rival } = this.#lados(estado);
+    if (this.espectador) this.miId = yo?.id || null;
     this.miNombre = yo?.nombre || this.miNombre;
     this.miEquipo = yo?.equipo || this.miEquipo;
     this.miAsiento = yo?.asiento ?? this.miAsiento;
@@ -466,6 +519,20 @@ export class GestorSalaCliente {
   #esTurnoDeMiEquipo(turnoEquipo, turnoId) {
     if (turnoEquipo) return turnoEquipo === this.miEquipo;
     return turnoId === this.miId;
+  }
+
+  #lados(estado = this.estado) {
+    const jugadores = estado?.jugadores || [];
+    if (this.espectador) {
+      const yo = jugadores.find((j) => j.equipo === "A") || jugadores[0] || null;
+      const rival = jugadores.find((j) => j.equipo === "B") || jugadores[1] || null;
+      return { yo, rival };
+    }
+    const yo = jugadores.find((j) => j.id === this.miId) || null;
+    const rival = jugadores.find((j) => this.miEquipo && j.equipo && j.equipo !== this.miEquipo)
+      || jugadores.find((j) => j.id !== this.miId)
+      || null;
+    return { yo, rival };
   }
 
   #aplicarEstadoJugadores(datos = {}) {
@@ -693,6 +760,10 @@ export class GestorSalaCliente {
       const btn = document.getElementById(btnId);
       if (btn && typeof poderesYo[id] === "number") {
         btn.classList.toggle("poder-agotado", poderesYo[id] <= 0);
+        btn.classList.toggle(
+          "poder-reaccion",
+          !!this.reaccionActiva?.permitidos?.includes(id) && poderesYo[id] > 0,
+        );
       }
     }
     if (datos?.poderId) {
@@ -735,7 +806,7 @@ export class GestorSalaCliente {
   }
 
   rivalId() {
-    return this.estado?.jugadores?.find((j) => j.id !== this.miId)?.id || null;
+    return this.#lados().rival?.id || null;
   }
 
   actualizarTurno(turnoId) {
@@ -744,6 +815,18 @@ export class GestorSalaCliente {
     this.esMiTurno = this.#esTurnoDeMiEquipo(estado.turnoEquipo, turnoId || estado.turno);
     const turnoSasuke = document.getElementById("turnoSasuke");
     const turnoNaruto = document.getElementById("turnoNaruto");
+    if (this.espectador) {
+      const equipoActivo = estado.turnoEquipo || (estado.turno === this.miId ? "A" : "B");
+      if (turnoSasuke) {
+        turnoSasuke.textContent = equipoActivo === "A" ? "TURNO EQUIPO A" : "";
+        turnoSasuke.classList.toggle("turno-activo", equipoActivo === "A");
+      }
+      if (turnoNaruto) {
+        turnoNaruto.textContent = equipoActivo === "B" ? "TURNO EQUIPO B" : "";
+        turnoNaruto.classList.toggle("turno-activo", equipoActivo === "B");
+      }
+      return;
+    }
     const compañeroActivo = this.es2v2 && this.esMiTurno && estado.turno !== this.miId;
     if (turnoSasuke) {
       turnoSasuke.textContent = compañeroActivo ? "TURNO DE TU EQUIPO" : this.esMiTurno ? "TU TURNO" : "";
@@ -801,6 +884,18 @@ export class GestorSalaCliente {
       BoardManager.marcarPendiente(intento.index);
       clienteMultijugador.voltearCarta(intento.index, this.intencionPendiente.nonce);
     }
+  }
+
+  #limpiarReaccion() {
+    if (this.reaccionTimer) {
+      clearTimeout(this.reaccionTimer);
+      this.reaccionTimer = null;
+    }
+    if (!this.reaccionActiva) return;
+    this.reaccionActiva = null;
+    document.body.classList.remove("contrarresto-disponible");
+    document.documentElement.style.removeProperty("--ventana-contrarresto-ms");
+    this.actualizarPoderesUI();
   }
 
   mostrarErrorSala(mensaje) {

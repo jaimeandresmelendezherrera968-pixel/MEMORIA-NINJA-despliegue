@@ -1633,32 +1633,43 @@ video {
 
 /* ==========================================
    GENJUTSU — ilusión visual del tablero (NUEVO)
-   Solo efecto visual: nunca toca datos reales
-   de las cartas ni sus posiciones en el DOM.
-   Se ve como un temblor de pantalla + las cartas
-   "ruedan" un momento, y al cortar el efecto todo
-   vuelve exactamente a como estaba antes.
+   La mezcla la aplica el servidor y el tablero la
+   refleja sin revelar valores. La ilusión añade un
+   temblor de pantalla y un vaivén de cartas ocultas;
+   al cortar el efecto solo desaparece la ilusión.
 ========================================== */
 
 .genjutsu-ilusion {
     animation: genjutsuTemblorPantalla 0.28s ease-in-out infinite;
 }
 
-.genjutsu-ilusion .card {
-    animation: genjutsuCartaRueda 0.65s linear infinite;
+.genjutsu-ilusion .card:not(.volteada):not(.emparejada):not(.matched) {
+    animation: genjutsuCartaRueda 0.65s ease-in-out infinite;
 }
 
-.genjutsu-ilusion .card:nth-child(2n) {
+.genjutsu-ilusion .card.volteada,
+.genjutsu-ilusion .card.emparejada,
+.genjutsu-ilusion .card.matched {
+    animation: none;
+}
+
+.card.genjutsu-mezclada {
+    outline: 2px solid rgba(198, 107, 255, 0.9);
+    outline-offset: 2px;
+    box-shadow: 0 0 18px rgba(198, 107, 255, 0.7);
+}
+
+.genjutsu-ilusion .card:nth-child(2n):not(.volteada):not(.emparejada):not(.matched) {
     animation-duration: 0.55s;
     animation-direction: reverse;
 }
 
-.genjutsu-ilusion .card:nth-child(3n) {
+.genjutsu-ilusion .card:nth-child(3n):not(.volteada):not(.emparejada):not(.matched) {
     animation-duration: 0.75s;
     animation-delay: 0.1s;
 }
 
-.genjutsu-ilusion .card:nth-child(5n) {
+.genjutsu-ilusion .card:nth-child(5n):not(.volteada):not(.emparejada):not(.matched) {
     animation-duration: 0.6s;
     animation-delay: 0.2s;
     animation-direction: reverse;
@@ -1674,8 +1685,10 @@ video {
 }
 
 @keyframes genjutsuCartaRueda {
-    from { transform: rotateY(0deg) rotateX(0deg); }
-    to   { transform: rotateY(360deg) rotateX(15deg); }
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    25%      { transform: translate(2px, -1px) rotate(1.5deg); }
+    50%      { transform: translate(-2px, 1px) rotate(-1.5deg); }
+    75%      { transform: translate(1px, 2px) rotate(0.8deg); }
 }
 
 .genjutsu-simbolo-central {
@@ -3122,5 +3135,327 @@ video {
         max-height:calc(100dvh - 16px);
         overflow:hidden;
         zoom:.85;
+    }
+}
+
+/* =====================================================
+   CONTRARRESTOS ONLINE (6 PODERES)
+   Selectores funcionales del trabajo local, sin rediseño visual.
+===================================================== */
+
+.skill.poder-reaccion {
+    border-radius: 12px;
+    outline: 2px solid #00ffaa;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(0, 255, 170, .16), 0 0 22px rgba(0, 255, 170, .75);
+    animation: poder-reaccion-pulso 1s ease-in-out infinite;
+}
+
+.skill.poder-reaccion::after {
+    content: "BLOQUEAR";
+    position: absolute;
+    top: -13px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: #00ffaa;
+    color: #04140d;
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: .5px;
+    white-space: nowrap;
+}
+
+@keyframes poder-reaccion-pulso {
+    0%, 100% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.06); filter: brightness(1.35); }
+}
+
+.aviso-rapido-central.aviso-reaccion {
+    color: #00ffaa;
+    border-color: #00ffaa;
+    background: rgba(2, 24, 17, .93);
+    box-shadow: 0 0 24px rgba(0, 255, 170, .55);
+    animation: avisoReaccion 3s ease-out forwards;
+}
+
+@keyframes avisoReaccion {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(.85); }
+    8% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(.96); }
+}
+
+.banner-poder-online {
+    overflow: hidden;
+    border-radius: 4px 14px 4px 14px;
+}
+
+.banner-poder-barra {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 3px;
+    background: rgba(0, 0, 0, .55);
+}
+
+.banner-poder-barra::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--poder-color));
+    transform-origin: left center;
+    animation: bannerBarra var(--duracion, 1700ms) linear forwards;
+}
+
+@keyframes bannerBarra {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+body.contrarresto-disponible .skill:not(.poder-reaccion) {
+    opacity: .42;
+    filter: grayscale(.75);
+    transform: scale(.96);
+}
+
+.ventana-bloqueo {
+    --sello: #00ffaa;
+    --sello-oscuro: #03140e;
+    position: fixed;
+    top: clamp(104px, 17vh, 168px);
+    left: 50%;
+    width: min(430px, 92vw);
+    z-index: 10020;
+    pointer-events: none;
+    padding: 14px 18px 16px;
+    color: #dfffee;
+    background:
+        repeating-linear-gradient(135deg, rgba(0, 255, 170, .055) 0 6px, transparent 6px 12px),
+        linear-gradient(155deg, rgba(3, 20, 15, .97), rgba(5, 9, 18, .97));
+    border: 1px solid color-mix(in srgb, var(--sello) 60%, transparent);
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+    box-shadow:
+        0 18px 52px rgba(0, 0, 0, .78),
+        0 0 34px color-mix(in srgb, var(--sello) 28%, transparent),
+        inset 0 0 22px rgba(255, 255, 255, .035);
+    font-family: 'Permanent Marker', cursive;
+    transform: translateX(-50%);
+    animation: ventanaBloqueoEntra .24s cubic-bezier(.2, .9, .3, 1.2) both;
+}
+
+.ventana-bloqueo.observando {
+    --sello: #ffd166;
+    --sello-oscuro: #1a1203;
+}
+
+.ventana-bloqueo-sello {
+    position: absolute;
+    top: -13px;
+    left: 18px;
+    padding: 2px 12px;
+    background: var(--sello);
+    color: var(--sello-oscuro);
+    font-family: 'Fredoka', sans-serif;
+    font-size: .62rem;
+    font-weight: 900;
+    letter-spacing: 2.4px;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+
+.ventana-bloqueo-cuerpo {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+    align-items: center;
+}
+
+.ventana-bloqueo-texto {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.ventana-bloqueo-titulo {
+    color: var(--sello);
+    font-size: .98rem;
+    letter-spacing: 1.6px;
+    text-shadow: 0 0 14px color-mix(in srgb, var(--sello) 55%, transparent);
+}
+
+.ventana-bloqueo-detalle {
+    margin-top: 3px;
+    color: #f2f7ff;
+    font-family: 'Fredoka', sans-serif;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ventana-bloqueo-pista {
+    margin-top: 2px;
+    color: color-mix(in srgb, var(--sello) 78%, white);
+    font-family: 'Fredoka', sans-serif;
+    font-size: .62rem;
+    font-weight: 800;
+    letter-spacing: 1.6px;
+}
+
+.ventana-bloqueo-numero {
+    min-width: 48px;
+    color: var(--sello);
+    font-size: 2.1rem;
+    line-height: 1;
+    text-align: center;
+    text-shadow: 0 0 18px color-mix(in srgb, var(--sello) 70%, transparent);
+    animation: ventanaNumero 1s ease-in-out infinite;
+}
+
+.ventana-bloqueo-barra {
+    grid-column: 1 / -1;
+    height: 6px;
+    margin-top: 6px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, .62);
+    border: 1px solid color-mix(in srgb, var(--sello) 35%, transparent);
+}
+
+.ventana-bloqueo-barra i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--sello));
+    transform-origin: left center;
+    animation: conteoBloqueo var(--conteo, 3s) linear forwards;
+}
+
+@keyframes ventanaBloqueoEntra {
+    0% { opacity: 0; transform: translate(-50%, -14px) scale(.94); }
+    100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+@keyframes ventanaNumero {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+}
+
+@keyframes conteoBloqueo {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+.contrarresto-flash {
+    --sello: #00ffaa;
+    position: fixed;
+    inset: 0;
+    z-index: 10030;
+    pointer-events: none;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--sello) 16%, transparent), transparent 46%);
+    animation: contrarrestoFondo 1.4s ease-out forwards;
+}
+
+.contrarresto-flash.es-rival {
+    --sello: #ff5b3b;
+}
+
+.contrarresto-flash::before,
+.contrarresto-flash::after {
+    content: "";
+    position: absolute;
+    width: min(72vw, 560px);
+    aspect-ratio: 1;
+    border: 2px solid color-mix(in srgb, var(--sello) 65%, transparent);
+    border-radius: 50%;
+    animation: contrarrestoOnda 1.1s ease-out forwards;
+}
+
+.contrarresto-flash::after {
+    animation-delay: .16s;
+}
+
+.contrarresto-panel {
+    position: relative;
+    min-width: min(420px, 88vw);
+    padding: 16px 28px 18px;
+    text-align: center;
+    background: linear-gradient(155deg, rgba(2, 18, 13, .96), rgba(4, 7, 14, .96));
+    border: 2px solid var(--sello);
+    clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
+    box-shadow: 0 0 46px color-mix(in srgb, var(--sello) 45%, transparent), 0 20px 60px rgba(0, 0, 0, .8);
+    animation: contrarrestoPanel .5s cubic-bezier(.15, .9, .25, 1.35) both;
+}
+
+.contrarresto-titulo {
+    display: block;
+    color: var(--sello);
+    font-family: 'Permanent Marker', cursive;
+    font-size: clamp(2rem, 7vw, 4.2rem);
+    letter-spacing: 4px;
+    text-shadow: 0 0 24px color-mix(in srgb, var(--sello) 65%, transparent);
+}
+
+.contrarresto-detalle {
+    display: block;
+    margin-top: 4px;
+    color: #f4f8ff;
+    font-family: 'Fredoka', sans-serif;
+    font-size: .82rem;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+}
+
+@keyframes contrarrestoFondo {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    70% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@keyframes contrarrestoOnda {
+    0% { opacity: .9; transform: scale(.25); }
+    100% { opacity: 0; transform: scale(1.6); }
+}
+
+@keyframes contrarrestoPanel {
+    0% { opacity: 0; transform: scale(.6) rotate(-4deg); }
+    60% { opacity: 1; transform: scale(1.06) rotate(1deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@media (max-width: 700px) {
+    .ventana-bloqueo {
+        top: 78px;
+        padding: 12px 14px 14px;
+    }
+    .ventana-bloqueo-titulo { font-size: .82rem; }
+    .ventana-bloqueo-detalle { font-size: .68rem; }
+    .ventana-bloqueo-numero {
+        min-width: 38px;
+        font-size: 1.7rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skill.poder-reaccion,
+    .aviso-rapido-central.aviso-reaccion,
+    .banner-poder-barra::after,
+    .ventana-bloqueo,
+    .ventana-bloqueo-numero,
+    .ventana-bloqueo-barra i,
+    .contrarresto-flash,
+    .contrarresto-flash::before,
+    .contrarresto-flash::after,
+    .contrarresto-panel {
+        animation: none !important;
+        transition: none !important;
     }
 }

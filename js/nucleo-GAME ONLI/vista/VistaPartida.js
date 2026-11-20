@@ -195,61 +195,91 @@ export class VistaPartida {
         aviso.textContent = mensaje;
         document.body.appendChild(aviso);
         this._avisoRapidoActual = aviso;
+        const duracion = tipo === "reaccion" ? 3000 : 1200;
         setTimeout(() => {
             aviso.remove();
             if (this._avisoRapidoActual === aviso) this._avisoRapidoActual = null;
-        }, 1200);
+        }, duracion);
     }
 
-    /**
-     * Ventana de reacción online. El servidor marca venceEn; el reloj local
-     * solo pinta la cuenta regresiva para que el jugador sepa cuánto queda.
-     * El texto accesible es estático: el lector de pantalla anuncia la ventana
-     * una sola vez, no una vez por décima de segundo.
-     */
-    mostrarVentanaContrarresto({ poder = "PODER", contra = "CONTRARRESTO", venceEn = null, duracion = 3000, puedoContrarrestar = true } = {}) {
-        this.detenerVentanaContrarresto();
-
-        const aviso = document.createElement("div");
-        aviso.className = "aviso-rapido-central aviso-contrarresto";
-        aviso.setAttribute("role", "status");
-        aviso.setAttribute("aria-live", "polite");
-
-        const accesible = document.createElement("span");
-        accesible.className = "sr-only";
-        accesible.textContent = puedoContrarrestar
-            ? `Ventana abierta: ${poder}. Contrarresta con ${contra}.`
-            : `${poder}: esperando contrarresto con ${contra}.`;
-
-        const cuenta = document.createElement("span");
-        cuenta.setAttribute("aria-hidden", "true");
-        aviso.append(accesible, cuenta);
-        document.body.appendChild(aviso);
-
-        const vencimiento = Number(venceEn) > 0
-            ? Number(venceEn)
-            : Date.now() + Math.max(0, Number(duracion) || 3000);
-
-        const actualizar = () => {
-            const restanteMs = Math.max(0, vencimiento - Date.now());
-            cuenta.textContent = puedoContrarrestar
-                ? `⚡ ${poder}: ${(restanteMs / 1000).toFixed(1)}s · ¡CONTRARRESTA CON ${contra}!`
-                : `⚡ ${poder}: esperando contrarresto con ${contra}`;
-            if (restanteMs === 0) this.detenerVentanaContrarresto();
-        };
-
-        this._ventanaContrarresto = aviso;
-        this._ventanaContrarrestoTimer = setInterval(actualizar, 100);
-        actualizar();
+    limpiarVentanaBloqueo() {
+        if (this._ventanaBloqueoInterval) clearInterval(this._ventanaBloqueoInterval);
+        if (this._ventanaBloqueoTimeout) clearTimeout(this._ventanaBloqueoTimeout);
+        this._ventanaBloqueoInterval = null;
+        this._ventanaBloqueoTimeout = null;
+        this._ventanaBloqueo?.remove();
+        this._ventanaBloqueo = null;
     }
 
-    detenerVentanaContrarresto() {
-        if (this._ventanaContrarrestoTimer) {
-            clearInterval(this._ventanaContrarrestoTimer);
-            this._ventanaContrarrestoTimer = null;
-        }
-        this._ventanaContrarresto?.remove();
-        this._ventanaContrarresto = null;
+    mostrarVentanaBloqueo({ poder = "PODER", contrapoderes = [], segundos = 3, puedo = false } = {}) {
+        this.limpiarVentanaBloqueo();
+        const duracion = Math.max(1, Number(segundos) || 3);
+        const overlay = document.createElement("div");
+        overlay.className = `ventana-bloqueo ${puedo ? "puedo-bloquear" : "observando"}`;
+        overlay.setAttribute("role", puedo ? "alert" : "status");
+        overlay.setAttribute("aria-live", puedo ? "assertive" : "polite");
+        overlay.style.setProperty("--conteo", `${duracion}s`);
+
+        const sello = document.createElement("span");
+        sello.className = "ventana-bloqueo-sello";
+        sello.textContent = puedo ? "BLOQUEA" : "ENEMIGO";
+
+        const cuerpo = document.createElement("div");
+        cuerpo.className = "ventana-bloqueo-cuerpo";
+        const texto = document.createElement("div");
+        texto.className = "ventana-bloqueo-texto";
+        const titulo = document.createElement("strong");
+        titulo.className = "ventana-bloqueo-titulo";
+        titulo.textContent = "VENTANA DE BLOQUEO";
+        const detalle = document.createElement("span");
+        detalle.className = "ventana-bloqueo-detalle";
+        detalle.textContent = `${poder} · ${contrapoderes.join(" / ") || "—"}`;
+        const pista = document.createElement("span");
+        pista.className = "ventana-bloqueo-pista";
+        pista.textContent = puedo ? "TOCA EL PODER MARCADO" : "EL OBJETIVO PUEDE CONTRARRESTAR";
+        texto.append(titulo, detalle, pista);
+
+        const numero = document.createElement("strong");
+        numero.className = "ventana-bloqueo-numero";
+        numero.textContent = String(duracion);
+
+        const barra = document.createElement("div");
+        barra.className = "ventana-bloqueo-barra";
+        const relleno = document.createElement("i");
+        barra.appendChild(relleno);
+
+        cuerpo.append(texto, numero, barra);
+        overlay.append(sello, cuerpo);
+        document.body.appendChild(overlay);
+        this._ventanaBloqueo = overlay;
+
+        const hasta = Date.now() + duracion * 1000;
+        this._ventanaBloqueoInterval = setInterval(() => {
+            const restante = Math.max(0, Math.ceil((hasta - Date.now()) / 1000));
+            numero.textContent = String(restante);
+        }, 100);
+        this._ventanaBloqueoTimeout = setTimeout(() => this.limpiarVentanaBloqueo(), duracion * 1000 + 120);
+    }
+
+    mostrarContrarresto({ poder = "PODER", contra = "CONTRARRESTO", por = "", esMio = false } = {}) {
+        this.limpiarVentanaBloqueo();
+        const flash = document.createElement("div");
+        flash.className = `contrarresto-flash ${esMio ? "es-mio" : "es-rival"}`;
+        flash.setAttribute("role", "status");
+        flash.setAttribute("aria-live", "polite");
+
+        const panel = document.createElement("div");
+        panel.className = "contrarresto-panel";
+        const titulo = document.createElement("strong");
+        titulo.className = "contrarresto-titulo";
+        titulo.textContent = "BLOQUEADO";
+        const detalle = document.createElement("span");
+        detalle.className = "contrarresto-detalle";
+        detalle.textContent = `${contra} anuló ${poder}${por ? ` · ${por}` : ""}`;
+        panel.append(titulo, detalle);
+        flash.appendChild(panel);
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 1400);
     }
 
     mostrarBannerPoder({ poder = "", titulo = "", detalle = "", icono = "", deRival = false, duracion = 1700 } = {}) {
@@ -259,6 +289,7 @@ export class VistaPartida {
         clearTimeout(this._bannerPoderTimeout);
         banner.replaceChildren();
         banner.className = "banner-poder-online";
+        banner.style.setProperty("--duracion", `${duracion}ms`);
         if (poder) banner.classList.add(`poder-${poder}`);
         if (deRival) banner.classList.add("es-rival");
 
@@ -282,6 +313,10 @@ export class VistaPartida {
         } else {
             banner.append(texto);
         }
+
+        const barra = document.createElement("span");
+        barra.className = "banner-poder-barra";
+        banner.appendChild(barra);
 
         void banner.offsetWidth;
         banner.classList.add("visible");
