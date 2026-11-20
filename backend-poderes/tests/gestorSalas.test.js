@@ -34,6 +34,22 @@ function esperarEvento(socket, evento, timeout = 2000) {
   });
 }
 
+function esperarEfecto(socket, tipo, timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const temporizador = setTimeout(() => {
+      socket.off("poder-efecto", alRecibir);
+      reject(new Error(`No llegó el efecto "${tipo}" en ${timeout}ms`));
+    }, timeout);
+    const alRecibir = (datos) => {
+      if (datos?.tipo !== tipo) return;
+      clearTimeout(temporizador);
+      socket.off("poder-efecto", alRecibir);
+      resolve(datos);
+    };
+    socket.on("poder-efecto", alRecibir);
+  });
+}
+
 function emitir(socket, evento, datos = {}, timeout = 2000) {
   return new Promise((resolve, reject) => {
     const temporizador = setTimeout(() => reject(new Error(`Sin respuesta a "${evento}"`)), timeout);
@@ -260,11 +276,9 @@ describe("GestorSalas (multijugador online real)", () => {
 
   it("Sustitución salva el fallo, no resta vida y conserva el turno", async () => {
     const { uno, codigo } = await salaIniciada();
-    const activado = esperarEvento(uno, "poder-activado");
     uno.emit("activar-poder", { poderId: "sustitucion" });
-    await activado;
+    await esperarEfecto(uno, "defensa");
     const sala = gestor.salas.get(codigo);
-    sala.poderEnProceso = null;
 
     const fallo = esperarEvento(uno, "fallo");
     const cambio = esperarEvento(uno, "turno-cambiado");
@@ -279,6 +293,30 @@ describe("GestorSalas (multijugador online real)", () => {
     assert.equal(datosTurno.turno, "token-jugador-uno");
     assert.equal(datosTurno.sustitucion, true);
     assert.equal(sala.defensas.sustitucion["token-jugador-uno"].activa, false);
+  });
+
+  it("marcar-listo después de iniciada la partida responde error", async () => {
+    const { uno } = await salaIniciada();
+    const respuesta = await emitir(uno, "marcar-listo", { listo: true });
+    assert.equal(respuesta.exito, false);
+    assert.equal(respuesta.error, "La partida ya está en curso");
+  });
+
+  it("reincorporarse no revela la Sustitución del otro jugador", async () => {
+    const { uno, dos, codigo } = await salaIniciada();
+    uno.emit("activar-poder", { poderId: "sustitucion" });
+    await esperarEfecto(uno, "defensa");
+
+    const reincorporadoDos = await emitir(dos, "reincorporarse-sala", { codigo });
+    assert.equal(reincorporadoDos.exito, true);
+    assert.deepEqual(Object.keys(reincorporadoDos.estado.sustitucionArmada), ["token-jugador-dos"]);
+    assert.equal(reincorporadoDos.estado.sustitucionArmada["token-jugador-uno"], undefined);
+
+    const reincorporadoUno = await emitir(uno, "reincorporarse-sala", { codigo });
+    assert.equal(reincorporadoUno.exito, true);
+    assert.deepEqual(Object.keys(reincorporadoUno.estado.sustitucionArmada), ["token-jugador-uno"]);
+    assert.equal(reincorporadoUno.estado.sustitucionArmada["token-jugador-uno"].activa, true);
+    assert.equal(reincorporadoUno.estado.sustitucionArmada["token-jugador-dos"], undefined);
   });
 
   it("Byakugan revela dos cartas solo al jugador que lo activa", async () => {
@@ -314,13 +352,10 @@ describe("GestorSalas (multijugador online real)", () => {
 
   it("Sello bloquea una carta oculta y no deja voltearla", async () => {
     const { uno, codigo } = await salaIniciada();
-    const efecto = esperarEvento(uno, "poder-efecto");
     uno.emit("activar-poder", { poderId: "sello" });
-    const datos = await efecto;
-    assert.equal(datos.tipo, "sello");
+    const datos = await esperarEfecto(uno, "sello");
 
     const sala = gestor.salas.get(codigo);
-    sala.poderEnProceso = null;
     const recibidas = [];
     uno.on("carta-volteada", (carta) => recibidas.push(carta));
     uno.emit("voltear-carta", { index: datos.index });
@@ -368,9 +403,8 @@ describe("GestorSalas (multijugador online real)", () => {
     const sala = gestor.salas.get(codigo);
     sala.defensas.sustitucion["token-jugador-dos"] = { activa: true };
 
-    const efecto = esperarEvento(uno, "poder-efecto");
     uno.emit("activar-poder", { poderId: "sello" });
-    const datos = await efecto;
+    const datos = await esperarEfecto(uno, "evadido");
 
     assert.equal(datos.tipo, "evadido");
     assert.equal(datos.poderId, "sello");
@@ -415,9 +449,8 @@ describe("GestorSalas (multijugador online real)", () => {
     const sala = gestor.salas.get(codigo);
     sala.defensas.sustitucion["token-jugador-dos"] = { activa: true };
 
-    const efecto = esperarEvento(uno, "poder-efecto");
     uno.emit("activar-poder", { poderId: "robo" });
-    const datos = await efecto;
+    const datos = await esperarEfecto(uno, "evadido");
 
     assert.equal(datos.tipo, "evadido");
     assert.equal(datos.poderId, "robo");
@@ -1225,20 +1258,20 @@ describe("GestorSalas (multijugador online real)", () => {
     assert.equal(salaDespues.chakra["token-jugador-uno"], chakraAntes - 35);
   });
 
-  it("Genjutsu: respuesta tardía (después de 3s) es rechazada", async () => {
+  it("Genjutsu: respuesta tardía activa un Byakugan normal fuera de turno", async () => {
     const { uno, dos, codigo } = await salaIniciada();
     const ventana = esperarEvento(uno, "poder-efecto");
     uno.emit("activar-poder", { poderId: "genjutsu" });
     await ventana;
 
-    // Esperar que la ventana expire
     await pausa(3500);
 
-    // Intentar contrarrestar tarde
-    const rechazo = esperarEvento(dos, "poder-rechazado");
+    const nuevaVentana = esperarEfecto(dos, "ventana-contrarresto");
     dos.emit("activar-poder", { poderId: "byakugan" });
-    const datos = await rechazo;
-    assert.equal(datos.motivo, "sin_turno");
+    const datos = await nuevaVentana;
+    assert.equal(datos.poderId, "byakugan");
+    assert.equal(datos.jugadorId, "token-jugador-dos");
+    assert.equal(gestor.salas.get(codigo).accionPendiente.poderId, "byakugan");
   });
 
 
@@ -1287,7 +1320,7 @@ describe("GestorSalas (multijugador online real)", () => {
     assert.equal(salaDespues.vida["token-jugador-dos"], 100, "Vida no debe reducirse");
   });
 
-  it("Bomba: respuesta tardía es rechazada", async () => {
+  it("Bomba: respuesta tardía activa un Sello normal fuera de turno", async () => {
     const { uno, dos, codigo } = await salaIniciada();
     const ventana = esperarEvento(uno, "poder-efecto");
     uno.emit("activar-poder", { poderId: "bomba" });
@@ -1295,10 +1328,12 @@ describe("GestorSalas (multijugador online real)", () => {
 
     await pausa(3500);
 
-    const rechazo = esperarEvento(dos, "poder-rechazado");
+    const nuevaVentana = esperarEfecto(dos, "ventana-contrarresto");
     dos.emit("activar-poder", { poderId: "sello", modo: "contraataque" });
-    const datos = await rechazo;
-    assert.equal(datos.motivo, "sin_turno");
+    const datos = await nuevaVentana;
+    assert.equal(datos.poderId, "sello");
+    assert.equal(datos.jugadorId, "token-jugador-dos");
+    assert.equal(gestor.salas.get(codigo).accionPendiente.poderId, "sello");
   });
 
 
@@ -1317,24 +1352,23 @@ describe("GestorSalas (multijugador online real)", () => {
     assert.equal(gestor.salas.get(codigo).vida["token-jugador-dos"], 80);
   });
 
-  it("Bomba: doble respuesta se rechaza", async () => {
+  it("Bomba: doble respuesta convierte la segunda en Sello normal", async () => {
     const { uno, dos, codigo } = await salaIniciada();
     const ventana = esperarEvento(uno, "poder-efecto");
     uno.emit("activar-poder", { poderId: "bomba" });
     const v = await ventana;
     assert.equal(v.tipo, "ventana-contrarresto");
 
-    // Dos activa sello como contraataque
-    const contrarresto = esperarEvento(uno, "poder-efecto");
+    const contrarresto = esperarEfecto(uno, "contrarresto");
     dos.emit("activar-poder", { poderId: "sello", modo: "contraataque" });
     const c = await contrarresto;
     assert.equal(c.tipo, "contrarresto");
 
-    // Intentar otra respuesta (debe rechazarse)
-    const rechazo = esperarEvento(dos, "poder-rechazado");
+    const nuevaVentana = esperarEfecto(dos, "ventana-contrarresto");
     dos.emit("activar-poder", { poderId: "sello", modo: "contraataque" });
-    const r = await rechazo;
-    assert.ok(r.motivo, "Debe rechazarse la segunda respuesta");
+    const r = await nuevaVentana;
+    assert.equal(r.poderId, "sello");
+    assert.equal(gestor.salas.get(codigo).accionPendiente.poderId, "sello");
   });
 
   function dejarCartasDisponibles(sala, cantidad) {
@@ -1377,19 +1411,21 @@ describe("GestorSalas (multijugador online real)", () => {
     assert.equal((await rechazo).motivo, "sin_cartas");
   });
 
-  it("Segundo Sello sobre la misma ventana se rechaza", async () => {
-    const { uno, dos } = await salaIniciada();
+  it("Segundo Sello sobre la misma ventana activa un Sello normal", async () => {
+    const { uno, dos, codigo } = await salaIniciada();
     const ventana = esperarEvento(uno, "poder-efecto");
     uno.emit("activar-poder", { poderId: "byakugan" });
     await ventana;
 
-    const contrarresto = esperarEvento(uno, "poder-efecto");
+    const contrarresto = esperarEfecto(uno, "contrarresto");
     dos.emit("activar-poder", { poderId: "sello", modo: "contraataque" });
     await contrarresto;
 
-    const rechazo = esperarEvento(dos, "poder-rechazado");
+    const nuevaVentana = esperarEfecto(dos, "ventana-contrarresto");
     dos.emit("activar-poder", { poderId: "sello", modo: "contraataque" });
-    assert.ok((await rechazo).motivo);
+    const r = await nuevaVentana;
+    assert.equal(r.poderId, "sello");
+    assert.equal(gestor.salas.get(codigo).accionPendiente.poderId, "sello");
   });
 
   it("Bomba con Sustitución activada durante la ventana hace 10 y la consume", async () => {
@@ -1445,6 +1481,65 @@ describe("GestorSalas (multijugador online real)", () => {
     assert.equal(datos.tipo, "contrarresto");
     assert.equal(datos.contrapoderId, "byakugan");
     assert.equal(gestor.salas.get(codigo).accionPendiente, null);
+  });
+
+  it("Robo: Sustitución contrarresta y no mueve chakra", async () => {
+    const { uno, dos, codigo } = await salaIniciada();
+    const ventana = esperarEvento(uno, "poder-efecto");
+    uno.emit("activar-poder", { poderId: "robo" });
+    assert.equal((await ventana).tipo, "ventana-contrarresto");
+
+    const contrarresto = esperarEfecto(uno, "contrarresto");
+    dos.emit("activar-poder", { poderId: "sustitucion" });
+    const datos = await contrarresto;
+    assert.equal(datos.poderId, "robo");
+    assert.equal(datos.contrapoderId, "sustitucion");
+    assert.equal(gestor.salas.get(codigo).chakra["token-jugador-uno"], 70);
+    assert.equal(gestor.salas.get(codigo).chakra["token-jugador-dos"], 100);
+  });
+
+  it("Sello: Byakugan contrarresta y no sella cartas", async () => {
+    const { uno, dos, codigo } = await salaIniciada();
+    const ventana = esperarEvento(uno, "poder-efecto");
+    uno.emit("activar-poder", { poderId: "sello" });
+    assert.equal((await ventana).tipo, "ventana-contrarresto");
+
+    const contrarresto = esperarEfecto(uno, "contrarresto");
+    dos.emit("activar-poder", { poderId: "byakugan" });
+    const datos = await contrarresto;
+    assert.equal(datos.poderId, "sello");
+    assert.equal(datos.contrapoderId, "byakugan");
+    assert.equal(gestor.salas.get(codigo).efectos.sello, null);
+  });
+
+  it("Sustitución: Genjutsu contrarresta y no arma defensa", async () => {
+    const { uno, dos, codigo } = await salaIniciada();
+    const ventana = esperarEvento(uno, "poder-efecto");
+    uno.emit("activar-poder", { poderId: "sustitucion" });
+    assert.equal((await ventana).tipo, "ventana-contrarresto");
+
+    const contrarresto = esperarEfecto(uno, "contrarresto");
+    dos.emit("activar-poder", { poderId: "genjutsu" });
+    const datos = await contrarresto;
+    assert.equal(datos.poderId, "sustitucion");
+    assert.equal(datos.contrapoderId, "genjutsu");
+    await pausa(3200);
+    assert.notEqual(gestor.salas.get(codigo).defensas.sustitucion["token-jugador-uno"]?.activa, true);
+  });
+
+  it("cualquier jugador activa poderes fuera de turno y afecta al rival", async () => {
+    const { dos, codigo } = await salaIniciada();
+    const ventana = esperarEfecto(dos, "ventana-contrarresto");
+    dos.emit("activar-poder", { poderId: "robo" });
+    const datosVentana = await ventana;
+    assert.equal(datosVentana.poderId, "robo");
+    assert.equal(datosVentana.jugadorId, "token-jugador-dos");
+
+    const robo = esperarEfecto(dos, "robo");
+    const datos = await robo;
+    assert.equal(datos.robado, 20);
+    assert.equal(gestor.salas.get(codigo).chakra["token-jugador-uno"], 80);
+    assert.equal(gestor.salas.get(codigo).chakra["token-jugador-dos"], 90);
   });
 
   it("En 2v2 el compañero del objetivo contrarresta Bomba", async () => {
@@ -1553,16 +1648,12 @@ describe("GestorSalas (multijugador online real)", () => {
   it("poderEnProceso se limpia solo tras Sustitución y Robo", async () => {
     const { uno, codigo } = await salaIniciada();
 
-    const defensa = esperarEvento(uno, "poder-efecto");
     uno.emit("activar-poder", { poderId: "sustitucion" });
-    await defensa;
-    await pausa(1000);
+    await esperarEfecto(uno, "defensa");
     assert.equal(gestor.salas.get(codigo).poderEnProceso, null);
 
-    const robo = esperarEvento(uno, "poder-efecto");
     uno.emit("activar-poder", { poderId: "robo" });
-    await robo;
-    await pausa(1000);
+    await esperarEfecto(uno, "robo");
     assert.equal(gestor.salas.get(codigo).poderEnProceso, null);
   });
 

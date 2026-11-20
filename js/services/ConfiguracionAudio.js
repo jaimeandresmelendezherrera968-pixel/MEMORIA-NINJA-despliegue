@@ -165,6 +165,98 @@ function crearGanancia(contexto, volumen) {
     return ganancia;
 }
 
+function reproducirTono({
+    frecuencia,
+    frecuenciaFinal = frecuencia,
+    tipo = "sine",
+    duracion = 0.18,
+    volumen = 0.18,
+    retardo = 0,
+    ataque = 0.008,
+}) {
+    const configuracion = leerConfiguracion();
+
+    if (!configuracion.efectos || configuracion.volumen <= 0) {
+        return;
+    }
+
+    const contexto = obtenerContextoAudio();
+
+    if (!contexto) {
+        return;
+    }
+
+    if (contexto.state === "suspended") {
+        contexto.resume().catch(() => {});
+    }
+
+    const inicio = contexto.currentTime + retardo;
+    const salida = crearGanancia(contexto, (configuracion.volumen / 100) * volumen);
+    const oscilador = contexto.createOscillator();
+    const envolvente = contexto.createGain();
+
+    oscilador.type = tipo;
+    oscilador.frequency.setValueAtTime(frecuencia, inicio);
+    if (frecuenciaFinal !== frecuencia) {
+        oscilador.frequency.exponentialRampToValueAtTime(Math.max(20, frecuenciaFinal), inicio + duracion);
+    }
+
+    envolvente.gain.setValueAtTime(0.0001, inicio);
+    envolvente.gain.exponentialRampToValueAtTime(1, inicio + ataque);
+    envolvente.gain.exponentialRampToValueAtTime(0.0001, inicio + duracion);
+
+    oscilador.connect(envolvente);
+    envolvente.connect(salida);
+    oscilador.start(inicio);
+    oscilador.stop(inicio + duracion + 0.02);
+}
+
+const SONIDOS_PODER = {
+    sustitucion: [
+        { frecuencia: 320, frecuenciaFinal: 540, tipo: "triangle", duracion: 0.16, volumen: 0.16 },
+        { frecuencia: 680, frecuenciaFinal: 820, tipo: "sine", duracion: 0.12, volumen: 0.1, retardo: 0.09 },
+    ],
+    byakugan: [
+        { frecuencia: 760, frecuenciaFinal: 1480, tipo: "sine", duracion: 0.28, volumen: 0.15 },
+        { frecuencia: 1180, frecuenciaFinal: 1760, tipo: "triangle", duracion: 0.22, volumen: 0.08, retardo: 0.06 },
+    ],
+    robo: [
+        { frecuencia: 720, frecuenciaFinal: 180, tipo: "sawtooth", duracion: 0.26, volumen: 0.13 },
+    ],
+    genjutsu: [
+        { frecuencia: 420, frecuenciaFinal: 620, tipo: "sine", duracion: 0.34, volumen: 0.14 },
+        { frecuencia: 300, frecuenciaFinal: 520, tipo: "triangle", duracion: 0.3, volumen: 0.09, retardo: 0.08 },
+    ],
+    sello: [
+        { frecuencia: 210, frecuenciaFinal: 120, tipo: "square", duracion: 0.22, volumen: 0.1 },
+        { frecuencia: 880, tipo: "sine", duracion: 0.08, volumen: 0.12, retardo: 0.02 },
+    ],
+    bomba: [
+        { frecuencia: 140, frecuenciaFinal: 45, tipo: "sawtooth", duracion: 0.42, volumen: 0.2 },
+        { frecuencia: 90, frecuenciaFinal: 35, tipo: "square", duracion: 0.32, volumen: 0.12, retardo: 0.04 },
+    ],
+};
+
+export function reproducirPoder(poderId) {
+    const tonos = SONIDOS_PODER[poderId] || SONIDOS_PODER.robo;
+    tonos.forEach((tono) => reproducirTono(tono));
+}
+
+export function reproducirVentana() {
+    reproducirTono({ frecuencia: 740, tipo: "square", duracion: 0.09, volumen: 0.09 });
+    reproducirTono({ frecuencia: 740, tipo: "square", duracion: 0.09, volumen: 0.09, retardo: 0.16 });
+}
+
+export function reproducirContrarresto() {
+    [660, 880, 1175].forEach((frecuencia, indice) => {
+        reproducirTono({ frecuencia, tipo: "triangle", duracion: 0.16, volumen: 0.14, retardo: indice * 0.08 });
+    });
+}
+
+export function reproducirDanio() {
+    reproducirTono({ frecuencia: 170, frecuenciaFinal: 60, tipo: "sawtooth", duracion: 0.3, volumen: 0.17 });
+}
+
 export function reproducirVolteo() {
     const configuracion = leerConfiguracion();
 
