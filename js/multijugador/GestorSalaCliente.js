@@ -661,6 +661,7 @@ export class GestorSalaCliente {
       chakraBarra: "chakraBarraSasuke",
       vidaTexto: "vidaTextoSasuke",
       vidaBarra: "vidaBarraSasuke",
+      vidaFantasma: "vidaFantasmaSasuke",
       comboLateral: "comboSasuke",
       aciertos: "playerHits",
       errores: "playerErrors",
@@ -671,6 +672,7 @@ export class GestorSalaCliente {
       chakraBarra: "chakraBarraNaruto",
       vidaTexto: "vidaTextoNaruto",
       vidaBarra: "vidaBarraNaruto",
+      vidaFantasma: "vidaFantasmaNaruto",
       comboLateral: "comboNaruto",
       aciertos: "enemyHits",
       errores: "enemyErrors",
@@ -695,10 +697,29 @@ export class GestorSalaCliente {
       if (barra) barra.style.width = `${Math.max(0, Math.min(100, chakra))}%`;
     }
     if (typeof vida === "number") {
+      const actual = Math.max(0, Math.min(100, vida));
       const texto = document.getElementById(ids.vidaTexto);
       const barra = document.getElementById(ids.vidaBarra);
-      if (texto) texto.textContent = `${vida}/100`;
-      if (barra) barra.style.width = `${Math.max(0, Math.min(100, vida))}%`;
+      const fantasma = ids.vidaFantasma ? document.getElementById(ids.vidaFantasma) : null;
+      if (!this._vidaAnterior) this._vidaAnterior = {};
+      const anterior = Number.isFinite(this._vidaAnterior[jugadorId]) ? this._vidaAnterior[jugadorId] : actual;
+      if (texto) texto.textContent = `${actual}/100`;
+      if (fantasma) {
+        if (actual < anterior) {
+          fantasma.style.transition = "none";
+          fantasma.style.width = `${anterior}%`;
+          void fantasma.offsetWidth;
+          fantasma.style.transition = "width .75s ease .12s";
+          fantasma.style.width = `${actual}%`;
+        } else if (actual > anterior) {
+          fantasma.style.transition = "none";
+          fantasma.style.width = `${actual}%`;
+        } else if (!fantasma.style.width) {
+          fantasma.style.width = `${actual}%`;
+        }
+      }
+      if (barra) barra.style.width = `${actual}%`;
+      this._vidaAnterior[jugadorId] = actual;
     }
     const comboLateral = document.getElementById(ids.comboLateral);
     if (comboLateral) comboLateral.textContent = combo > 0 ? `COMBO x${combo}` : "";

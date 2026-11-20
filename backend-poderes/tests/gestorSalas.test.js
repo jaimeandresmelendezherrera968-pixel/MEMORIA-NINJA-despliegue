@@ -104,6 +104,10 @@ describe("GestorSalas (multijugador online real)", () => {
     gestor = new GestorSalas(servidor, {
       tiempoReconexionMs: TIEMPO_RECONEXION_MS,
       retardoFalloMs: RETARDO_FALLO_MS,
+      ventanaContrarrestoMs: 200,
+      duracionByakuganMs: 5000,
+      duracionSelloMs: 5000,
+      duracionGenjutsuMs: 5000,
     });
     gestor.generarMazo = () => mazoFijo(8);
     clientes = [];
@@ -381,6 +385,11 @@ describe("GestorSalas (multijugador online real)", () => {
       assert.equal(typeof carta.index, "number");
       assert.ok(sala.mazo[carta.index]);
     }
+    assert.ok(Array.isArray(datos.movimientos) && datos.movimientos.length === 3);
+    for (const movimiento of datos.movimientos) {
+      assert.equal(typeof movimiento.index, "number");
+      assert.equal(typeof movimiento.destino, "number");
+    }
     assert.equal(sala.efectos.genjutsu.jugadorId, "token-jugador-uno");
   });
 
@@ -449,9 +458,12 @@ describe("GestorSalas (multijugador online real)", () => {
     const sala = gestor.salas.get(codigo);
     sala.defensas.sustitucion["token-jugador-dos"] = { activa: true };
 
+    const ventana = esperarEvento(uno, "poder-efecto");
     uno.emit("activar-poder", { poderId: "robo" });
-    const datos = await esperarEfecto(uno, "evadido");
+    const datosVentana = await ventana;
+    assert.equal(datosVentana.tipo, "ventana-contrarresto");
 
+    const datos = await esperarEfecto(uno, "evadido");
     assert.equal(datos.tipo, "evadido");
     assert.equal(datos.poderId, "robo");
     assert.equal(sala.chakra["token-jugador-dos"], 100);

@@ -30,6 +30,9 @@ export class VistaPartida {
         this.vidaTextoNaruto = document.getElementById("vidaTextoNaruto");
         this.vidaBarraSasuke = document.getElementById("vidaBarraSasuke");
         this.vidaBarraNaruto = document.getElementById("vidaBarraNaruto");
+        this.vidaFantasmaSasuke = document.getElementById("vidaFantasmaSasuke");
+        this.vidaFantasmaNaruto = document.getElementById("vidaFantasmaNaruto");
+        this._vidaAnterior = { sasuke: null, naruto: null };
 
         this.nombreJugador = document.getElementById("playerName");
         this.avatarJugador = document.getElementById("playerAvatar");
@@ -129,10 +132,29 @@ export class VistaPartida {
     }
 
     renderVida(jugador, rival) {
-        if (this.vidaTextoSasuke) this.vidaTextoSasuke.textContent = jugador.vida + "/" + jugador.constructor.VIDA_MAXIMA;
-        if (this.vidaBarraSasuke) this.vidaBarraSasuke.style.width = jugador.vida + "%";
-        if (this.vidaTextoNaruto) this.vidaTextoNaruto.textContent = rival.vida + "/" + rival.constructor.VIDA_MAXIMA;
-        if (this.vidaBarraNaruto) this.vidaBarraNaruto.style.width = rival.vida + "%";
+        this._renderVidaLado("sasuke", jugador.vida, jugador.constructor.VIDA_MAXIMA, this.vidaTextoSasuke, this.vidaBarraSasuke, this.vidaFantasmaSasuke);
+        this._renderVidaLado("naruto", rival.vida, rival.constructor.VIDA_MAXIMA, this.vidaTextoNaruto, this.vidaBarraNaruto, this.vidaFantasmaNaruto);
+    }
+
+    _renderVidaLado(clave, vida, maxima, textoEl, barraEl, fantasmaEl) {
+        const actual = Math.max(0, Math.min(maxima, Number(vida) || 0));
+        if (textoEl) textoEl.textContent = actual + "/" + maxima;
+        const anterior = Number.isFinite(this._vidaAnterior?.[clave]) ? this._vidaAnterior[clave] : actual;
+        if (fantasmaEl) {
+            if (actual < anterior) {
+                fantasmaEl.style.transition = "none";
+                fantasmaEl.style.width = `${anterior}%`;
+                void fantasmaEl.offsetWidth;
+                fantasmaEl.style.transition = "width .75s ease .12s";
+                fantasmaEl.style.width = `${actual}%`;
+            } else if (actual > anterior || !fantasmaEl.style.width) {
+                fantasmaEl.style.transition = "none";
+                fantasmaEl.style.width = `${actual}%`;
+            }
+        }
+        if (barraEl) barraEl.style.width = `${actual}%`;
+        if (!this._vidaAnterior) this._vidaAnterior = {};
+        this._vidaAnterior[clave] = actual;
     }
 
     renderAciertoJugador(esSasuke, personaje) {
